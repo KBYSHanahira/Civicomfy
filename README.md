@@ -4,6 +4,17 @@ Civicomfy integrates Civitai's model library directly into ComfyUI. Browse, sear
 
 ---
 
+## Screenshot
+
+<img width="879" height="694" alt="image" src="https://github.com/user-attachments/assets/21f4e9a8-de3c-4790-8995-d5f048b7e4b3" />
+<img width="880" height="696" alt="image" src="https://github.com/user-attachments/assets/58a528fd-af85-4b39-9810-633e48263e31" />
+<img width="885" height="689" alt="image" src="https://github.com/user-attachments/assets/dbf21dd4-bae2-4494-b4b0-7ce3e6c20420" />
+<img width="883" height="693" alt="image" src="https://github.com/user-attachments/assets/0632b748-5d13-45c3-9365-ca58c1cd579c" />
+<img width="893" height="690" alt="image" src="https://github.com/user-attachments/assets/9c0cc454-0115-4425-a23b-6994fd511691" />
+
+
+---
+
 ## Installation
 
 ```bash
