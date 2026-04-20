@@ -1,4 +1,4 @@
-import { CivitaiDownloaderAPI } from "../../api/civitai.js";
+﻿import { CivitaiDownloaderAPI } from "../../api/civitai.js";
 
 const CIVITAI_BASE = 'https://civitai.com/models/';
 
@@ -292,6 +292,39 @@ export function handleMyModelViewDetail(ui, relPath) {
     _showDetailModal(ui, model);
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function _fmtBytes(bytes) {
+    if (!bytes || bytes <= 0) return '';
+    if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
+    if (bytes >= 1048576)    return (bytes / 1048576).toFixed(1) + ' MB';
+    return (bytes / 1024).toFixed(0) + ' KB';
+}
+
+function _fmtDate(ts) {
+    if (!ts) return '';
+    return new Date(ts * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function _mmTypeColor(type) {
+    const map = {
+        'checkpoints': '#4a9eff', 'loras': '#f59e0b', 'controlnet': '#22d3ee',
+        'vae': '#fb7185', 'embeddings': '#a78bfa', 'hypernetworks': '#34d399',
+        'upscale_models': '#fb923c', 'clip': '#a3e635',
+    };
+    return map[(type || '').toLowerCase()] || '#888';
+}
+
+function _mmSection(label, iconClass) {
+    const sec = document.createElement('div');
+    sec.className = 'civitai-mymodel-detail-section';
+    const lbl = document.createElement('div');
+    lbl.className = 'civitai-mymodel-detail-section-label';
+    lbl.innerHTML = iconClass ? `<i class="fas ${iconClass}"></i> ${label}` : label;
+    sec.appendChild(lbl);
+    return sec;
+}
+
 function _showDetailModal(ui, model) {
     // Remove any existing detail modal
     const existing = ui.modal.querySelector('#civitai-mymodel-detail-modal');
@@ -304,25 +337,83 @@ function _showDetailModal(ui, model) {
     const panel = document.createElement('div');
     panel.className = 'civitai-mymodel-detail-panel';
 
-    // Header
+    // ── HEADER ────────────────────────────────────────────────────────────────
     const header = document.createElement('div');
     header.className = 'civitai-mymodel-detail-header';
-    const title = document.createElement('h3');
-    title.textContent = model.model_name || model.name;
+
+    const titleWrap = document.createElement('div');
+    titleWrap.className = 'civitai-mymodel-detail-title-wrap';
+
+    const typeLabel = model.model_type || model.model_type_civitai || '';
+    if (typeLabel) {
+        const chip = document.createElement('span');
+        chip.className = 'civitai-mymodel-detail-type-chip';
+        chip.textContent = typeLabel;
+        const tc = _mmTypeColor(typeLabel);
+        chip.style.background = tc + '28';
+        chip.style.borderColor = tc + '60';
+        chip.style.color = tc;
+        titleWrap.appendChild(chip);
+    }
+
+    const titleEl = document.createElement('h3');
+    titleEl.className = 'civitai-mymodel-detail-title';
+    titleEl.textContent = model.model_name || model.name;
+    titleEl.title = model.model_name || model.name;
+    titleWrap.appendChild(titleEl);
+
+    const headerRight = document.createElement('div');
+    headerRight.className = 'civitai-mymodel-detail-header-right';
+
+    if (model.civitai_model_id) {
+        const civitLink = document.createElement('a');
+        civitLink.href = `${CIVITAI_BASE}${model.civitai_model_id}`;
+        civitLink.target = '_blank';
+        civitLink.rel = 'noopener noreferrer';
+        civitLink.className = 'civitai-button secondary small';
+        civitLink.innerHTML = '<i class="fas fa-external-link-alt"></i> Civitai';
+        civitLink.title = 'View on Civitai';
+        headerRight.appendChild(civitLink);
+    }
+
     const closeBtn = document.createElement('button');
     closeBtn.className = 'civitai-close-button';
     closeBtn.innerHTML = '&times;';
-    closeBtn.addEventListener('click', () => overlay.remove());
-    header.appendChild(title);
-    header.appendChild(closeBtn);
+    closeBtn.title = 'Close (Esc)';
 
-    // Body
+    headerRight.appendChild(closeBtn);
+    header.appendChild(titleWrap);
+    header.appendChild(headerRight);
+
+    // ── META BAR ──────────────────────────────────────────────────────────────
+    const metaBar = document.createElement('div');
+    metaBar.className = 'civitai-mymodel-detail-meta-bar';
+
+    const metaItems = [
+        model.version_name          ? { icon: 'fa-code-branch', text: model.version_name } : null,
+        model.base_model            ? { icon: 'fa-layer-group', text: model.base_model }   : null,
+        _fmtBytes(model.size_bytes) ? { icon: 'fa-hdd',         text: _fmtBytes(model.size_bytes) } : null,
+        _fmtDate(model.modified)    ? { icon: 'fa-clock',        text: _fmtDate(model.modified) }   : null,
+    ].filter(Boolean);
+
+    metaItems.forEach(({ icon, text }) => {
+        const item = document.createElement('span');
+        item.className = 'civitai-mymodel-detail-meta-item';
+        item.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
+        metaBar.appendChild(item);
+    });
+
+    // ── BODY ─────────────────────────────────────────────────────────────────
     const body = document.createElement('div');
     body.className = 'civitai-mymodel-detail-body';
 
     // Left: preview
     const left = document.createElement('div');
     left.className = 'civitai-mymodel-detail-left';
+
+    const previewWrap = document.createElement('div');
+    previewWrap.className = 'civitai-mymodel-detail-preview-wrap';
+
     if (model.has_preview) {
         const imgUrl = `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`;
         const img = document.createElement('img');
@@ -330,7 +421,11 @@ function _showDetailModal(ui, model) {
         img.alt = model.name;
         img.className = 'civitai-mymodel-detail-preview civitai-zoomable';
         img.title = 'Click to zoom';
-        img.onerror = () => img.remove();
+        img.onerror = () => {
+            previewWrap.classList.add('no-preview');
+            img.remove();
+            previewWrap.innerHTML = '<i class="fas fa-image"></i>';
+        };
         img.addEventListener('click', () => {
             const lb = document.createElement('div');
             lb.id = 'civitai-lightbox';
@@ -346,54 +441,87 @@ function _showDetailModal(ui, model) {
             lb.appendChild(closeX);
             lb.appendChild(zoomImg);
             lb.addEventListener('click', () => lb.remove());
-            const onKey = (e) => { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', onKey); } };
-            document.addEventListener('keydown', onKey);
+            const onLbKey = (e) => { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', onLbKey); } };
+            document.addEventListener('keydown', onLbKey);
             document.body.appendChild(lb);
         });
-        left.appendChild(img);
+        previewWrap.appendChild(img);
+    } else {
+        previewWrap.classList.add('no-preview');
+        previewWrap.innerHTML = '<i class="fas fa-image"></i>';
     }
+    left.appendChild(previewWrap);
 
-    // Right: info fields
+    // Right: details
     const right = document.createElement('div');
     right.className = 'civitai-mymodel-detail-right';
 
-    const fields = [
-        ['File', model.name],
-        ['Path', model.rel_path],
-        ['Size', model.size_bytes > 0 ? (model.size_bytes / 1024 / 1024).toFixed(2) + ' MB' : ''],
-        ['Model Type', model.model_type || model.model_type_civitai],
-        ['Base Model', model.base_model],
-        ['Version', model.version_name],
-        ['Civitai Model ID', model.civitai_model_id],
-        ['Civitai Version ID', model.civitai_version_id],
+    // ── Section: File Info
+    const infoSec = _mmSection('File Info', 'fa-file-alt');
+    const kvGrid = document.createElement('div');
+    kvGrid.className = 'civitai-mymodel-detail-kv-grid';
+
+    const kvRows = [
+        ['Filename',    model.name,         null],
+        ['Model Name',  (model.model_name && model.model_name !== model.name) ? model.model_name : null, null],
+        ['Version',     model.version_name, null],
+        ['Type',        model.model_type || model.model_type_civitai, null],
+        ['Base Model',  model.base_model,   null],
+        ['File Size',   _fmtBytes(model.size_bytes), null],
+        ['Modified',    _fmtDate(model.modified),    null],
+        ['Model ID',    model.civitai_model_id,
+            model.civitai_model_id ? () => { navigator.clipboard?.writeText(String(model.civitai_model_id)).catch(() => {}); ui.showToast('Model ID copied!', 'success', 1500); } : null],
+        ['Version ID',  model.civitai_version_id,
+            model.civitai_version_id ? () => { navigator.clipboard?.writeText(String(model.civitai_version_id)).catch(() => {}); ui.showToast('Version ID copied!', 'success', 1500); } : null],
     ];
 
-    const table = document.createElement('table');
-    table.className = 'civitai-mymodel-detail-table';
-    fields.forEach(([label, val]) => {
+    kvRows.forEach(([key, val, onCopy]) => {
         if (!val && val !== 0) return;
-        const tr = document.createElement('tr');
-        const td1 = document.createElement('td');
-        td1.className = 'detail-label';
-        td1.textContent = label;
-        const td2 = document.createElement('td');
-        td2.textContent = String(val);
-        tr.appendChild(td1);
-        tr.appendChild(td2);
-        table.appendChild(tr);
+        const kEl = document.createElement('div');
+        kEl.className = 'civitai-mymodel-detail-kv-key';
+        kEl.textContent = key;
+        const vEl = document.createElement('div');
+        vEl.className = 'civitai-mymodel-detail-kv-val';
+        if (onCopy) {
+            const code = document.createElement('code');
+            code.textContent = String(val);
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'civitai-button small icon-only';
+            copyBtn.title = `Copy ${key}`;
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+            copyBtn.addEventListener('click', onCopy);
+            vEl.appendChild(code);
+            vEl.appendChild(copyBtn);
+        } else {
+            vEl.textContent = String(val);
+        }
+        kvGrid.appendChild(kEl);
+        kvGrid.appendChild(vEl);
     });
-    right.appendChild(table);
+    infoSec.appendChild(kvGrid);
+    right.appendChild(infoSec);
 
-    // Trigger words
+    // ── Section: Trigger Words
     if (Array.isArray(model.trained_words) && model.trained_words.length > 0) {
-        const twLabel = document.createElement('div');
-        twLabel.className = 'detail-section-title';
-        twLabel.textContent = 'Trigger Words';
+        const twSec = _mmSection('Trigger Words', 'fa-tags');
+
+        const twHeader = document.createElement('div');
+        twHeader.className = 'civitai-mymodel-detail-tw-header';
+        const copyAllBtn = document.createElement('button');
+        copyAllBtn.className = 'civitai-button small secondary';
+        copyAllBtn.innerHTML = '<i class="fas fa-copy"></i> Copy All';
+        copyAllBtn.addEventListener('click', () => {
+            navigator.clipboard?.writeText(model.trained_words.join(', ')).catch(() => {});
+            ui.showToast('All trigger words copied!', 'success', 1800);
+        });
+        twHeader.appendChild(copyAllBtn);
+        twSec.appendChild(twHeader);
+
         const twWrap = document.createElement('div');
-        twWrap.className = 'civitai-mymodel-detail-tags';
+        twWrap.className = 'civitai-mymodel-detail-trigger-words';
         model.trained_words.forEach(w => {
             const tag = document.createElement('span');
-            tag.className = 'civitai-mymodel-tag';
+            tag.className = 'civitai-mymodel-detail-trigger-word';
             tag.textContent = w;
             tag.title = 'Click to copy';
             tag.addEventListener('click', () => {
@@ -402,84 +530,119 @@ function _showDetailModal(ui, model) {
             });
             twWrap.appendChild(tag);
         });
-        right.appendChild(twLabel);
-        right.appendChild(twWrap);
+        twSec.appendChild(twWrap);
+        right.appendChild(twSec);
     }
 
-    // Description
-    if (model.description) {
-        const descLabel = document.createElement('div');
-        descLabel.className = 'detail-section-title';
-        descLabel.textContent = 'Description';
-        const desc = document.createElement('div');
-        desc.className = 'civitai-mymodel-detail-desc';
-        // Strip HTML tags for safety
-        const tmp = document.createElement('div');
-        tmp.innerHTML = model.description;
-        desc.textContent = tmp.textContent || tmp.innerText || '';
-        right.appendChild(descLabel);
-        right.appendChild(desc);
-    }
-
-    // Example Prompts
+    // ── Section: Example Prompts
     if (Array.isArray(model.example_prompts) && model.example_prompts.length > 0) {
-        const epLabel = document.createElement('div');
-        epLabel.className = 'detail-section-title';
-        epLabel.textContent = 'Example Prompts';
-        right.appendChild(epLabel);
+        const epSec = _mmSection('Example Prompts', 'fa-lightbulb');
+        const promptsWrap = document.createElement('div');
+        promptsWrap.className = 'civitai-mymodel-detail-prompts';
         model.example_prompts.forEach((prompt, i) => {
-            const wrap = document.createElement('div');
-            wrap.className = 'civitai-mymodel-example-prompt';
+            const card = document.createElement('div');
+            card.className = 'civitai-mymodel-detail-prompt-card';
+            const cardHeader = document.createElement('div');
+            cardHeader.className = 'civitai-mymodel-detail-prompt-header';
             const num = document.createElement('span');
-            num.className = 'civitai-mymodel-example-prompt-num';
-            num.textContent = `${i + 1}.`;
-            const text = document.createElement('span');
-            text.className = 'civitai-mymodel-example-prompt-text';
-            text.textContent = prompt;
+            num.className = 'civitai-mymodel-detail-prompt-num';
+            num.textContent = `Prompt ${i + 1}`;
             const copyBtn = document.createElement('button');
-            copyBtn.className = 'civitai-button small civitai-mymodel-example-prompt-copy';
-            copyBtn.title = 'Copy prompt';
-            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+            copyBtn.className = 'civitai-button small';
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
             copyBtn.addEventListener('click', () => {
                 navigator.clipboard?.writeText(prompt).catch(() => {});
                 ui.showToast('Prompt copied!', 'success', 1500);
             });
-            wrap.appendChild(num);
-            wrap.appendChild(text);
-            wrap.appendChild(copyBtn);
-            right.appendChild(wrap);
+            cardHeader.appendChild(num);
+            cardHeader.appendChild(copyBtn);
+            const text = document.createElement('div');
+            text.className = 'civitai-mymodel-detail-prompt-text';
+            text.textContent = prompt;
+            card.appendChild(cardHeader);
+            card.appendChild(text);
+            promptsWrap.appendChild(card);
         });
+        epSec.appendChild(promptsWrap);
+        right.appendChild(epSec);
     }
 
-    // Footer: Open on Civit link
-    if (model.civitai_model_id) {
-        const footer = document.createElement('div');
-        footer.className = 'civitai-mymodel-detail-footer';
-        const civitLink = document.createElement('a');
-        civitLink.href = `${CIVITAI_BASE}${model.civitai_model_id}`;
-        civitLink.target = '_blank';
-        civitLink.rel = 'noopener noreferrer';
-        civitLink.className = 'civitai-button primary small';
-        civitLink.innerHTML = '<i class="fas fa-external-link-alt"></i> Open on Civitai';
-        footer.appendChild(civitLink);
-        right.appendChild(footer);
+    // ── Section: Description
+    if (model.description) {
+        const descSec = _mmSection('Description', 'fa-align-left');
+        const desc = document.createElement('div');
+        desc.className = 'civitai-mymodel-detail-desc';
+        const tmp = document.createElement('div');
+        tmp.innerHTML = model.description;
+        desc.textContent = tmp.textContent || tmp.innerText || '';
+        descSec.appendChild(desc);
+        right.appendChild(descSec);
     }
 
     body.appendChild(left);
     body.appendChild(right);
+
+    // ── FOOTER BAR ────────────────────────────────────────────────────────────
+    const footerBar = document.createElement('div');
+    footerBar.className = 'civitai-mymodel-detail-footer-bar';
+
+    const footerLeft = document.createElement('div');
+    footerLeft.className = 'civitai-mymodel-detail-footer-left';
+    const pathIcon = document.createElement('span');
+    pathIcon.className = 'civitai-mymodel-detail-path-label';
+    pathIcon.innerHTML = '<i class="fas fa-folder-open"></i>';
+    pathIcon.title = model.rel_path;
+    const pathCode = document.createElement('code');
+    pathCode.className = 'civitai-mymodel-detail-path-code';
+    pathCode.textContent = model.rel_path;
+    pathCode.title = model.rel_path;
+    const copyPathBtn = document.createElement('button');
+    copyPathBtn.className = 'civitai-button small secondary';
+    copyPathBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Path';
+    copyPathBtn.title = 'Copy relative path';
+    copyPathBtn.addEventListener('click', () => {
+        navigator.clipboard?.writeText(model.rel_path).catch(() => {});
+        ui.showToast('Path copied!', 'success', 1500);
+    });
+    footerLeft.appendChild(pathIcon);
+    footerLeft.appendChild(pathCode);
+    footerLeft.appendChild(copyPathBtn);
+
+    const footerRight = document.createElement('div');
+    footerRight.className = 'civitai-mymodel-detail-footer-right';
+    if (model.civitai_model_id) {
+        const civitBtn = document.createElement('a');
+        civitBtn.href = `${CIVITAI_BASE}${model.civitai_model_id}`;
+        civitBtn.target = '_blank';
+        civitBtn.rel = 'noopener noreferrer';
+        civitBtn.className = 'civitai-button primary small';
+        civitBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> Open on Civitai';
+        footerRight.appendChild(civitBtn);
+    }
+
+    footerBar.appendChild(footerLeft);
+    footerBar.appendChild(footerRight);
+
+    // ── ASSEMBLE ─────────────────────────────────────────────────────────────
     panel.appendChild(header);
+    if (metaItems.length > 0) panel.appendChild(metaBar);
     panel.appendChild(body);
+    panel.appendChild(footerBar);
     overlay.appendChild(panel);
 
-    // Close on backdrop click
-    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    // Close on Escape key
+    const onEsc = (e) => {
+        if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); }
+    };
+    document.addEventListener('keydown', onEsc);
+
+    // Close on backdrop click or close button
+    const _close = () => { overlay.remove(); document.removeEventListener('keydown', onEsc); };
+    closeBtn.addEventListener('click', _close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) _close(); });
 
     ui.modal.appendChild(overlay);
 }
-
-/**
- * Handle Delete button click with confirmation.
- */
 export async function handleMyModelDelete(ui, relPath, name, btn) {
     if (!confirm(`Delete "${name}"?\n\nThis will permanently remove the file from disk.`)) return;
 

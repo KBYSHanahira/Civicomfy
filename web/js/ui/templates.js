@@ -1,15 +1,14 @@
 // Modal template for Civicomfy UI
-// Keep structure identical to the original inline HTML to minimize risk
 
 export function modalTemplate(settings = {}) {
   const numConnections = Number.isFinite(settings.numConnections) ? settings.numConnections : 1;
   return `
     <div class="civitai-downloader-modal-content">
       <div class="civitai-downloader-header">
-        <h2><i class="fas fa-cloud-download-alt" style="color:var(--accent-color,#5c8aff);margin-right:8px;"></i>Civicomfy</h2>
+        <h2><i class="fas fa-cloud-download-alt" style="color:var(--cfy-accent,#5c8aff);margin-right:8px;"></i>Civicomfy</h2>
         <div class="civitai-header-actions">
           <button class="civitai-icon-button" id="civitai-fullscreen-toggle" title="Toggle fullscreen"><i class="fas fa-expand"></i></button>
-          <button class="civitai-close-button" id="civitai-close-modal">&times;</button>
+          <button class="civitai-close-button" id="civitai-close-modal" title="Close">&times;</button>
         </div>
       </div>
       <div class="civitai-downloader-body">
@@ -17,68 +16,70 @@ export function modalTemplate(settings = {}) {
           <button class="civitai-downloader-tab active" data-tab="download"><i class="fas fa-download"></i> Download</button>
           <button class="civitai-downloader-tab" data-tab="browse"><i class="fas fa-compass"></i> Browse</button>
           <button class="civitai-downloader-tab" data-tab="mymodels"><i class="fas fa-layer-group"></i> My Models</button>
-          <button class="civitai-downloader-tab" data-tab="status"><i class="fas fa-tasks"></i> Status <span id="civitai-status-indicator" style="display: none;">(<span id="civitai-active-count">0</span>)</span></button>
+          <button class="civitai-downloader-tab" data-tab="status"><i class="fas fa-tasks"></i> Status <span id="civitai-status-indicator" style="display:none;">(<span id="civitai-active-count">0</span>)</span></button>
           <button class="civitai-downloader-tab" data-tab="settings"><i class="fas fa-cog"></i> Settings</button>
         </div>
         <div id="civitai-tab-download" class="civitai-downloader-tab-content active">
           <form id="civitai-download-form">
             <div class="civitai-form-group">
-              <label for="civitai-model-url">Model URL or ID</label>
-              <input type="text" id="civitai-model-url" class="civitai-input" placeholder="e.g., https://civitai.com/models/12345 or https://huggingface.co/owner/repo/resolve/main/model.safetensors" required>
+              <label for="civitai-model-url"><i class="fas fa-link" style="margin-right:5px;opacity:0.6;"></i>Model URL or ID</label>
+              <input type="text" id="civitai-model-url" class="civitai-input" placeholder="https://civitai.com/models/12345  or  HuggingFace /resolve/ link" required>
+              <p class="civitai-field-hint">Supports Civitai URLs/IDs and HuggingFace <code>/resolve/</code> or <code>/blob/</code> file links. Add <code>?modelVersionId=xxxxx</code> for a specific version.</p>
             </div>
-            <p style="font-size: 0.9em; color: #ccc; margin-top: -10px; margin-bottom: 15px;">Supports Civitai URLs/IDs and HuggingFace <code>/resolve/</code> or <code>/blob/</code> file links. For Civitai you can add <code>?modelVersionId=xxxxx</code>.</p>
             <div class="civitai-form-row">
               <div class="civitai-form-group">
-                <label for="civitai-model-type">Model Type (Save Location)</label>
-                <div style="display:flex; gap:6px; align-items:center;">
+                <label for="civitai-model-type"><i class="fas fa-folder-open" style="margin-right:5px;opacity:0.6;"></i>Model Type (Save Location)</label>
+                <div class="civitai-input-btn-group">
                   <select id="civitai-model-type" class="civitai-select" required></select>
-                  <button type="button" id="civitai-create-model-type" class="civitai-button small" title="Create new model type folder"><i class="fas fa-folder-plus"></i></button>
+                  <button type="button" id="civitai-create-model-type" class="civitai-button small icon-only" title="Create new model type folder"><i class="fas fa-folder-plus"></i></button>
                 </div>
               </div>
               <div class="civitai-form-group">
-                <label for="civitai-subdir-select">Save Subfolder</label>
-                <div style="display:flex; gap:6px; align-items:center;">
+                <label for="civitai-subdir-select"><i class="fas fa-sitemap" style="margin-right:5px;opacity:0.6;"></i>Save Subfolder</label>
+                <div class="civitai-input-btn-group">
                   <select id="civitai-subdir-select" class="civitai-select">
                     <option value="">(root)</option>
                   </select>
-                  <button type="button" id="civitai-create-subdir" class="civitai-button small" title="Create new subfolder"><i class="fas fa-folder-plus"></i></button>
+                  <button type="button" id="civitai-create-subdir" class="civitai-button small icon-only" title="Create new subfolder"><i class="fas fa-folder-plus"></i></button>
                 </div>
               </div>
               <div class="civitai-form-group">
-                <label for="civitai-model-version-id">Version ID (Optional)</label>
-                <input type="number" id="civitai-model-version-id" class="civitai-input" placeholder="Overrides URL/Latest">
+                <label for="civitai-model-version-id"><i class="fas fa-code-branch" style="margin-right:5px;opacity:0.6;"></i>Version ID <span style="font-weight:400;text-transform:none;font-size:0.95em;">(Optional)</span></label>
+                <input type="number" id="civitai-model-version-id" class="civitai-input" placeholder="Overrides URL / Latest">
               </div>
             </div>
             <div class="civitai-form-row">
               <div class="civitai-form-group">
-                <label for="civitai-custom-filename">Custom Filename (Optional)</label>
+                <label for="civitai-custom-filename"><i class="fas fa-file-signature" style="margin-right:5px;opacity:0.6;"></i>Custom Filename <span style="font-weight:400;text-transform:none;font-size:0.95em;">(Optional)</span></label>
                 <input type="text" id="civitai-custom-filename" class="civitai-input" placeholder="Leave blank to use original name">
               </div>
               <div class="civitai-form-group">
-                <label for="civitai-connections">Connections</label>
+                <label for="civitai-connections"><i class="fas fa-plug" style="margin-right:5px;opacity:0.6;"></i>Connections</label>
                 <input type="number" id="civitai-connections" class="civitai-input" value="${numConnections}" min="1" max="16" step="1" required disabled>
-                <p style="font-size: 0.9em; color: #ccc; margin-top: 7px; margin-bottom: 15px;">Disabled: Only single connection possible for now</p>
+                <p class="civitai-field-hint"><i class="fas fa-info-circle" style="margin-right:3px;"></i>Only single connection supported currently.</p>
               </div>
             </div>
             <div class="civitai-form-group inline">
               <input type="checkbox" id="civitai-force-redownload" class="civitai-checkbox">
-              <label for="civitai-force-redownload">Force Re-download (if exists)</label>
+              <label for="civitai-force-redownload"><i class="fas fa-redo" style="margin-right:5px;opacity:0.6;"></i>Force Re-download (if file already exists)</label>
             </div>
-            <div id="civitai-download-preview-area" class="civitai-download-preview-area" style="margin-top: 25px; margin-bottom: 25px; padding-top: 15px; border-top: 1px solid var(--border-color, #444);">
+            <div id="civitai-download-preview-area" class="civitai-download-preview-area">
               <!-- Preview content will be injected here -->
             </div>
-            <button type="submit" id="civitai-download-submit" class="civitai-button primary">Start Download</button>
+            <div class="civitai-form-actions">
+              <button type="submit" id="civitai-download-submit" class="civitai-button primary"><i class="fas fa-download"></i> Start Download</button>
+            </div>
           </form>
         </div>
         <div id="civitai-tab-browse" class="civitai-downloader-tab-content">
           <div class="civitai-browse-header">
             <div class="civitai-browse-type-tabs" id="civitai-browse-type-tabs">
-              <button class="civitai-browse-type-tab active" data-type="all">All</button>
+              <button class="civitai-browse-type-tab active" data-type="all"><i class="fas fa-th-large" style="margin-right:4px;"></i>All</button>
               <!-- Model type tabs will be injected here by JS -->
             </div>
             <div class="civitai-browse-controls">
-              <input type="text" id="civitai-browse-search" class="civitai-input civitai-browse-search-input" placeholder="Search model name..." autocomplete="off" style="min-width:180px; flex:1 1 180px;">
-              <select id="civitai-browse-sort" class="civitai-select" style="min-width:160px;">
+              <input type="text" id="civitai-browse-search" class="civitai-input civitai-browse-search-input" placeholder="Search models..." autocomplete="off">
+              <select id="civitai-browse-sort" class="civitai-select" style="min-width:155px;">
                 <option value="Most Downloaded">Most Downloaded</option>
                 <option value="Highest Rated">Highest Rated</option>
                 <option value="Most Liked">Most Liked</option>
@@ -115,7 +116,7 @@ export function modalTemplate(settings = {}) {
             <span id="civitai-browse-selected-text" class="civitai-browse-selected-text"></span>
           </div>
           <div id="civitai-browse-results" class="civitai-browse-cards"></div>
-          <div id="civitai-browse-pagination" style="text-align: center; margin-top: 20px;"></div>
+          <div id="civitai-browse-pagination" class="civitai-browse-pagination"></div>
         </div>
         <div id="civitai-tab-mymodels" class="civitai-downloader-tab-content">
           <div class="civitai-mymodels-header">
@@ -133,7 +134,7 @@ export function modalTemplate(settings = {}) {
                   <option value="size_asc">Size (Small first)</option>
                 </select>
                 <input type="text" id="civitai-mymodels-search" class="civitai-input" placeholder="Filter by name...">
-                <select id="civitai-mymodels-limit" class="civitai-select" style="width:auto;" title="Items per page">
+                <select id="civitai-mymodels-limit" class="civitai-select" title="Items per page">
                   <option value="25">25 / page</option>
                   <option value="50" selected>50 / page</option>
                   <option value="75">75 / page</option>
@@ -151,25 +152,26 @@ export function modalTemplate(settings = {}) {
           </div>
           <div id="civitai-mymodels-pagination" class="civitai-mymodels-pagination"></div>
         </div>
+        </div>
         <div id="civitai-tab-status" class="civitai-downloader-tab-content">
           <div id="civitai-status-content">
             <div class="civitai-status-section">
-              <h3>Active Downloads</h3>
+              <h3><i class="fas fa-bolt"></i> Active Downloads</h3>
               <div id="civitai-active-list" class="civitai-download-list">
                 <p>No active downloads.</p>
               </div>
             </div>
             <div class="civitai-status-section">
-              <h3>Queued Downloads</h3>
+              <h3><i class="fas fa-clock"></i> Queued Downloads</h3>
               <div id="civitai-queued-list" class="civitai-download-list">
                 <p>Download queue is empty.</p>
               </div>
             </div>
             <div class="civitai-status-section">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3>Download History (Recent)</h3>
+              <div class="civitai-status-history-header">
+                <h3><i class="fas fa-history"></i> Recent History</h3>
                 <button id="civitai-clear-history-button" class="civitai-button danger small" title="Clear all history items">
-                  <i class="fas fa-trash-alt"></i> Clear History
+                  <i class="fas fa-trash-alt"></i> Clear
                 </button>
               </div>
               <div id="civitai-history-list" class="civitai-download-list">
@@ -182,21 +184,21 @@ export function modalTemplate(settings = {}) {
           <form id="civitai-settings-form">
             <div class="civitai-settings-container">
               <div class="civitai-settings-section">
-                <h4>API & Defaults</h4>
+                <h4><i class="fas fa-key"></i> API & Defaults</h4>
                 <div class="civitai-form-group">
-                  <label for="civitai-settings-api-key">Civitai API Key (Optional)</label>
+                  <label for="civitai-settings-api-key">Civitai API Key <span style="font-weight:400;">(Optional)</span></label>
                   <input type="password" id="civitai-settings-api-key" class="civitai-input" placeholder="Enter API key for higher limits / authenticated access" autocomplete="new-password">
-                  <p style="font-size: 0.85em; color: #bbb; margin-top: 5px;">Needed for some downloads/features. Find keys at civitai.com/user/account (also accessible via civit.com or civit.red)</p>
+                  <p class="civitai-field-hint">Needed for some downloads/features. Find keys at civitai.com/user/account</p>
                 </div>
                 <div class="civitai-form-group">
-                  <label for="civitai-settings-hf-token">HuggingFace Token (Optional)</label>
+                  <label for="civitai-settings-hf-token">HuggingFace Token <span style="font-weight:400;">(Optional)</span></label>
                   <input type="password" id="civitai-settings-hf-token" class="civitai-input" placeholder="hf_..." autocomplete="new-password">
-                  <p style="font-size: 0.85em; color: #bbb; margin-top: 5px;">Required for gated/private models on huggingface.co. Get yours at huggingface.co/settings/tokens</p>
+                  <p class="civitai-field-hint">Required for gated/private models on huggingface.co/settings/tokens</p>
                 </div>
                 <div class="civitai-form-group">
                   <label for="civitai-settings-connections">Default Connections</label>
                   <input type="number" id="civitai-settings-connections" class="civitai-input" value="1" min="1" max="16" step="1" required disabled>
-                  <p style="font-size: 0.85em; color: #bbb; margin-top: 5px;">Disabled. Only single connection possible for now</p>
+                  <p class="civitai-field-hint"><i class="fas fa-info-circle" style="margin-right:3px;"></i>Only single connection supported currently.</p>
                 </div>
                 <div class="civitai-form-group">
                   <label for="civitai-settings-default-type">Default Model Type (for saving)</label>
@@ -204,7 +206,7 @@ export function modalTemplate(settings = {}) {
                 </div>
               </div>
               <div class="civitai-settings-section">
-                <h4>Interface & Search</h4>
+                <h4><i class="fas fa-sliders-h"></i> Interface & Search</h4>
                 <div class="civitai-form-group inline">
                   <input type="checkbox" id="civitai-settings-auto-open-status" class="civitai-checkbox">
                   <label for="civitai-settings-auto-open-status">Switch to Status tab after starting download</label>
@@ -216,14 +218,15 @@ export function modalTemplate(settings = {}) {
                 <div class="civitai-form-group">
                   <label for="civitai-settings-nsfw-threshold">NSFW Blur Threshold (nsfwLevel)</label>
                   <input type="number" id="civitai-settings-nsfw-threshold" class="civitai-input" value="${Number.isFinite(settings.nsfwBlurMinLevel) ? settings.nsfwBlurMinLevel : 4}" min="0" max="128" step="1">
-                  <p style="font-size: 0.85em; color: #bbb; margin-top: 5px;">
-                    Blur thumbnails when an image's <code>nsfwLevel</code> is greater than or equal to this value.
-                    Higher numbers indicate more explicit content. None (Safe/PG): 1, Mild (PG-13): 2, Mature (R): 4, Adult (X): 5, Extra Explicit (R): 8, Explicit (XXX): 16/32+
+                  <p class="civitai-field-hint">
+                    Blur thumbnails when nsfwLevel &ge; this value. Safe: 1 &bull; PG-13: 2 &bull; R: 4 &bull; X: 5 &bull; Explicit: 16/32+
                   </p>
                 </div>
               </div>
             </div>
-            <button type="submit" id="civitai-settings-save" class="civitai-button primary" style="margin-top: 20px;">Save Settings</button>
+            <div class="civitai-form-actions">
+              <button type="submit" id="civitai-settings-save" class="civitai-button primary"><i class="fas fa-save"></i> Save Settings</button>
+            </div>
           </form>
         </div>
       </div>

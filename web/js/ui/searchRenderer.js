@@ -274,45 +274,98 @@ export function showBrowseCardInfo(ui, modelId) {
     _renderBrowseInfoModal(ui, hit);
 }
 
+// ─── Helper: format large numbers ────────────────────────────
+function _fmtNum(n) {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+    if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k';
+    return String(n);
+}
+
+function _fmtBytes(bytes) {
+    if (!bytes) return '';
+    if (bytes >= 1024 ** 3) return (bytes / 1024 ** 3).toFixed(2) + ' GB';
+    if (bytes >= 1024 ** 2) return (bytes / 1024 ** 2).toFixed(1) + ' MB';
+    if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return bytes + ' B';
+}
+
+function _ratingStars(rating) {
+    const full = Math.floor(rating);
+    const half = (rating - full) >= 0.5;
+    let s = '';
+    for (let i = 0; i < 5; i++) {
+        if (i < full) s += '<i class="fas fa-star"></i>';
+        else if (i === full && half) s += '<i class="fas fa-star-half-alt"></i>';
+        else s += '<i class="far fa-star"></i>';
+    }
+    return `<span class="civitai-browse-info-stars">${s}</span>`;
+}
+
+function _fmtDate(d) {
+    try { return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); } catch (_) { return ''; }
+}
+
+// ─── Info section factory ─────────────────────────────────────
+function _infoSection(label, iconClass = null) {
+    const sec = document.createElement('div');
+    sec.className = 'civitai-browse-info-section';
+    const lbl = document.createElement('div');
+    lbl.className = 'civitai-browse-info-section-label';
+    lbl.innerHTML = iconClass ? `<i class="${iconClass}"></i> ${label}` : label;
+    sec.appendChild(lbl);
+    return sec;
+}
+
+// ─── Main info modal ──────────────────────────────────────────
 function _renderBrowseInfoModal(ui, hit) {
-    // Remove any existing info modal
     ui.modal.querySelector('#civitai-browse-info-modal')?.remove();
 
     const placeholder = PLACEHOLDER_IMAGE_URL;
     const blurMinLevel = Number(ui.settings?.nsfwBlurMinLevel ?? 4);
     const shouldBlurGlobal = ui.settings?.hideMatureInSearch === true;
-    const onError = `this.onerror=null; this.src='${placeholder}'; this.style.backgroundColor='#444';`;
+    const onError = `this.onerror=null;this.src='${placeholder}';this.style.backgroundColor='#444';`;
 
-    const modelId = hit.id;
-    const modelName = hit.name || 'Untitled Model';
-    const modelTypeApi = hit.type || 'other';
-    const typeColor = _typeColor(modelTypeApi);
-    const creator = hit.user?.username || 'Unknown';
-    const stats = hit.metrics || {};
-    const tags = (hit.tags || []).map(t => t.name);
-    const allVersions = hit.versions || [];
-    const primaryVersion = hit.version || (allVersions.length > 0 ? allVersions[0] : {});
+    // ── Data ──────────────────────────────────────
+    const modelId       = hit.id;
+    const modelName     = hit.name || 'Untitled Model';
+    const modelTypeApi  = hit.type || 'other';
+    const typeColor     = _typeColor(modelTypeApi);
+    const creator       = hit.user?.username || 'Unknown';
+    const creatorAvatar = hit.user?.image || null;
+    const stats         = hit.metrics || {};
+    const tags          = (hit.tags || []).map(t => t.name);
+    const allVersions   = hit.versions || [];
+    const primaryVersion   = hit.version || (allVersions[0] || {});
     const primaryVersionId = primaryVersion.id;
 
-    const publishedAt = hit.publishedAt;
-    let publishedFormatted = '';
-    if (publishedAt) {
-        try { publishedFormatted = new Date(publishedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); } catch (_) {}
-    }
+    const publishedAt = hit.publishedAt ? _fmtDate(hit.publishedAt) : '';
+    const updatedAt   = hit.updatedAt   ? _fmtDate(hit.updatedAt)   : '';
 
-    const uniqueBaseModels = allVersions.length > 0
-        ? [...new Set(allVersions.map(v => v.baseModel).filter(Boolean))]
-        : (primaryVersion.baseModel ? [primaryVersion.baseModel] : []);
+    const uniqueBaseModels = [...new Set(
+        allVersions.map(v => v.baseModel).filter(Boolean)
+            .concat(primaryVersion.baseModel ? [primaryVersion.baseModel] : [])
+    )];
 
-    // Gallery images — images[].url are now full CDN URLs (processed by server)
-    // Fall back to thumbnailUrl if images array is empty
-    let images = (hit.images || []).filter(img => {
-        if (!shouldBlurGlobal) return true;
-        return Number(img.nsfwLevel ?? 0) < blurMinLevel;
-    }).filter(img => img.url).slice(0, 10);
+    let images = (hit.images || [])
+        .filter(img => shouldBlurGlobal ? Number(img.nsfwLevel ?? 0) < blurMinLevel : true)
+        .filter(img => img.url)
+        .slice(0, 12);
     if (images.length === 0 && hit.thumbnailUrl) images = [{ url: hit.thumbnailUrl, type: 'image' }];
 
-    // ── Overlay ───────────────────────────────────
+    const allTrainedWords = [...new Set(
+        allVersions.flatMap(v => v.trainedWords || [])
+            .concat(hit.version?.trainedWords || [])
+            .filter(Boolean)
+    )];
+
+    const exampleImages = (hit.images || [])
+        .filter(img => typeof img?.meta?.prompt === 'string' && img.meta.prompt.trim())
+        .slice(0, 4);
+
+    const rating      = Number(stats.rating ?? stats.ratingAllTime ?? 0);
+    const ratingCount = Number(stats.ratingCount ?? stats.ratingCountAllTime ?? 0);
+
+    // ── DOM skeleton ──────────────────────────────
     const overlay = document.createElement('div');
     overlay.id = 'civitai-browse-info-modal';
     overlay.className = 'civitai-browse-info-overlay';
@@ -320,40 +373,111 @@ function _renderBrowseInfoModal(ui, hit) {
     const panel = document.createElement('div');
     panel.className = 'civitai-browse-info-panel';
 
-    // Header
+    // ── HEADER ───────────────────────────────────
     const header = document.createElement('div');
     header.className = 'civitai-browse-info-header';
 
     const titleWrap = document.createElement('div');
     titleWrap.className = 'civitai-browse-info-title-wrap';
 
-    const hTypeChip = document.createElement('span');
-    hTypeChip.className = 'civitai-browse-info-type-chip';
-    hTypeChip.textContent = modelTypeApi;
-    hTypeChip.style.color = typeColor;
-    hTypeChip.style.borderColor = typeColor + '88';
-    hTypeChip.style.backgroundColor = typeColor + '22';
+    const typeChip = document.createElement('span');
+    typeChip.className = 'civitai-browse-info-type-chip';
+    typeChip.textContent = modelTypeApi;
+    typeChip.style.cssText = `color:${typeColor};border-color:${typeColor}88;background:${typeColor}22;`;
 
     const titleEl = document.createElement('h3');
     titleEl.className = 'civitai-browse-info-title';
     titleEl.textContent = modelName;
+    titleEl.title = modelName;
 
-    titleWrap.appendChild(hTypeChip);
-    titleWrap.appendChild(titleEl);
+    titleWrap.append(typeChip, titleEl);
+
+    const headerRight = document.createElement('div');
+    headerRight.className = 'civitai-browse-info-header-right';
+
+    const civitaiLink = document.createElement('a');
+    civitaiLink.href = `https://civitai.com/models/${modelId}${primaryVersionId ? '?modelVersionId=' + primaryVersionId : ''}`;
+    civitaiLink.target = '_blank';
+    civitaiLink.rel = 'noopener noreferrer';
+    civitaiLink.className = 'civitai-button small';
+    civitaiLink.title = 'Open on Civitai';
+    civitaiLink.innerHTML = '<i class="fas fa-external-link-alt"></i>';
+    civitaiLink.style.textDecoration = 'none';
 
     const closeBtn = document.createElement('button');
     closeBtn.className = 'civitai-close-button';
     closeBtn.innerHTML = '&times;';
+    closeBtn.title = 'Close (Esc)';
     closeBtn.addEventListener('click', () => overlay.remove());
 
-    header.appendChild(titleWrap);
-    header.appendChild(closeBtn);
+    headerRight.append(civitaiLink, closeBtn);
+    header.append(titleWrap, headerRight);
 
-    // Body: gallery (left) + details (right)
+    // ── META BAR (creator + stats) ────────────────
+    const metaBar = document.createElement('div');
+    metaBar.className = 'civitai-browse-info-meta-bar';
+
+    const creatorEl = document.createElement('div');
+    creatorEl.className = 'civitai-browse-info-creator';
+
+    if (creatorAvatar) {
+        const av = document.createElement('img');
+        av.src = creatorAvatar;
+        av.className = 'civitai-browse-info-creator-avatar';
+        av.alt = creator;
+        av.setAttribute('onerror', `this.style.display='none';`);
+        creatorEl.appendChild(av);
+    } else {
+        const avI = document.createElement('i');
+        avI.className = 'fas fa-user-circle civitai-browse-info-creator-avatar-icon';
+        creatorEl.appendChild(avI);
+    }
+
+    const creatorNameEl = document.createElement('span');
+    creatorNameEl.className = 'civitai-browse-info-creator-name';
+    creatorNameEl.textContent = creator;
+    creatorEl.appendChild(creatorNameEl);
+
+    if (publishedAt) {
+        const dateEl = document.createElement('span');
+        dateEl.className = 'civitai-browse-info-date';
+        dateEl.title = updatedAt ? `Updated: ${updatedAt}` : '';
+        dateEl.innerHTML = `<i class="fas fa-calendar-alt"></i> ${publishedAt}${updatedAt && updatedAt !== publishedAt ? ` <span class="civitai-browse-info-updated">(Updated ${updatedAt})</span>` : ''}`;
+        creatorEl.appendChild(dateEl);
+    }
+
+    const statsEl = document.createElement('div');
+    statsEl.className = 'civitai-browse-info-stats';
+
+    [
+        { icon: 'fa-download',  val: stats.downloadCount,                    title: 'Downloads' },
+        { icon: 'fa-thumbs-up', val: stats.thumbsUpCount ?? stats.thumbsUpCountAllTime,   title: 'Likes' },
+        { icon: 'fa-comment',   val: stats.commentCount  ?? stats.commentCountAllTime,    title: 'Comments' },
+        { icon: 'fa-bookmark',  val: stats.collectedCount ?? stats.favoriteCount,          title: 'Saved' },
+        { icon: 'fa-bolt',      val: stats.tippedAmountCount,                title: 'Buzz' },
+    ].forEach(({ icon, val, title }) => {
+        if (val == null || Number(val) === 0) return;
+        const sp = document.createElement('span');
+        sp.title = title;
+        sp.innerHTML = `<i class="fas ${icon}"></i> ${_fmtNum(Number(val))}`;
+        statsEl.appendChild(sp);
+    });
+
+    if (rating > 0 && ratingCount > 0) {
+        const rSp = document.createElement('span');
+        rSp.className = 'civitai-browse-info-rating';
+        rSp.title = `${rating.toFixed(1)} / 5  (${ratingCount.toLocaleString()} ratings)`;
+        rSp.innerHTML = `${_ratingStars(rating)}<span class="civitai-browse-info-rating-val"> ${rating.toFixed(1)}</span><span class="civitai-browse-info-rating-count"> (${_fmtNum(ratingCount)})</span>`;
+        statsEl.appendChild(rSp);
+    }
+
+    metaBar.append(creatorEl, statsEl);
+
+    // ── BODY ──────────────────────────────────────
     const body = document.createElement('div');
     body.className = 'civitai-browse-info-body';
 
-    // ── Gallery ───────────────────────────────────
+    // Gallery
     const galleryWrap = document.createElement('div');
     galleryWrap.className = 'civitai-browse-info-gallery';
 
@@ -361,16 +485,37 @@ function _renderBrowseInfoModal(ui, hit) {
     mainImgWrap.className = 'civitai-browse-info-main-image civitai-zoomable';
     mainImgWrap.title = 'Click to zoom';
 
-    let _currentImg = images.length > 0 ? images[0] : null;
+    const imgCounter = document.createElement('div');
+    imgCounter.className = 'civitai-browse-info-img-counter';
+    mainImgWrap.appendChild(imgCounter);
 
-    function _setMainMedia(img) {
+    const imgMetaEl = document.createElement('div');
+    imgMetaEl.className = 'civitai-browse-info-img-meta';
+    imgMetaEl.style.display = 'none';
+
+    let _currentImg = null;
+    let strip = null;
+
+    function _updateImgMeta(img) {
+        const m = img?.meta || {};
+        const parts = [];
+        if (m.sampler)                       parts.push(`<span title="Sampler"><i class="fas fa-random"></i> ${m.sampler}</span>`);
+        if (m.steps)                         parts.push(`<span title="Steps"><i class="fas fa-layer-group"></i> ${m.steps} steps</span>`);
+        if (m.cfgScale != null || m.cfg_scale != null) parts.push(`<span title="CFG Scale"><i class="fas fa-sliders-h"></i> CFG ${m.cfgScale ?? m.cfg_scale}</span>`);
+        if (m.seed != null)                  parts.push(`<span title="Seed"><i class="fas fa-seedling"></i> ${m.seed}</span>`);
+        if (m.size)                          parts.push(`<span title="Size"><i class="fas fa-expand-alt"></i> ${m.size}</span>`);
+        imgMetaEl.innerHTML = parts.join('');
+        imgMetaEl.style.display = parts.length > 0 ? 'flex' : 'none';
+    }
+
+    function _setMainMedia(img, idx) {
         _currentImg = img;
-        mainImgWrap.innerHTML = '';
+        mainImgWrap.querySelectorAll('img,video').forEach(e => e.remove());
         let el;
         if (img.type === 'video') {
             el = document.createElement('video');
             el.src = img.url;
-            el.autoplay = true; el.loop = true; el.muted = true;
+            el.autoplay = true; el.loop = true; el.muted = true; el.controls = false;
             el.setAttribute('playsinline', '');
         } else {
             el = document.createElement('img');
@@ -379,6 +524,10 @@ function _renderBrowseInfoModal(ui, hit) {
             el.setAttribute('onerror', onError);
         }
         mainImgWrap.appendChild(el);
+        imgCounter.textContent = `${idx + 1} / ${images.length}`;
+        imgCounter.style.display = images.length > 1 ? 'flex' : 'none';
+        strip?.querySelectorAll('.civitai-browse-info-thumb').forEach((t, i) => t.classList.toggle('active', i === idx));
+        _updateImgMeta(img);
     }
 
     mainImgWrap.addEventListener('click', () => {
@@ -386,112 +535,99 @@ function _renderBrowseInfoModal(ui, hit) {
     });
 
     if (images.length > 0) {
-        _setMainMedia(images[0]);
+        _setMainMedia(images[0], 0);
     } else {
         mainImgWrap.innerHTML = '<i class="fas fa-image" style="font-size:3em;opacity:0.2;"></i>';
+        imgCounter.style.display = 'none';
     }
-    galleryWrap.appendChild(mainImgWrap);
+    galleryWrap.append(mainImgWrap, imgMetaEl);
 
     if (images.length > 1) {
-        const strip = document.createElement('div');
+        strip = document.createElement('div');
         strip.className = 'civitai-browse-info-thumb-strip';
         images.forEach((img, idx) => {
             const thumb = document.createElement('div');
             thumb.className = 'civitai-browse-info-thumb' + (idx === 0 ? ' active' : '');
+            if (img.type === 'video') {
+                const vIcon = document.createElement('div');
+                vIcon.className = 'civitai-browse-info-thumb-video-icon';
+                vIcon.innerHTML = '<i class="fas fa-play"></i>';
+                thumb.appendChild(vIcon);
+            }
             const tImg = document.createElement('img');
             tImg.src = img.url || placeholder;
             tImg.alt = `Image ${idx + 1}`;
             tImg.loading = 'lazy';
             tImg.setAttribute('onerror', onError);
             thumb.appendChild(tImg);
-            thumb.addEventListener('click', () => {
-                strip.querySelectorAll('.civitai-browse-info-thumb').forEach(t => t.classList.remove('active'));
-                thumb.classList.add('active');
-                _setMainMedia(img);
-            });
+            thumb.addEventListener('click', () => _setMainMedia(img, idx));
             strip.appendChild(thumb);
         });
         galleryWrap.appendChild(strip);
     }
     body.appendChild(galleryWrap);
 
-    // ── Details panel ─────────────────────────────
+    // Details (right panel, scrollable)
     const detailsWrap = document.createElement('div');
     detailsWrap.className = 'civitai-browse-info-details';
 
-    // Creator + date
-    const creatorRow = document.createElement('div');
-    creatorRow.className = 'civitai-browse-info-creator';
-    creatorRow.innerHTML = `
-        <span><i class="fas fa-user" style="margin-right:5px;opacity:.6;"></i>${creator}</span>
-        ${publishedFormatted ? `<span><i class="fas fa-calendar-alt" style="margin-right:5px;opacity:.6;"></i>${publishedFormatted}</span>` : ''}
-    `;
-    detailsWrap.appendChild(creatorRow);
+    // ── Overview: KV grid ─────────────────────────
+    {
+        const sec = _infoSection('Overview', 'fas fa-info-circle');
+        const grid = document.createElement('div');
+        grid.className = 'civitai-browse-info-kv-grid';
 
-    // Stats
-    const statsRow = document.createElement('div');
-    statsRow.className = 'civitai-browse-info-stats';
-    statsRow.innerHTML = `
-        <span title="Downloads"><i class="fas fa-download"></i> ${stats.downloadCount?.toLocaleString() || 0}</span>
-        <span title="Thumbs Up"><i class="fas fa-thumbs-up"></i> ${stats.thumbsUpCount?.toLocaleString() || 0}</span>
-        <span title="Collected"><i class="fas fa-archive"></i> ${stats.collectedCount?.toLocaleString() || 0}</span>
-        <span title="Buzz"><i class="fas fa-bolt"></i> ${stats.tippedAmountCount?.toLocaleString() || 0}</span>
-    `;
-    detailsWrap.appendChild(statsRow);
+        const kv = (label, html) => {
+            if (html == null || html === '') return;
+            const k = document.createElement('span');
+            k.className = 'civitai-browse-info-kv-key';
+            k.textContent = label;
+            const v = document.createElement('span');
+            v.className = 'civitai-browse-info-kv-val';
+            v.innerHTML = String(html);
+            grid.append(k, v);
+        };
 
-    // Base models
-    if (uniqueBaseModels.length > 0) {
-        const sec = _infoSection('Base Models');
-        const bmWrap = document.createElement('div');
-        bmWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;';
-        uniqueBaseModels.forEach(bm => {
-            const chip = document.createElement('span');
-            chip.className = 'base-model-badge';
-            chip.textContent = bm;
-            bmWrap.appendChild(chip);
+        kv('Model ID',  `<code>${modelId}</code>`);
+        if (uniqueBaseModels.length > 0)
+            kv('Base Model', uniqueBaseModels.map(bm => `<span class="base-model-badge">${bm}</span>`).join(' '));
+        if (allVersions.length > 0) kv('Versions', allVersions.length);
+        if (publishedAt) kv('Published', publishedAt);
+        if (updatedAt && updatedAt !== publishedAt) kv('Updated', updatedAt);
+        const nsfwLvl = hit.nsfwLevel ?? hit.nsfw;
+        if (nsfwLvl != null) {
+            const n = Number(nsfwLvl);
+            const label = n <= 1 ? '🟢 Safe (PG)' : n <= 2 ? '🟡 Mild (PG-13)' : n <= 4 ? '🟠 Mature (R)' : n <= 8 ? '🔴 Adult (X)' : '⛔ Explicit';
+            kv('Content', label);
+        }
+
+        grid.addEventListener('click', e => {
+            const btn = e.target.closest('.civitai-browse-info-copy-id');
+            if (btn) { navigator.clipboard?.writeText(btn.dataset.copy).catch(() => {}); ui.showToast('Copied!', 'success', 1200); }
         });
-        sec.appendChild(bmWrap);
+
+        sec.appendChild(grid);
         detailsWrap.appendChild(sec);
     }
 
-    // Tags
-    if (tags.length > 0) {
-        const sec = _infoSection('Tags');
-        const tagsWrap = document.createElement('div');
-        tagsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;';
-        tags.slice(0, 15).forEach(tag => {
-            const el = document.createElement('span');
-            el.className = 'civitai-search-tag';
-            el.textContent = tag;
-            tagsWrap.appendChild(el);
-        });
-        sec.appendChild(tagsWrap);
-        detailsWrap.appendChild(sec);
-    }
-
-    // Description
-    const rawDesc = hit.description || '';
-    if (rawDesc) {
-        const sec = _infoSection('Description');
-        const descEl = document.createElement('div');
-        descEl.className = 'civitai-browse-info-description';
-        const tmp = document.createElement('div');
-        tmp.innerHTML = rawDesc;
-        descEl.textContent = tmp.textContent || tmp.innerText || '';
-        sec.appendChild(descEl);
-        detailsWrap.appendChild(sec);
-    }
-
-    // Trigger Words — collect from all versions (deduplicated)
-    const allTrainedWords = [...new Set(
-        allVersions.flatMap(v => v.trainedWords || []).concat(
-            (hit.version?.trainedWords || [])
-        ).filter(Boolean)
-    )];
+    // ── Trigger Words ─────────────────────────────
     if (allTrainedWords.length > 0) {
-        const sec = _infoSection('Trigger Words');
+        const sec = _infoSection('Trigger Words', 'fas fa-magic');
+
+        const twHeader = document.createElement('div');
+        twHeader.className = 'civitai-browse-info-tw-header';
+        const copyAllBtn = document.createElement('button');
+        copyAllBtn.className = 'civitai-button small';
+        copyAllBtn.innerHTML = '<i class="fas fa-copy"></i> Copy All';
+        copyAllBtn.addEventListener('click', () => {
+            navigator.clipboard?.writeText(allTrainedWords.join(', ')).catch(() => {});
+            ui.showToast('All trigger words copied!', 'success', 1500);
+        });
+        twHeader.appendChild(copyAllBtn);
+        sec.appendChild(twHeader);
+
         const twWrap = document.createElement('div');
-        twWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;';
+        twWrap.className = 'civitai-browse-info-trigger-words';
         allTrainedWords.forEach(w => {
             const chip = document.createElement('span');
             chip.className = 'civitai-browse-info-trigger-word';
@@ -499,7 +635,7 @@ function _renderBrowseInfoModal(ui, hit) {
             chip.title = 'Click to copy';
             chip.addEventListener('click', () => {
                 navigator.clipboard?.writeText(w).catch(() => {});
-                ui.showToast(`Copied: ${w}`, 'success', 1500);
+                ui.showToast(`Copied: ${w}`, 'success', 1200);
             });
             twWrap.appendChild(chip);
         });
@@ -507,63 +643,89 @@ function _renderBrowseInfoModal(ui, hit) {
         detailsWrap.appendChild(sec);
     }
 
-    // Example Prompts — from images[].meta.prompt (unique, non-empty, max 3)
-    const examplePrompts = [...new Set(
-        (hit.images || [])
-            .map(img => img?.meta?.prompt)
-            .filter(p => typeof p === 'string' && p.trim().length > 0)
-    )].slice(0, 3);
-    if (examplePrompts.length > 0) {
-        const sec = _infoSection('Example Prompts');
-        const epWrap = document.createElement('div');
-        epWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-top:5px;';
-        examplePrompts.forEach((prompt, i) => {
-            const row = document.createElement('div');
-            row.className = 'civitai-browse-info-example-prompt';
-            const num = document.createElement('span');
-            num.className = 'civitai-browse-info-example-num';
-            num.textContent = `${i + 1}.`;
-            const text = document.createElement('span');
-            text.className = 'civitai-browse-info-example-text';
-            text.textContent = prompt;
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'civitai-button small civitai-browse-info-example-copy';
-            copyBtn.title = 'Copy prompt';
-            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-            copyBtn.addEventListener('click', () => {
-                navigator.clipboard?.writeText(prompt).catch(() => {});
-                ui.showToast('Prompt copied!', 'success', 1500);
-            });
-            row.appendChild(num);
-            row.appendChild(text);
-            row.appendChild(copyBtn);
-            epWrap.appendChild(row);
-        });
-        sec.appendChild(epWrap);
-        detailsWrap.appendChild(sec);
-    }
-
-    // Versions + download buttons
+    // ── Versions ──────────────────────────────────
     if (allVersions.length > 0) {
-        const sec = _infoSection(`Versions (${allVersions.length})`);
+        const sec = _infoSection(`Versions (${allVersions.length})`, 'fas fa-code-branch');
         const versList = document.createElement('div');
-        versList.style.cssText = 'display:flex;flex-direction:column;gap:5px;margin-top:6px;';
+        versList.className = 'civitai-browse-info-versions';
 
-        allVersions.slice(0, 8).forEach(ver => {
-            const vBtn = document.createElement('button');
-            vBtn.className = 'civitai-button primary small civitai-search-download-button';
-            vBtn.dataset.modelId = modelId;
-            vBtn.dataset.versionId = ver.id || '';
-            vBtn.dataset.modelType = modelTypeApi;
-            vBtn.dataset.modelName = modelName;
-            vBtn.dataset.versionName = ver.name || 'Unknown';
-            vBtn.style.textAlign = 'left';
-            if (!ver.id) vBtn.disabled = true;
-            vBtn.innerHTML = `<span class="base-model-badge">${ver.baseModel || 'N/A'}</span> ${ver.name || 'Unknown'} <i class="fas fa-download"></i>`;
-            versList.appendChild(vBtn);
+        allVersions.slice(0, 10).forEach(ver => {
+            const card = document.createElement('div');
+            card.className = 'civitai-browse-info-version-card';
+
+            // Header row: base model + name + download button
+            const vHead = document.createElement('div');
+            vHead.className = 'civitai-browse-info-version-head';
+
+            const vNameWrap = document.createElement('div');
+            vNameWrap.className = 'civitai-browse-info-version-name-wrap';
+            if (ver.baseModel) {
+                const bm = document.createElement('span');
+                bm.className = 'base-model-badge';
+                bm.textContent = ver.baseModel;
+                vNameWrap.appendChild(bm);
+            }
+            const vName = document.createElement('span');
+            vName.className = 'civitai-browse-info-version-name';
+            vName.textContent = ver.name || `Version ${ver.id}`;
+            vName.title = ver.name || '';
+            vNameWrap.appendChild(vName);
+
+            if (ver.id && ver.id === primaryVersionId) {
+                const badge = document.createElement('span');
+                badge.className = 'civitai-browse-info-latest-badge';
+                badge.textContent = 'Latest';
+                vNameWrap.appendChild(badge);
+            }
+
+            const dlBtn = document.createElement('button');
+            dlBtn.className = 'civitai-button primary small civitai-search-download-button';
+            dlBtn.dataset.modelId = modelId;
+            dlBtn.dataset.versionId = ver.id || '';
+            dlBtn.dataset.modelType = modelTypeApi;
+            dlBtn.dataset.modelName = modelName;
+            dlBtn.dataset.versionName = ver.name || 'Unknown';
+            dlBtn.title = `Download: ${ver.name || 'this version'}`;
+            if (!ver.id) dlBtn.disabled = true;
+            dlBtn.innerHTML = '<i class="fas fa-download"></i>';
+
+            vHead.append(vNameWrap, dlBtn);
+            card.appendChild(vHead);
+
+            // Files
+            const files = ver.files || [];
+            if (files.length > 0) {
+                const filesList = document.createElement('div');
+                filesList.className = 'civitai-browse-info-version-files';
+                files.slice(0, 4).forEach(f => {
+                    const fRow = document.createElement('div');
+                    fRow.className = 'civitai-browse-info-version-file';
+                    const ext = (f.name || '').split('.').pop().toUpperCase() || 'FILE';
+                    const sizeStr = f.sizeKB ? _fmtBytes(f.sizeKB * 1024) : '';
+                    const isPrimary = f.primary || (f.type || '').toLowerCase() === 'model';
+                    fRow.innerHTML = `
+                        <span class="civitai-browse-info-file-ext${isPrimary ? ' primary' : ''}">${ext}</span>
+                        <span class="civitai-browse-info-file-name" title="${f.name || ''}">${f.name || 'Unknown'}</span>
+                        ${sizeStr ? `<span class="civitai-browse-info-file-size">${sizeStr}</span>` : ''}
+                    `;
+                    filesList.appendChild(fRow);
+                });
+                card.appendChild(filesList);
+            }
+
+            // Trained words for this version (brief)
+            const vWords = (ver.trainedWords || []).slice(0, 6);
+            if (vWords.length > 0) {
+                const vwEl = document.createElement('div');
+                vwEl.className = 'civitai-browse-info-version-words';
+                vwEl.textContent = vWords.join(', ') + (ver.trainedWords.length > 6 ? '…' : '');
+                card.appendChild(vwEl);
+            }
+
+            versList.appendChild(card);
         });
 
-        // Handle clicks on version download buttons inside this modal
+        // Download button click handler
         versList.addEventListener('click', e => {
             const btn = e.target.closest('.civitai-search-download-button');
             if (!btn) return;
@@ -582,7 +744,7 @@ function _renderBrowseInfoModal(ui, hit) {
             }
             overlay.remove();
             ui.switchTab('download');
-            ui.showToast(`Filled download form for Model ID ${mid}.`, 'info', 4000);
+            ui.showToast(`Filled download form for "${mname || 'Model #' + mid}".`, 'info', 3500);
             ui.fetchAndDisplayDownloadPreview();
         });
 
@@ -590,35 +752,131 @@ function _renderBrowseInfoModal(ui, hit) {
         detailsWrap.appendChild(sec);
     }
 
-    // External link
-    const extLink = document.createElement('a');
-    extLink.href = `https://civitai.com/models/${modelId}${primaryVersionId ? '?modelVersionId=' + primaryVersionId : ''}`;
-    extLink.target = '_blank';
-    extLink.rel = 'noopener noreferrer';
-    extLink.className = 'civitai-button small';
-    extLink.style.cssText = 'display:inline-block;margin-top:12px;text-decoration:none;';
-    extLink.innerHTML = 'View on Civitai <i class="fas fa-external-link-alt"></i>';
-    detailsWrap.appendChild(extLink);
+    // ── Example Prompts ───────────────────────────
+    if (exampleImages.length > 0) {
+        const sec = _infoSection(`Example Prompts (${exampleImages.length})`, 'fas fa-magic');
+        const epWrap = document.createElement('div');
+        epWrap.className = 'civitai-browse-info-prompts';
+
+        exampleImages.forEach((img, i) => {
+            const meta = img.meta || {};
+            const card = document.createElement('div');
+            card.className = 'civitai-browse-info-prompt-card';
+
+            const metaParts = [];
+            if (meta.sampler) metaParts.push(`<span title="Sampler"><i class="fas fa-random"></i> ${meta.sampler}</span>`);
+            if (meta.steps)   metaParts.push(`<span title="Steps"><i class="fas fa-layer-group"></i> ${meta.steps}</span>`);
+            if (meta.cfgScale != null || meta.cfg_scale != null) metaParts.push(`<span title="CFG"><i class="fas fa-sliders-h"></i> CFG ${meta.cfgScale ?? meta.cfg_scale}</span>`);
+            if (meta.size)    metaParts.push(`<span title="Resolution"><i class="fas fa-expand-alt"></i> ${meta.size}</span>`);
+
+            const promptHeader = document.createElement('div');
+            promptHeader.className = 'civitai-browse-info-prompt-header';
+            promptHeader.innerHTML = `<span class="civitai-browse-info-prompt-num">#${i + 1}</span>${metaParts.join('')}`;
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'civitai-button small icon-only';
+            copyBtn.title = 'Copy prompt';
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard?.writeText(meta.prompt).catch(() => {});
+                ui.showToast('Prompt copied!', 'success', 1500);
+            });
+            promptHeader.appendChild(copyBtn);
+
+            const promptText = document.createElement('div');
+            promptText.className = 'civitai-browse-info-prompt-text';
+            promptText.textContent = meta.prompt;
+
+            card.append(promptHeader, promptText);
+
+            if (meta.negativePrompt) {
+                const negEl = document.createElement('div');
+                negEl.className = 'civitai-browse-info-prompt-neg';
+                negEl.innerHTML = `<span class="civitai-browse-info-prompt-neg-label"><i class="fas fa-minus-circle"></i> Negative</span> ${meta.negativePrompt}`;
+                card.appendChild(negEl);
+            }
+            epWrap.appendChild(card);
+        });
+        sec.appendChild(epWrap);
+        detailsWrap.appendChild(sec);
+    }
+
+    // ── Description ───────────────────────────────
+    const rawDesc = hit.description || '';
+    if (rawDesc) {
+        const sec = _infoSection('Description', 'fas fa-align-left');
+        const descEl = document.createElement('div');
+        descEl.className = 'civitai-browse-info-desc';
+        const tmp = document.createElement('div');
+        tmp.innerHTML = rawDesc;
+        descEl.textContent = tmp.textContent || tmp.innerText || '';
+        sec.appendChild(descEl);
+        detailsWrap.appendChild(sec);
+    }
+
+    // ── Tags ──────────────────────────────────────
+    if (tags.length > 0) {
+        const sec = _infoSection('Tags', 'fas fa-tags');
+        const tagsWrap = document.createElement('div');
+        tagsWrap.className = 'civitai-browse-info-tags';
+        tags.slice(0, 20).forEach(tag => {
+            const el = document.createElement('span');
+            el.className = 'civitai-browse-info-tag';
+            el.textContent = tag;
+            tagsWrap.appendChild(el);
+        });
+        sec.appendChild(tagsWrap);
+        detailsWrap.appendChild(sec);
+    }
 
     body.appendChild(detailsWrap);
 
-    panel.appendChild(header);
-    panel.appendChild(body);
-    overlay.appendChild(panel);
+    // ── FOOTER ────────────────────────────────────
+    const footer = document.createElement('div');
+    footer.className = 'civitai-browse-info-footer';
 
+    const footerLeft = document.createElement('div');
+    footerLeft.className = 'civitai-browse-info-footer-left';
+    footerLeft.innerHTML = `<span class="civitai-browse-info-model-id-label"><i class="fas fa-hashtag"></i> Model ID: <code>${modelId}</code></span>`;
+
+    const footerRight = document.createElement('div');
+    footerRight.className = 'civitai-browse-info-footer-right';
+
+    const copyIdBtn = document.createElement('button');
+    copyIdBtn.className = 'civitai-button small secondary';
+    copyIdBtn.title = 'Copy Model ID to clipboard';
+    copyIdBtn.innerHTML = '<i class="fas fa-copy"></i> Copy ID';
+    copyIdBtn.addEventListener('click', () => {
+        navigator.clipboard?.writeText(String(modelId)).catch(() => {});
+        ui.showToast('Model ID copied!', 'success', 1200);
+    });
+
+    const viewBtn = document.createElement('a');
+    viewBtn.href = civitaiLink.href;
+    viewBtn.target = '_blank';
+    viewBtn.rel = 'noopener noreferrer';
+    viewBtn.className = 'civitai-button small primary';
+    viewBtn.title = 'Open model page on Civitai';
+    viewBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> View on Civitai';
+    viewBtn.style.textDecoration = 'none';
+
+    footerRight.append(copyIdBtn, viewBtn);
+    footer.append(footerLeft, footerRight);
+
+    // ── Assemble ──────────────────────────────────
+    panel.append(header, metaBar, body, footer);
+    overlay.appendChild(panel);
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 
-    ui.modal.appendChild(overlay);
-}
+    // Esc closes
+    const _onKey = e => { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', _onKey); } };
+    document.addEventListener('keydown', _onKey);
+    // Clean up listener when overlay is removed
+    new MutationObserver((_, obs) => {
+        if (!overlay.isConnected) { document.removeEventListener('keydown', _onKey); obs.disconnect(); }
+    }).observe(ui.modal, { childList: true, subtree: false });
 
-function _infoSection(label) {
-    const sec = document.createElement('div');
-    sec.className = 'civitai-browse-info-section';
-    const lbl = document.createElement('div');
-    lbl.className = 'civitai-browse-info-section-label';
-    lbl.textContent = label;
-    sec.appendChild(lbl);
-    return sec;
+    ui.modal.appendChild(overlay);
 }
 
 export function renderSearchResults(ui, items) {
