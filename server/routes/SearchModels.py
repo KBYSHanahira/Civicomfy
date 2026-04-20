@@ -21,6 +21,7 @@ async def route_search_models(request):
         data = await get_request_json(request)
 
         query = data.get("query", "").strip()
+        search_mode = data.get("search_mode", "all")  # "all", "name", or "username"
         model_type_keys = data.get("model_types", []) # e.g., ["lora", "checkpoint"] (frontend internal keys)
         base_model_filters = data.get("base_models", []) # e.g., ["SD 1.5", "Pony"]
         sort = data.get("sort", "Most Downloaded") # Frontend display value
@@ -63,7 +64,7 @@ async def route_search_models(request):
              #     print("Warning: Some provided base model filters were invalid.")
 
         # --- Call the New API Method ---
-        print(f"[Server Search] Meili: query='{query if query else '<none>'}', types={api_types_filter or 'Any'}, baseModels={valid_base_models or 'Any'}, sort={sort}, nsfw={nsfw}, limit={limit}, page={page}")
+        print(f"[Server Search] Meili: query='{query if query else '<none>'}', mode='{search_mode}', types={api_types_filter or 'Any'}, baseModels={valid_base_models or 'Any'}, sort={sort}, nsfw={nsfw}, limit={limit}, page={page}")
 
         # Call the new search method
         meili_results = api.search_models_meili(
@@ -73,7 +74,8 @@ async def route_search_models(request):
              sort=sort, # Pass the frontend value, mapping happens inside search_models_meili
              limit=limit,
              page=page,
-             nsfw=nsfw
+             nsfw=nsfw,
+             search_mode=search_mode
         )
 
         # Handle API error response from CivitaiAPI helper

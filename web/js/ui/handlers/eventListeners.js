@@ -177,6 +177,18 @@ export function setupEventListeners(ui) {
         });
     }
 
+    if (ui.browseSearchModeSelect) {
+        const placeholders = { all: 'Search models...', name: 'Search by model name...', username: 'Search by username...' };
+        ui.browseSearchModeSelect.addEventListener('change', () => {
+            if (ui.browseSearchInput) {
+                ui.browseSearchInput.placeholder = placeholders[ui.browseSearchModeSelect.value] || 'Search models...';
+            }
+            ui.browsePagination.currentPage = 1;
+            ui.saveBrowseSettings();
+            ui.handleBrowseLoad();
+        });
+    }
+
     if (ui.browseSearchInput) {
         let _browseSearchDebounce = null;
         ui.browseSearchInput.addEventListener('input', () => {

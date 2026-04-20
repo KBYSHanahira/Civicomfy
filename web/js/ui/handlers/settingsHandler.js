@@ -117,6 +117,7 @@ export function saveBrowseSettings(ui) {
             activeType: ui.browseActiveType || 'all',
             baseModels: ui.getBrowseSelectedBaseModels(),
             searchQuery: ui.browseSearchInput?.value?.trim() || '',
+            searchMode: ui.browseSearchModeSelect?.value || 'all',
             limit: ui.browsePagination?.limit || 25,
         };
         setCookie(BROWSE_SETTINGS_COOKIE, JSON.stringify(data), 365);
@@ -148,6 +149,11 @@ export function loadBrowseSettings(ui) {
         }
         if (data.searchQuery && ui.browseSearchInput) {
             ui.browseSearchInput.value = data.searchQuery;
+        }
+        if (data.searchMode && ui.browseSearchModeSelect) {
+            ui.browseSearchModeSelect.value = data.searchMode;
+            const placeholders = { all: 'Search models...', name: 'Search by model name...', username: 'Search by username...' };
+            if (ui.browseSearchInput) ui.browseSearchInput.placeholder = placeholders[data.searchMode] || 'Search models...';
         }
         if (data.limit && ui.browseLimitSelect) {
             const validLimits = ['25', '50', '75', '100'];

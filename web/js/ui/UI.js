@@ -70,6 +70,7 @@ export class CivitaiDownloaderUI {
 
         // Browse Tab
         this.browseTypeTabsContainer = this.modal.querySelector('#civitai-browse-type-tabs');
+        this.browseSearchModeSelect = this.modal.querySelector('#civitai-browse-search-mode');
         this.browseSearchInput = this.modal.querySelector('#civitai-browse-search');
         this.browseSortSelect = this.modal.querySelector('#civitai-browse-sort');
         this.browseLimitSelect = this.modal.querySelector('#civitai-browse-limit');

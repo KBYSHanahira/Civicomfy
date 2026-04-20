@@ -78,6 +78,11 @@ export function modalTemplate(settings = {}) {
               <!-- Model type tabs will be injected here by JS -->
             </div>
             <div class="civitai-browse-controls">
+              <select id="civitai-browse-search-mode" class="civitai-select" style="width:auto;flex-shrink:0;" title="Search field">
+                <option value="all">All Fields</option>
+                <option value="name">By Name</option>
+                <option value="username">By Username</option>
+              </select>
               <input type="text" id="civitai-browse-search" class="civitai-input civitai-browse-search-input" placeholder="Search models..." autocomplete="off">
               <select id="civitai-browse-sort" class="civitai-select" style="min-width:155px;">
                 <option value="Most Downloaded">Most Downloaded</option>

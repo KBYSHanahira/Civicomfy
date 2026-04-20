@@ -128,7 +128,8 @@ class CivitaiAPI:
                             base_models: Optional[List[str]] = None,
                             sort: str = 'metrics.downloadCount:desc', # Default to Most Downloaded
                             limit: int = 20, page: int = 1,
-                            nsfw: Optional[bool] = None) -> Optional[Dict[str, Any]]:
+                            nsfw: Optional[bool] = None,
+                            search_mode: str = 'all') -> Optional[Dict[str, Any]]:
         """Searches models using the Civitai Meilisearch endpoint."""
         meili_url = "https://search.civitai.com/multi-search"
         headers = {'Content-Type': 'application/json'}
@@ -208,6 +209,11 @@ class CivitaiAPI:
                 }
             ]
         }
+        # Restrict which fields are searched based on search_mode
+        if search_mode == 'name':
+            payload["queries"][0]["attributesToSearchOn"] = ["name"]
+        elif search_mode == 'username':
+            payload["queries"][0]["attributesToSearchOn"] = ["user.username"]
         if(sort != "Relevancy"):
             payload["queries"][0]["sort"] = meili_sort
         
