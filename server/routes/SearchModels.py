@@ -104,12 +104,16 @@ async def route_search_models(request):
                    # Extract latest version info (Meili response includes 'version' object for the primary version)
                    latest_version_info = hit.get("version", {}) or {} # Ensure it's a dict
 
-                   # Prepare item structure for frontend (can pass raw hit + extras, or build a specific structure)
-                   # Let's pass the raw `hit` and add the `thumbnailUrl` and potentially other processed fields.
-                   hit['thumbnailUrl'] = thumbnail_url # Add processed thumbnail URL directly to the hit object
+                   # Rewrite all image URLs to full CDN URLs so the frontend can use them directly
+                   if images and isinstance(images, list):
+                       for img in images:
+                           if isinstance(img, dict) and img.get("url"):
+                               raw = img["url"]
+                               # Only rewrite if not already a full URL
+                               if not raw.startswith("http"):
+                                   img["url"] = f"{image_base_url}/{raw}/width=450"
 
-                   # Optional: Add more processed fields if needed, e.g., formatted stats
-                   # hit['processedStats'] = { ... }
+                   hit['thumbnailUrl'] = thumbnail_url # Add processed thumbnail URL directly to the hit object
 
                    processed_items.append(hit)
 

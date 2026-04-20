@@ -162,4 +162,22 @@ export class CivitaiDownloaderAPI {
       body: JSON.stringify({ rel_path: relPath }),
     });
   }
+
+  // ---- HuggingFace ----
+
+  static async getModelDetailsHF(params) {
+    return await this._request("/civitai/get_model_details_hf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+  }
+
+  static async downloadModelHF(params) {
+    return await this._request("/civitai/download_hf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+  }
 }

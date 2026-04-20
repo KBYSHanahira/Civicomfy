@@ -6,7 +6,7 @@ import { handleSettingsSave, loadAndApplySettings, loadSettingsFromCookie, saveS
 import { startStatusUpdates, stopStatusUpdates, updateStatus, handleCancelDownload, handleRetryDownload, handleOpenPath, handleClearHistory } from "./handlers/statusHandler.js";
 import { handleMyModelsLoad, renderMyModels, handleMyModelOpenOnCivit, handleMyModelViewDetail, handleMyModelDelete } from "./handlers/myModelsHandler.js";
 import { renderDownloadList } from "./statusRenderer.js";
-import { renderSearchResults } from "./searchRenderer.js";
+import { renderSearchResults, renderBrowseCards, showBrowseCardInfo } from "./searchRenderer.js";
 import { renderDownloadPreview } from "./previewRenderer.js";
 import { modalTemplate } from "./templates.js";
 import { CivitaiDownloaderAPI } from "../api/civitai.js";
@@ -79,6 +79,8 @@ export class CivitaiDownloaderUI {
         this.browseRefreshButton = this.modal.querySelector('#civitai-browse-refresh');
         this.browseResultsContainer = this.modal.querySelector('#civitai-browse-results');
         this.browsePaginationContainer = this.modal.querySelector('#civitai-browse-pagination');
+        this.browseSelectedBar = this.modal.querySelector('#civitai-browse-selected-bar');
+        this.browseSelectedText = this.modal.querySelector('#civitai-browse-selected-text');
 
         // Status Tab
         this.statusContent = this.modal.querySelector('#civitai-status-content');
@@ -95,6 +97,7 @@ export class CivitaiDownloaderUI {
         // Settings Tab
         this.settingsForm = this.modal.querySelector('#civitai-settings-form');
         this.settingsApiKeyInput = this.modal.querySelector('#civitai-settings-api-key');
+        this.settingsHfTokenInput = this.modal.querySelector('#civitai-settings-hf-token');
         this.settingsConnectionsInput = this.modal.querySelector('#civitai-settings-connections');
         this.settingsDefaultTypeSelect = this.modal.querySelector('#civitai-settings-default-type');
         this.settingsAutoOpenCheckbox = this.modal.querySelector('#civitai-settings-auto-open-status');
@@ -363,13 +366,8 @@ export class CivitaiDownloaderUI {
     renderDownloadList = (items, container, emptyMessage) => renderDownloadList(this, items, container, emptyMessage);
     renderSearchResults = (items) => renderSearchResults(this, items);
     renderDownloadPreview = (data) => renderDownloadPreview(this, data);
-    renderBrowseResults = (items) => {
-        // Temporarily point searchResultsContainer to browse container so the shared renderer works
-        const saved = this.searchResultsContainer;
-        this.searchResultsContainer = this.browseResultsContainer;
-        renderSearchResults(this, items);
-        this.searchResultsContainer = saved;
-    };
+    renderBrowseResults = (items) => renderBrowseCards(this, items);
+    showBrowseCardInfo = (modelId) => showBrowseCardInfo(this, modelId);
     
     // --- Auto-select model type based on Civitai model type ---
     inferFolderFromCivitaiType(civitaiType) {

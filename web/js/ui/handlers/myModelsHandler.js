@@ -119,12 +119,21 @@ function _buildModelRow(model) {
         previewWrap.innerHTML = '<i class="fas fa-image" style="font-size:2em;opacity:0.25;"></i>';
     }
 
-    // Type badge
+    // Type badge — bottom-left
     if (model.model_type) {
         const badge = document.createElement('div');
         badge.className = 'civitai-mymodel-card-badge';
         badge.textContent = model.model_type;
         previewWrap.appendChild(badge);
+    }
+
+    // Base model badge — bottom-right (NoobAI / Illustrious / SDXL 1.0 …)
+    if (model.base_model) {
+        const bmBadge = document.createElement('div');
+        bmBadge.className = 'civitai-mymodel-card-bm-badge';
+        bmBadge.textContent = model.base_model;
+        bmBadge.title = `Base model: ${model.base_model}`;
+        previewWrap.appendChild(bmBadge);
     }
 
     // Hover overlay with action buttons
@@ -173,7 +182,6 @@ function _buildModelRow(model) {
     const dateStr = model.modified ? new Date(model.modified * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
     const parts = [
         model.version_name,
-        model.base_model,
         sizeMB ? `<i class="fas fa-hdd" style="opacity:.6;"></i> ${sizeMB}` : '',
         dateStr ? `<i class="fas fa-clock" style="opacity:.6;"></i> ${dateStr}` : '',
     ].filter(Boolean);
@@ -314,6 +322,36 @@ function _showDetailModal(ui, model) {
         desc.textContent = tmp.textContent || tmp.innerText || '';
         right.appendChild(descLabel);
         right.appendChild(desc);
+    }
+
+    // Example Prompts
+    if (Array.isArray(model.example_prompts) && model.example_prompts.length > 0) {
+        const epLabel = document.createElement('div');
+        epLabel.className = 'detail-section-title';
+        epLabel.textContent = 'Example Prompts';
+        right.appendChild(epLabel);
+        model.example_prompts.forEach((prompt, i) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'civitai-mymodel-example-prompt';
+            const num = document.createElement('span');
+            num.className = 'civitai-mymodel-example-prompt-num';
+            num.textContent = `${i + 1}.`;
+            const text = document.createElement('span');
+            text.className = 'civitai-mymodel-example-prompt-text';
+            text.textContent = prompt;
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'civitai-button small civitai-mymodel-example-prompt-copy';
+            copyBtn.title = 'Copy prompt';
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard?.writeText(prompt).catch(() => {});
+                ui.showToast('Prompt copied!', 'success', 1500);
+            });
+            wrap.appendChild(num);
+            wrap.appendChild(text);
+            wrap.appendChild(copyBtn);
+            right.appendChild(wrap);
+        });
     }
 
     // Footer: Open on Civit link

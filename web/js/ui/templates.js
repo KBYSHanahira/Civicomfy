@@ -24,9 +24,9 @@ export function modalTemplate(settings = {}) {
           <form id="civitai-download-form">
             <div class="civitai-form-group">
               <label for="civitai-model-url">Model URL or ID</label>
-              <input type="text" id="civitai-model-url" class="civitai-input" placeholder="e.g., https://civitai.com/models/12345, https://civitai.red/models/12345 or 12345" required>
+              <input type="text" id="civitai-model-url" class="civitai-input" placeholder="e.g., https://civitai.com/models/12345 or https://huggingface.co/owner/repo/resolve/main/model.safetensors" required>
             </div>
-            <p style="font-size: 0.9em; color: #ccc; margin-top: -10px; margin-bottom: 15px;">You can optionally specify a version ID using "?modelVersionId=xxxxx" in the URL or in the field below.</p>
+            <p style="font-size: 0.9em; color: #ccc; margin-top: -10px; margin-bottom: 15px;">Supports Civitai URLs/IDs and HuggingFace <code>/resolve/</code> or <code>/blob/</code> file links. For Civitai you can add <code>?modelVersionId=xxxxx</code>.</p>
             <div class="civitai-form-row">
               <div class="civitai-form-group">
                 <label for="civitai-model-type">Model Type (Save Location)</label>
@@ -102,7 +102,12 @@ export function modalTemplate(settings = {}) {
               <button id="civitai-browse-refresh" class="civitai-button" title="Refresh"><i class="fas fa-sync-alt"></i></button>
             </div>
           </div>
-          <div id="civitai-browse-results" class="civitai-search-results"></div>
+          <div id="civitai-browse-selected-bar" class="civitai-browse-selected-bar" style="display:none;">
+            <i class="fas fa-check-circle" style="color:var(--accent-color,#5c8aff);flex-shrink:0;"></i>
+            <span class="civitai-browse-selected-label">Selected:</span>
+            <span id="civitai-browse-selected-text" class="civitai-browse-selected-text"></span>
+          </div>
+          <div id="civitai-browse-results" class="civitai-browse-cards"></div>
           <div id="civitai-browse-pagination" style="text-align: center; margin-top: 20px;"></div>
         </div>
         <div id="civitai-tab-mymodels" class="civitai-downloader-tab-content">
@@ -164,6 +169,11 @@ export function modalTemplate(settings = {}) {
                   <label for="civitai-settings-api-key">Civitai API Key (Optional)</label>
                   <input type="password" id="civitai-settings-api-key" class="civitai-input" placeholder="Enter API key for higher limits / authenticated access" autocomplete="new-password">
                   <p style="font-size: 0.85em; color: #bbb; margin-top: 5px;">Needed for some downloads/features. Find keys at civitai.com/user/account (also accessible via civit.com or civit.red)</p>
+                </div>
+                <div class="civitai-form-group">
+                  <label for="civitai-settings-hf-token">HuggingFace Token (Optional)</label>
+                  <input type="password" id="civitai-settings-hf-token" class="civitai-input" placeholder="hf_..." autocomplete="new-password">
+                  <p style="font-size: 0.85em; color: #bbb; margin-top: 5px;">Required for gated/private models on huggingface.co. Get yours at huggingface.co/settings/tokens</p>
                 </div>
                 <div class="civitai-form-group">
                   <label for="civitai-settings-connections">Default Connections</label>

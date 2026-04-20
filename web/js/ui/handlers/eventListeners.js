@@ -239,7 +239,8 @@ export function setupEventListeners(ui) {
     // Browse results: download button + show all versions + nsfw toggle
     if (ui.browseResultsContainer) {
         ui.browseResultsContainer.addEventListener('click', (event) => {
-            const thumbContainer = event.target.closest('.civitai-thumbnail-container');
+            // Handle NSFW click-to-reveal for both legacy .civitai-thumbnail-container and new .civitai-browse-card-preview
+            const thumbContainer = event.target.closest('.civitai-thumbnail-container, .civitai-browse-card-preview');
             if (thumbContainer) {
                 const nsfwLevel = Number(thumbContainer.dataset.nsfwLevel ?? thumbContainer.getAttribute('data-nsfw-level'));
                 const threshold = Number(ui.settings?.nsfwBlurMinLevel ?? 4);
@@ -263,10 +264,17 @@ export function setupEventListeners(ui) {
                 }
             }
 
+            const infoButton = event.target.closest('.civitai-browse-card-info-btn');
+            if (infoButton) {
+                event.stopPropagation();
+                ui.showBrowseCardInfo(infoButton.dataset.modelId);
+                return;
+            }
+
             const downloadButton = event.target.closest('.civitai-search-download-button');
             if (downloadButton) {
                 event.preventDefault();
-                const { modelId, versionId, modelType } = downloadButton.dataset;
+                const { modelId, versionId, modelType, modelName, versionName } = downloadButton.dataset;
                 if (!modelId || !versionId) { ui.showToast("Error: Missing data for download.", "error"); return; }
                 const modelTypeInternalKey = ui.inferFolderFromCivitaiType(modelType) || ui.settings.defaultModelType;
                 ui.modelUrlInput.value = modelId;
@@ -274,6 +282,15 @@ export function setupEventListeners(ui) {
                 ui.customFilenameInput.value = '';
                 ui.forceRedownloadCheckbox.checked = false;
                 ui.downloadModelTypeSelect.value = modelTypeInternalKey;
+
+                // Update "Selected" bar in Browse tab
+                if (ui.browseSelectedBar && ui.browseSelectedText) {
+                    const displayName = modelName || `Model #${modelId}`;
+                    const displayVersion = versionName || `Version #${versionId}`;
+                    ui.browseSelectedText.textContent = `${displayName}  —  ${displayVersion}`;
+                    ui.browseSelectedBar.style.display = 'flex';
+                }
+
                 ui.switchTab('download');
                 ui.showToast(`Filled download form for Model ID ${modelId}.`, 'info', 4000);
                 ui.fetchAndDisplayDownloadPreview();

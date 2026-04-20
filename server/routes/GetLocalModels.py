@@ -37,6 +37,7 @@ def _read_sidecar(base_path_no_ext):
             "base_model": data.get("BaseModel"),
             "model_type_civitai": data.get("ModelType"),
             "trained_words": data.get("TrainedWords", []),
+            "example_prompts": data.get("ExamplePrompts", []),
             "description": data.get("ModelDescription") or data.get("VersionDescription") or "",
             "nsfw": data.get("Nsfw", False),
         }

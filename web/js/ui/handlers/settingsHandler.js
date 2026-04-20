@@ -5,6 +5,7 @@ const SETTINGS_COOKIE_NAME = 'civitaiDownloaderSettings';
 export function getDefaultSettings() {
     return {
         apiKey: '',
+        hfToken: '',
         numConnections: 1,
         defaultModelType: 'checkpoint',
         autoOpenStatusTab: true,
@@ -49,6 +50,9 @@ export function applySettings(ui) {
     if (ui.settingsApiKeyInput) {
         ui.settingsApiKeyInput.value = ui.settings.apiKey || '';
     }
+    if (ui.settingsHfTokenInput) {
+        ui.settingsHfTokenInput.value = ui.settings.hfToken || '';
+    }
     if (ui.settingsConnectionsInput) {
         ui.settingsConnectionsInput.value = Math.max(1, Math.min(16, ui.settings.numConnections || 1));
     }
@@ -75,6 +79,7 @@ export function applySettings(ui) {
 
 export function handleSettingsSave(ui) {
     const apiKey = ui.settingsApiKeyInput.value.trim();
+    const hfToken = ui.settingsHfTokenInput ? ui.settingsHfTokenInput.value.trim() : '';
     const numConnections = parseInt(ui.settingsConnectionsInput.value, 10);
     const defaultModelType = ui.settingsDefaultTypeSelect.value;
     const autoOpenStatusTab = ui.settingsAutoOpenCheckbox.checked;
@@ -91,6 +96,7 @@ export function handleSettingsSave(ui) {
     }
 
     ui.settings.apiKey = apiKey;
+    ui.settings.hfToken = hfToken;
     ui.settings.numConnections = numConnections;
     ui.settings.defaultModelType = defaultModelType;
     ui.settings.autoOpenStatusTab = autoOpenStatusTab;

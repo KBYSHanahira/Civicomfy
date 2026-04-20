@@ -502,6 +502,13 @@ class DownloadManager:
                 "ImportedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 "Hashes": primary_file.get('hashes', {}),
                 "TrainedWords": version_info.get('trainedWords', []),
+                "ExamplePrompts": [
+                    img["meta"]["prompt"]
+                    for img in (version_info.get('images') or [])
+                    if isinstance(img, dict)
+                    and isinstance(img.get("meta"), dict)
+                    and img["meta"].get("prompt")
+                ][:5],
                 "Stats": {
                     "downloadCount": version_stats.get('downloadCount', model_stats.get('downloadCount', 0)),
                     "rating": version_stats.get('rating', model_stats.get('rating', 0)),

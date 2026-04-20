@@ -38,6 +38,9 @@ Then restart ComfyUI. The **Civicomfy** button will appear in the top-right tool
 
 ## Features
 
+- **CivitAI Blue / Red Support** — Support download from civitai both site
+- **HuggigFace Support** — Support download from Hugginface
+
 ### Download Tab
 
 Manually queue a download by pasting a Civitai model URL or numeric model ID.

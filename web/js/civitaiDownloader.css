@@ -993,6 +993,26 @@
     white-space: nowrap;
 }
 
+/* Base model badge — bottom-right of my-models card preview */
+.civitai-mymodel-card-bm-badge {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.72);
+    color: #e0e0e0;
+    font-size: 0.65em;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    letter-spacing: 0.02em;
+    z-index: 2;
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Hover overlay with action buttons */
 .civitai-mymodel-card-overlay {
     position: absolute;
@@ -1346,6 +1366,578 @@
     box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     font-size: 0.9em;
     padding: 10px 20px;
+}
+
+/* ===================================================
+   BROWSE CARD GRID
+   =================================================== */
+.civitai-browse-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 0;
+    align-content: start;
+}
+
+.civitai-browse-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--comfy-input-bg, #2a2a2a);
+    border: 1px solid var(--border-color, #444);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+    height: 295px;
+}
+
+.civitai-browse-card:hover {
+    border-color: var(--accent-color, #5c8aff);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(92, 138, 255, 0.22);
+}
+
+.civitai-browse-card-preview {
+    position: relative;
+    width: 100%;
+    height: 185px;
+    flex-shrink: 0;
+    background: var(--comfy-menu-bg, #1a1a1a);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.civitai-browse-card-preview img,
+.civitai-browse-card-preview video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.civitai-browse-card:hover .civitai-browse-card-preview img,
+.civitai-browse-card:hover .civitai-browse-card-preview video {
+    transform: scale(1.04);
+}
+
+.civitai-browse-card-preview.blurred img,
+.civitai-browse-card-preview.blurred video {
+    filter: blur(14px) brightness(0.6) saturate(0.6);
+    pointer-events: none;
+}
+.civitai-browse-card-preview.blurred {
+    cursor: pointer;
+}
+
+.civitai-browse-card-badge {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    background: rgba(0, 0, 0, 0.78);
+    color: #fff;
+    font-size: 0.68em;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    letter-spacing: 0.04em;
+    z-index: 2;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* Base model badge — bottom-right of browse card preview */
+.civitai-browse-card-bm-badge {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.72);
+    color: #e0e0e0;
+    font-size: 0.65em;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    letter-spacing: 0.02em;
+    z-index: 2;
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Hover overlay with version download buttons */
+.civitai-browse-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    padding: 8px 7px;
+    gap: 5px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 3;
+    overflow-y: auto;
+}
+
+.civitai-browse-card:hover .civitai-browse-card-overlay {
+    opacity: 1;
+}
+
+.civitai-browse-card-overlay .civitai-button {
+    padding: 5px 8px;
+    font-size: 0.78em;
+    border-radius: 5px;
+    backdrop-filter: blur(4px);
+    background: rgba(40, 40, 60, 0.85);
+    border-color: rgba(255, 255, 255, 0.2);
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.civitai-browse-card-overlay .civitai-button:hover {
+    background: rgba(92, 138, 255, 0.85);
+    border-color: var(--accent-color, #5c8aff);
+}
+
+.civitai-browse-card-overlay a.civitai-button {
+    text-align: center;
+    display: block;
+    text-decoration: none;
+}
+
+/* Card body: name + meta */
+.civitai-browse-card-body {
+    padding: 7px 9px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-height: 0;
+    border-top: 1px solid var(--border-color, #3a3a3a);
+    background: var(--comfy-input-bg, #2a2a2a);
+}
+
+/* Name row: name text + info button */
+.civitai-browse-card-name-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.civitai-browse-card-name {
+    font-size: 0.83em;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--comfy-text-color, #eee);
+    flex: 1;
+    min-width: 0;
+}
+
+/* Info button — clearly a clickable button */
+.civitai-browse-card-info-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(92, 138, 255, 0.14);
+    border: 1px solid rgba(92, 138, 255, 0.4);
+    border-radius: 5px;
+    color: var(--accent-color, #5c8aff);
+    cursor: pointer;
+    font-size: 0.72em;
+    font-weight: 600;
+    padding: 2px 6px;
+    line-height: 1.4;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+}
+.civitai-browse-card-info-btn:hover {
+    background: rgba(92, 138, 255, 0.3);
+    border-color: var(--accent-color, #5c8aff);
+    box-shadow: 0 0 6px rgba(92, 138, 255, 0.35);
+}
+
+/* Type chip row */
+.civitai-browse-card-type-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.civitai-browse-card-type-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.68em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Base model chip (NoobAI / Illustrious / SDXL 1.0 …) */
+.civitai-browse-card-bm-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 0.65em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: var(--comfy-text-color-secondary, #bbb);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+    flex-shrink: 1;
+}
+
+.civitai-browse-card-meta {
+    font-size: 0.7em;
+    color: var(--comfy-text-color-secondary, #888);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ===================================================
+   BROWSE SELECTED BAR
+   =================================================== */
+.civitai-browse-selected-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(92, 138, 255, 0.1);
+    border: 1px solid rgba(92, 138, 255, 0.35);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 0.88em;
+    flex-shrink: 0;
+}
+
+.civitai-browse-selected-label {
+    font-weight: 700;
+    color: var(--accent-color, #5c8aff);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.civitai-browse-selected-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--comfy-text-color, #eee);
+}
+
+/* ===================================================
+   BROWSE INFO MODAL
+   =================================================== */
+.civitai-browse-info-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.civitai-browse-info-panel {
+    background: var(--comfy-menu-bg, #1e1e1e);
+    border: 1px solid var(--border-color, #555);
+    border-radius: 10px;
+    width: 92%;
+    max-width: 760px;
+    max-height: 88%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+}
+
+.civitai-browse-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color, #444);
+    flex-shrink: 0;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.civitai-browse-info-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.civitai-browse-info-type-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.civitai-browse-info-title {
+    margin: 0;
+    font-size: 1em;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.civitai-browse-info-body {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+}
+
+/* ── Gallery ── */
+.civitai-browse-info-gallery {
+    flex-shrink: 0;
+    width: 210px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.civitai-browse-info-main-image {
+    width: 210px;
+    height: 295px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--comfy-input-bg, #2a2a2a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.civitai-browse-info-main-image img,
+.civitai-browse-info-main-image video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.civitai-browse-info-thumb-strip {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.civitai-browse-info-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.15s, transform 0.15s;
+    background: var(--comfy-input-bg, #2a2a2a);
+    flex-shrink: 0;
+}
+
+.civitai-browse-info-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.civitai-browse-info-thumb:hover {
+    transform: scale(1.05);
+    border-color: rgba(92, 138, 255, 0.6);
+}
+
+.civitai-browse-info-thumb.active {
+    border-color: var(--accent-color, #5c8aff);
+}
+
+/* ── Details ── */
+.civitai-browse-info-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.civitai-browse-info-creator {
+    display: flex;
+    gap: 14px;
+    font-size: 0.85em;
+    color: var(--comfy-text-color-secondary, #aaa);
+    flex-wrap: wrap;
+}
+
+.civitai-browse-info-stats {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 0.85em;
+    color: #bbb;
+    padding: 8px 0;
+    border-top: 1px solid var(--border-color, #3a3a3a);
+    border-bottom: 1px solid var(--border-color, #3a3a3a);
+}
+
+.civitai-browse-info-stats span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.civitai-browse-info-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.civitai-browse-info-section-label {
+    font-size: 0.72em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--comfy-text-color-secondary, #888);
+}
+
+/* Description */
+.civitai-browse-info-description {
+    font-size: 0.82em;
+    color: var(--comfy-text-color-secondary, #bbb);
+    line-height: 1.55;
+    max-height: 100px;
+    overflow-y: auto;
+    margin-top: 5px;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 5px;
+    border: 1px solid var(--border-color, #3a3a3a);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Trigger words */
+.civitai-browse-info-trigger-word {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 600;
+    background: rgba(92, 138, 255, 0.12);
+    border: 1px solid rgba(92, 138, 255, 0.4);
+    color: var(--accent-color, #5c8aff);
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+    user-select: none;
+}
+.civitai-browse-info-trigger-word:hover {
+    background: rgba(92, 138, 255, 0.25);
+    box-shadow: 0 0 6px rgba(92, 138, 255, 0.35);
+}
+
+/* Example prompts — Browse */
+.civitai-browse-info-example-prompt {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-color, #3a3a3a);
+    border-radius: 5px;
+    padding: 6px 8px;
+}
+.civitai-browse-info-example-num {
+    font-size: 0.75em;
+    font-weight: 700;
+    color: var(--accent-color, #5c8aff);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.civitai-browse-info-example-text {
+    flex: 1;
+    font-size: 0.78em;
+    color: var(--comfy-text-color-secondary, #bbb);
+    line-height: 1.5;
+    word-break: break-word;
+    max-height: 72px;
+    overflow-y: auto;
+}
+.civitai-browse-info-example-copy {
+    flex-shrink: 0;
+    padding: 2px 6px !important;
+    font-size: 0.75em !important;
+    align-self: flex-start;
+}
+
+/* Example prompts — My Models */
+.civitai-mymodel-example-prompt {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-color, #3a3a3a);
+    border-radius: 5px;
+    padding: 6px 8px;
+    margin-top: 4px;
+}
+.civitai-mymodel-example-prompt-num {
+    font-size: 0.75em;
+    font-weight: 700;
+    color: var(--accent-color, #5c8aff);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.civitai-mymodel-example-prompt-text {
+    flex: 1;
+    font-size: 0.78em;
+    color: var(--comfy-text-color-secondary, #bbb);
+    line-height: 1.5;
+    word-break: break-word;
+    max-height: 72px;
+    overflow-y: auto;
+}
+.civitai-mymodel-example-prompt-copy {
+    flex-shrink: 0;
+    padding: 2px 6px !important;
+    font-size: 0.75em !important;
+    align-self: flex-start;
 }
 
 /* ===================================================
