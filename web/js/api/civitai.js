@@ -86,15 +86,15 @@ export class CivitaiDownloaderAPI {
   }
 
   static async getModelDirs(modelType) {
-    const q = encodeURIComponent(modelType || 'checkpoints');
+    const q = encodeURIComponent(modelType || 'checkpoint');
     return await this._request(`/civitai/model_dirs?type=${q}`);
   }
 
-  static async createModelDir(modelType, newDir, root = "") {
+  static async createModelDir(modelType, newDir) {
     return await this._request("/civitai/create_dir", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model_type: modelType, new_dir: newDir, root }),
+      body: JSON.stringify({ model_type: modelType, new_dir: newDir }),
     });
   }
 
@@ -107,7 +107,7 @@ export class CivitaiDownloaderAPI {
   }
 
   static async getModelRoots(modelType) {
-    const q = encodeURIComponent(modelType || 'checkpoints');
+    const q = encodeURIComponent(modelType || 'checkpoint');
     return await this._request(`/civitai/model_roots?type=${q}`);
   }
 
@@ -116,26 +116,6 @@ export class CivitaiDownloaderAPI {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model_type: modelType, path: absPath }),
-    });
-  }
-
-  static async getGlobalRoot() {
-    return await this._request("/civitai/global_root");
-  }
-
-  static async setGlobalRoot(path) {
-    return await this._request("/civitai/global_root", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path }),
-    });
-  }
-
-  static async clearGlobalRoot() {
-    return await this._request("/civitai/global_root/clear", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
     });
   }
 
@@ -159,6 +139,27 @@ export class CivitaiDownloaderAPI {
     return await this._request("/civitai/clear_history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  static async getLocalModels(modelType = '') {
+    const q = modelType ? `?type=${encodeURIComponent(modelType)}` : '';
+    return await this._request(`/civitai/local_models${q}`);
+  }
+
+  static async deleteModel(relPath) {
+    return await this._request("/civitai/delete_model", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rel_path: relPath }),
+    });
+  }
+
+  static async openModelFolder(relPath) {
+    return await this._request("/civitai/open_model_folder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rel_path: relPath }),
     });
   }
 }

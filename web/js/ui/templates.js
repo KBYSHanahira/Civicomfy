@@ -6,21 +6,25 @@ export function modalTemplate(settings = {}) {
   return `
     <div class="civitai-downloader-modal-content">
       <div class="civitai-downloader-header">
-        <h2>Civicomfy</h2>
-        <button class="civitai-close-button" id="civitai-close-modal">&times;</button>
+        <h2><i class="fas fa-cloud-download-alt" style="color:var(--accent-color,#5c8aff);margin-right:8px;"></i>Civicomfy</h2>
+        <div class="civitai-header-actions">
+          <button class="civitai-icon-button" id="civitai-fullscreen-toggle" title="Toggle fullscreen"><i class="fas fa-expand"></i></button>
+          <button class="civitai-close-button" id="civitai-close-modal">&times;</button>
+        </div>
       </div>
       <div class="civitai-downloader-body">
         <div class="civitai-downloader-tabs">
-          <button class="civitai-downloader-tab active" data-tab="download">Download</button>
-          <button class="civitai-downloader-tab" data-tab="search">Search</button>
-          <button class="civitai-downloader-tab" data-tab="status">Status <span id="civitai-status-indicator" style="display: none;">(<span id="civitai-active-count">0</span>)</span></button>
-          <button class="civitai-downloader-tab" data-tab="settings">Settings</button>
+          <button class="civitai-downloader-tab active" data-tab="download"><i class="fas fa-download"></i> Download</button>
+          <button class="civitai-downloader-tab" data-tab="browse"><i class="fas fa-compass"></i> Browse</button>
+          <button class="civitai-downloader-tab" data-tab="mymodels"><i class="fas fa-layer-group"></i> My Models</button>
+          <button class="civitai-downloader-tab" data-tab="status"><i class="fas fa-tasks"></i> Status <span id="civitai-status-indicator" style="display: none;">(<span id="civitai-active-count">0</span>)</span></button>
+          <button class="civitai-downloader-tab" data-tab="settings"><i class="fas fa-cog"></i> Settings</button>
         </div>
         <div id="civitai-tab-download" class="civitai-downloader-tab-content active">
           <form id="civitai-download-form">
             <div class="civitai-form-group">
               <label for="civitai-model-url">Model URL or ID</label>
-              <input type="text" id="civitai-model-url" class="civitai-input" placeholder="e.g., https://civitai.com/models/12345 or 12345" required>
+              <input type="text" id="civitai-model-url" class="civitai-input" placeholder="e.g., https://civitai.com/models/12345, https://civitai.red/models/12345 or 12345" required>
             </div>
             <p style="font-size: 0.9em; color: #ccc; margin-top: -10px; margin-bottom: 15px;">You can optionally specify a version ID using "?modelVersionId=xxxxx" in the URL or in the field below.</p>
             <div class="civitai-form-row">
@@ -39,7 +43,6 @@ export function modalTemplate(settings = {}) {
                   </select>
                   <button type="button" id="civitai-create-subdir" class="civitai-button small" title="Create new subfolder"><i class="fas fa-folder-plus"></i></button>
                 </div>
-                <p id="civitai-save-base-path" style="font-size: 0.8em; color: #bbb; margin-top: 6px; word-break: break-all;"></p>
               </div>
               <div class="civitai-form-group">
                 <label for="civitai-model-version-id">Version ID (Optional)</label>
@@ -67,31 +70,63 @@ export function modalTemplate(settings = {}) {
             <button type="submit" id="civitai-download-submit" class="civitai-button primary">Start Download</button>
           </form>
         </div>
-        <div id="civitai-tab-search" class="civitai-downloader-tab-content">
-          <form id="civitai-search-form">
-            <div class="civitai-search-controls">
-              <input type="text" id="civitai-search-query" class="civitai-input" placeholder="Search Civitai...">
-              <select id="civitai-search-type" class="civitai-select">
-                <option value="any">Any Type</option>
-              </select>
-              <select id="civitai-search-base-model" class="civitai-select">
-                <option value="any">Any Base Model</option>
-              </select>
-              <select id="civitai-search-sort" class="civitai-select">
-                <option value="Relevancy">Relevancy</option>
+        <div id="civitai-tab-browse" class="civitai-downloader-tab-content">
+          <div class="civitai-browse-header">
+            <div class="civitai-browse-type-tabs" id="civitai-browse-type-tabs">
+              <button class="civitai-browse-type-tab active" data-type="all">All</button>
+              <!-- Model type tabs will be injected here by JS -->
+            </div>
+            <div class="civitai-browse-controls">
+              <select id="civitai-browse-sort" class="civitai-select" style="min-width:160px;">
+                <option value="Most Downloaded">Most Downloaded</option>
                 <option value="Highest Rated">Highest Rated</option>
                 <option value="Most Liked">Most Liked</option>
+                <option value="Newest">Newest</option>
                 <option value="Most Discussed">Most Discussed</option>
                 <option value="Most Collected">Most Collected</option>
-                <option value="Most Buzz">Most Buzz</option>
-                <option value="Most Downloaded">Most Downloaded</option>
-                <option value="Newest">Newest</option>
               </select>
+              <div id="civitai-browse-base-model-picker" class="civitai-base-model-picker">
+                <button type="button" class="civitai-base-model-picker-toggle" id="civitai-browse-base-model-toggle">
+                  <span id="civitai-browse-base-model-label">Any Base Model</span> <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="civitai-base-model-picker-dropdown" id="civitai-browse-base-model-dropdown" style="display:none;">
+                  <div class="civitai-base-model-picker-search-wrap">
+                    <input type="text" id="civitai-browse-base-model-search" class="civitai-input" placeholder="Filter..." autocomplete="off">
+                  </div>
+                  <div class="civitai-base-model-picker-options" id="civitai-browse-base-model-options"></div>
+                  <div class="civitai-base-model-picker-footer">
+                    <button type="button" id="civitai-browse-base-model-clear" class="civitai-button small secondary">Clear</button>
+                  </div>
+                </div>
+              </div>
+              <button id="civitai-browse-refresh" class="civitai-button" title="Refresh"><i class="fas fa-sync-alt"></i></button>
             </div>
-            <button type="submit" id="civitai-search-submit" class="civitai-button primary">Search</button>
-          </form>
-          <div id="civitai-search-results" class="civitai-search-results"></div>
-          <div id="civitai-search-pagination" style="text-align: center; margin-top: 20px;"></div>
+          </div>
+          <div id="civitai-browse-results" class="civitai-search-results"></div>
+          <div id="civitai-browse-pagination" style="text-align: center; margin-top: 20px;"></div>
+        </div>
+        <div id="civitai-tab-mymodels" class="civitai-downloader-tab-content">
+          <div class="civitai-mymodels-header">
+            <div class="civitai-mymodels-controls">
+              <select id="civitai-mymodels-type-filter" class="civitai-select">
+                <option value="">All Types</option>
+              </select>
+              <select id="civitai-mymodels-sort" class="civitai-select" title="Sort models">
+                <option value="name_asc">Name (A → Z)</option>
+                <option value="name_desc">Name (Z → A)</option>
+                <option value="time_desc" selected>Newest First</option>
+                <option value="time_asc">Oldest First</option>
+                <option value="size_desc">Size (Large first)</option>
+                <option value="size_asc">Size (Small first)</option>
+              </select>
+              <input type="text" id="civitai-mymodels-search" class="civitai-input" placeholder="Filter by name...">
+              <span id="civitai-mymodels-count" class="civitai-mymodels-count"></span>
+              <button id="civitai-mymodels-refresh" class="civitai-button" title="Refresh list"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+          </div>
+          <div id="civitai-mymodels-list" class="civitai-mymodels-list">
+            <p>Click Refresh to load your local models.</p>
+          </div>
         </div>
         <div id="civitai-tab-status" class="civitai-downloader-tab-content">
           <div id="civitai-status-content">
@@ -128,18 +163,7 @@ export function modalTemplate(settings = {}) {
                 <div class="civitai-form-group">
                   <label for="civitai-settings-api-key">Civitai API Key (Optional)</label>
                   <input type="password" id="civitai-settings-api-key" class="civitai-input" placeholder="Enter API key for higher limits / authenticated access" autocomplete="new-password">
-                  <p style="font-size: 0.85em; color: #bbb; margin-top: 5px;">Needed for some downloads/features. Leave blank to use server env <code>CIVITAI_API_KEY</code>. Find keys at civitai.com/user/account</p>
-                </div>
-                <div class="civitai-form-group">
-                  <label for="civitai-settings-global-root">Global Download Root (Optional)</label>
-                  <input type="text" id="civitai-settings-global-root" class="civitai-input" placeholder="e.g., /runpod-volume/ComfyUI or F:/Models/ComfyUI">
-                  <p style="font-size: 0.85em; color: #bbb; margin-top: 5px;">
-                    When set, downloads use <code>&lt;global_root&gt;/&lt;model_type&gt;</code> (for example <code>/runpod-volume/ComfyUI/checkpoints</code>).
-                  </p>
-                  <div style="display:flex; gap:8px; margin-top: 8px; flex-wrap: wrap;">
-                    <button type="button" id="civitai-settings-set-global-root" class="civitai-button small">Set Global Root</button>
-                    <button type="button" id="civitai-settings-clear-global-root" class="civitai-button danger small">Clear Global Root</button>
-                  </div>
+                  <p style="font-size: 0.85em; color: #bbb; margin-top: 5px;">Needed for some downloads/features. Find keys at civitai.com/user/account (also accessible via civit.com or civit.red)</p>
                 </div>
                 <div class="civitai-form-group">
                   <label for="civitai-settings-connections">Default Connections</label>

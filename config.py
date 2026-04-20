@@ -51,6 +51,28 @@ MODEL_TYPE_DIRS = {
     "other": ("Other", None)
 }
 
+# Maps ComfyUI folder names (lowercase) to Civitai API 'types' parameter value
+# Used when Browse tab sends the actual folder name instead of the internal key
+FOLDER_TO_CIVITAI_TYPE_MAP = {
+    "checkpoints": "Checkpoint",
+    "loras": "LORA",
+    "vae": "VAE",
+    "vae_approx": "VAE",
+    "embeddings": "TextualInversion",
+    "hypernetworks": "Hypernetwork",
+    "controlnet": "Controlnet",
+    "diffusers": "Checkpoint",
+    "diffusion_models": "Checkpoint",
+    "unet": "UNET",
+    "upscale_models": "Upscaler",
+    "latent_upscale_models": "Upscaler",
+    "motion_models": "MotionModule",
+    "poses": "Poses",
+    "wildcards": "Wildcards",
+    "clip": "Checkpoint",
+    "clip_vision": "Checkpoint",
+}
+
 # Civitai API specific type mapping (for search filters)
 # Maps internal key (lowercase) to Civitai API 'types' parameter value
 CIVITAI_API_TYPE_MAP = {

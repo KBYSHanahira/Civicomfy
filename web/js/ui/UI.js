@@ -1,21 +1,12 @@
 import { Feedback } from "./feedback.js";
 import { setupEventListeners } from "./handlers/eventListeners.js";
 import { handleDownloadSubmit, fetchAndDisplayDownloadPreview, debounceFetchDownloadPreview } from "./handlers/downloadHandler.js";
-import { handleSearchSubmit } from "./handlers/searchHandler.js";
-import {
-    handleSettingsSave,
-    loadAndApplySettings,
-    loadSettingsFromCookie,
-    saveSettingsToCookie,
-    applySettings,
-    getDefaultSettings,
-    loadGlobalRootSetting,
-    handleSetGlobalRoot,
-    handleClearGlobalRoot,
-} from "./handlers/settingsHandler.js";
+import { handleBrowseLoad } from "./handlers/browseHandler.js";
+import { handleSettingsSave, loadAndApplySettings, loadSettingsFromCookie, saveSettingsToCookie, applySettings, getDefaultSettings, saveBrowseSettings, loadBrowseSettings, saveMyModelsSettings, loadMyModelsSettings } from "./handlers/settingsHandler.js";
 import { startStatusUpdates, stopStatusUpdates, updateStatus, handleCancelDownload, handleRetryDownload, handleOpenPath, handleClearHistory } from "./handlers/statusHandler.js";
-import { renderSearchResults } from "./searchRenderer.js";
+import { handleMyModelsLoad, renderMyModels, handleMyModelOpenOnCivit, handleMyModelViewDetail, handleMyModelDelete } from "./handlers/myModelsHandler.js";
 import { renderDownloadList } from "./statusRenderer.js";
+import { renderSearchResults } from "./searchRenderer.js";
 import { renderDownloadPreview } from "./previewRenderer.js";
 import { modalTemplate } from "./templates.js";
 import { CivitaiDownloaderAPI } from "../api/civitai.js";
@@ -30,10 +21,15 @@ export class CivitaiDownloaderUI {
         this.statusInterval = null;
         this.statusData = { queue: [], active: [], history: [] };
         this.baseModels = [];
+        this.browsePagination = { currentPage: 1, totalPages: 1, limit: 20 };
         this.searchPagination = { currentPage: 1, totalPages: 1, limit: 20 };
+        this.browseActiveType = 'all';
+        this.browseLoaded = false;
         this.settings = this.getDefaultSettings();
         this.toastTimeout = null;
         this.modelPreviewDebounceTimeout = null;
+        this._myModelsAll = [];
+        this._myModelsLoaded = false;
 
         this.updateStatus();
         this.buildModalHTML();
@@ -54,6 +50,7 @@ export class CivitaiDownloaderUI {
 
     cacheDOMElements() {
         this.closeButton = this.modal.querySelector('#civitai-close-modal');
+        this.fullscreenButton = this.modal.querySelector('#civitai-fullscreen-toggle');
         this.tabContainer = this.modal.querySelector('.civitai-downloader-tabs');
 
         // Download Tab
@@ -66,21 +63,22 @@ export class CivitaiDownloaderUI {
         this.customFilenameInput = this.modal.querySelector('#civitai-custom-filename');
         this.subdirSelect = this.modal.querySelector('#civitai-subdir-select');
         this.createSubdirButton = this.modal.querySelector('#civitai-create-subdir');
-        this.saveBasePathHint = this.modal.querySelector('#civitai-save-base-path');
         this.downloadConnectionsInput = this.modal.querySelector('#civitai-connections');
         this.forceRedownloadCheckbox = this.modal.querySelector('#civitai-force-redownload');
         this.downloadSubmitButton = this.modal.querySelector('#civitai-download-submit');
 
-        // Search Tab
-        this.searchForm = this.modal.querySelector('#civitai-search-form');
-        this.searchQueryInput = this.modal.querySelector('#civitai-search-query');
-        this.searchTypeSelect = this.modal.querySelector('#civitai-search-type');
-        this.searchBaseModelSelect = this.modal.querySelector('#civitai-search-base-model');
-        this.searchSortSelect = this.modal.querySelector('#civitai-search-sort');
-        this.searchPeriodSelect = this.modal.querySelector('#civitai-search-period');
-        this.searchSubmitButton = this.modal.querySelector('#civitai-search-submit');
-        this.searchResultsContainer = this.modal.querySelector('#civitai-search-results');
-        this.searchPaginationContainer = this.modal.querySelector('#civitai-search-pagination');
+        // Browse Tab
+        this.browseTypeTabsContainer = this.modal.querySelector('#civitai-browse-type-tabs');
+        this.browseSortSelect = this.modal.querySelector('#civitai-browse-sort');
+        this.browseBaseModelPickerToggle = this.modal.querySelector('#civitai-browse-base-model-toggle');
+        this.browseBaseModelPickerDropdown = this.modal.querySelector('#civitai-browse-base-model-dropdown');
+        this.browseBaseModelPickerOptions = this.modal.querySelector('#civitai-browse-base-model-options');
+        this.browseBaseModelPickerLabel = this.modal.querySelector('#civitai-browse-base-model-label');
+        this.browseBaseModelPickerSearch = this.modal.querySelector('#civitai-browse-base-model-search');
+        this.browseBaseModelClearButton = this.modal.querySelector('#civitai-browse-base-model-clear');
+        this.browseRefreshButton = this.modal.querySelector('#civitai-browse-refresh');
+        this.browseResultsContainer = this.modal.querySelector('#civitai-browse-results');
+        this.browsePaginationContainer = this.modal.querySelector('#civitai-browse-pagination');
 
         // Status Tab
         this.statusContent = this.modal.querySelector('#civitai-status-content');
@@ -97,15 +95,20 @@ export class CivitaiDownloaderUI {
         // Settings Tab
         this.settingsForm = this.modal.querySelector('#civitai-settings-form');
         this.settingsApiKeyInput = this.modal.querySelector('#civitai-settings-api-key');
-        this.settingsGlobalRootInput = this.modal.querySelector('#civitai-settings-global-root');
-        this.settingsSetGlobalRootButton = this.modal.querySelector('#civitai-settings-set-global-root');
-        this.settingsClearGlobalRootButton = this.modal.querySelector('#civitai-settings-clear-global-root');
         this.settingsConnectionsInput = this.modal.querySelector('#civitai-settings-connections');
         this.settingsDefaultTypeSelect = this.modal.querySelector('#civitai-settings-default-type');
         this.settingsAutoOpenCheckbox = this.modal.querySelector('#civitai-settings-auto-open-status');
         this.settingsHideMatureCheckbox = this.modal.querySelector('#civitai-settings-hide-mature');
         this.settingsNsfwThresholdInput = this.modal.querySelector('#civitai-settings-nsfw-threshold');
         this.settingsSaveButton = this.modal.querySelector('#civitai-settings-save');
+
+        // My Models Tab
+        this.myModelsTypeFilter = this.modal.querySelector('#civitai-mymodels-type-filter');
+        this.myModelsSearchInput = this.modal.querySelector('#civitai-mymodels-search');
+        this.myModelsSortSelect = this.modal.querySelector('#civitai-mymodels-sort');
+        this.myModelsRefreshButton = this.modal.querySelector('#civitai-mymodels-refresh');
+        this.myModelsListContainer = this.modal.querySelector('#civitai-mymodels-list');
+        this.myModelsCountEl = this.modal.querySelector('#civitai-mymodels-count');
 
         // Toast Notification
         this.toastElement = this.modal.querySelector('#civitai-toast');
@@ -127,10 +130,8 @@ export class CivitaiDownloaderUI {
         await this.populateModelTypes();
         await this.populateBaseModels();
         this.loadAndApplySettings();
-        await this.loadGlobalRootSetting();
-        if (this.downloadModelTypeSelect) {
-            await this.loadAndPopulateSubdirs(this.downloadModelTypeSelect.value);
-        }
+        this.loadBrowseSettings();
+        this.loadMyModelsSettings();
     }
 
     async populateModelTypes() {
@@ -144,8 +145,12 @@ export class CivitaiDownloaderUI {
             const sortedTypes = Object.entries(this.modelTypes).sort((a, b) => a[1].localeCompare(b[1]));
 
             this.downloadModelTypeSelect.innerHTML = '';
-            this.searchTypeSelect.innerHTML = '<option value="any">Any Type</option>';
             this.settingsDefaultTypeSelect.innerHTML = '';
+
+            // Rebuild browse type tabs (keep "All" first)
+            if (this.browseTypeTabsContainer) {
+                this.browseTypeTabsContainer.innerHTML = '<button class="civitai-browse-type-tab active" data-type="all">All</button>';
+            }
 
             sortedTypes.forEach(([key, displayName]) => {
                 const option = document.createElement('option');
@@ -153,15 +158,23 @@ export class CivitaiDownloaderUI {
                 option.textContent = displayName;
             this.downloadModelTypeSelect.appendChild(option.cloneNode(true));
             this.settingsDefaultTypeSelect.appendChild(option.cloneNode(true));
-            this.searchTypeSelect.appendChild(option.cloneNode(true));
+
+            // Add browse type tab
+            if (this.browseTypeTabsContainer) {
+                const tabBtn = document.createElement('button');
+                tabBtn.className = 'civitai-browse-type-tab';
+                tabBtn.dataset.type = key;
+                tabBtn.textContent = displayName;
+                this.browseTypeTabsContainer.appendChild(tabBtn);
+            }
         });
         // After types are populated, load subdirs for the current selection
         await this.loadAndPopulateSubdirs(this.downloadModelTypeSelect.value);
         } catch (error) {
             console.error("[Civicomfy] Failed to get or populate model types:", error);
             this.showToast('Failed to load model types', 'error');
-            this.downloadModelTypeSelect.innerHTML = '<option value="checkpoints">Checkpoints (Default)</option>';
-            this.modelTypes = { "checkpoints": "Checkpoints (Default)" };
+            this.downloadModelTypeSelect.innerHTML = '<option value="checkpoint">Checkpoint (Default)</option>';
+            this.modelTypes = { "checkpoint": "Checkpoint (Default)" };
         }
     }
 
@@ -189,17 +202,10 @@ export class CivitaiDownloaderUI {
             if (Array.from(select.options).some(o => o.value === current)) {
                 select.value = current;
             }
-            if (this.saveBasePathHint) {
-                const basePath = (res && typeof res.base_dir === 'string') ? res.base_dir : '';
-                this.saveBasePathHint.textContent = basePath ? `Base path: ${basePath}` : '';
-            }
         } catch (e) {
             console.error('[Civicomfy] Failed to load subdirectories:', e);
             if (this.subdirSelect) {
                 this.subdirSelect.innerHTML = '<option value="">(root)</option>';
-            }
-            if (this.saveBasePathHint) {
-                this.saveBasePathHint.textContent = '';
             }
         }
     }
@@ -214,18 +220,44 @@ export class CivitaiDownloaderUI {
                 throw new Error("Invalid base models data format received.");
             }
             this.baseModels = result.base_models.sort();
-            const existingOptions = Array.from(this.searchBaseModelSelect.options);
-            existingOptions.slice(1).forEach(opt => opt.remove());
-            this.baseModels.forEach(baseModelName => {
-                const option = document.createElement('option');
-                option.value = baseModelName;
-                option.textContent = baseModelName;
-                this.searchBaseModelSelect.appendChild(option);
-            });
+            this._buildBrowseBaseModelPicker(this.baseModels);
         } catch (error) {
              console.error("[Civicomfy] Failed to get or populate base models:", error);
              this.showToast('Failed to load base models list', 'error');
         }
+    }
+
+    _buildBrowseBaseModelPicker(models) {
+        const container = this.browseBaseModelPickerOptions;
+        if (!container) return;
+        container.innerHTML = '';
+        models.forEach(name => {
+            const label = document.createElement('label');
+            label.className = 'civitai-base-model-option';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = name;
+            cb.className = 'civitai-base-model-checkbox';
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(' ' + name));
+            container.appendChild(label);
+        });
+    }
+
+    getBrowseSelectedBaseModels() {
+        if (!this.browseBaseModelPickerOptions) return [];
+        return Array.from(this.browseBaseModelPickerOptions.querySelectorAll('input[type=checkbox]:checked'))
+            .map(cb => cb.value);
+    }
+
+    updateBrowseBaseModelLabel() {
+        if (!this.browseBaseModelPickerLabel) return;
+        const selected = this.getBrowseSelectedBaseModels();
+        this.browseBaseModelPickerLabel.textContent = selected.length === 0
+            ? 'Any Base Model'
+            : selected.length === 1
+                ? selected[0]
+                : `${selected.length} selected`;
     }
 
     switchTab(tabId) {
@@ -240,6 +272,19 @@ export class CivitaiDownloaderUI {
         this.activeTab = tabId;
 
         if (tabId === 'status') this.updateStatus();
+        else if (tabId === 'browse') {
+            if (!this.browseLoaded) {
+                this.browseLoaded = true;
+                this.browsePagination.currentPage = 1;
+                this.handleBrowseLoad();
+            }
+        }
+        else if (tabId === 'mymodels') {
+            if (!this._myModelsLoaded) {
+                this._myModelsLoaded = true;
+                this.handleMyModelsLoad();
+            }
+        }
         else if (tabId === 'settings') this.applySettings();
         else if(tabId === 'download') {
             this.downloadConnectionsInput.value = this.settings.numConnections;
@@ -262,6 +307,19 @@ export class CivitaiDownloaderUI {
         this.modal?.classList.remove('open');
         document.body.style.removeProperty('overflow');
         this.stopStatusUpdates();
+    }
+
+    toggleFullscreen() {
+        const content = this.modal?.querySelector('.civitai-downloader-modal-content');
+        if (!content) return;
+        const isFs = content.classList.toggle('fullscreen');
+        const icon = this.fullscreenButton?.querySelector('i');
+        if (icon) {
+            icon.className = isFs ? 'fas fa-compress' : 'fas fa-expand';
+        }
+        if (this.fullscreenButton) {
+            this.fullscreenButton.title = isFs ? 'Exit fullscreen' : 'Toggle fullscreen';
+        }
     }
 
     // --- Utility Methods ---
@@ -305,6 +363,13 @@ export class CivitaiDownloaderUI {
     renderDownloadList = (items, container, emptyMessage) => renderDownloadList(this, items, container, emptyMessage);
     renderSearchResults = (items) => renderSearchResults(this, items);
     renderDownloadPreview = (data) => renderDownloadPreview(this, data);
+    renderBrowseResults = (items) => {
+        // Temporarily point searchResultsContainer to browse container so the shared renderer works
+        const saved = this.searchResultsContainer;
+        this.searchResultsContainer = this.browseResultsContainer;
+        renderSearchResults(this, items);
+        this.searchResultsContainer = saved;
+    };
     
     // --- Auto-select model type based on Civitai model type ---
     inferFolderFromCivitaiType(civitaiType) {
@@ -392,20 +457,20 @@ export class CivitaiDownloaderUI {
         }
     }
 
-    renderSearchPagination(metadata) {
-        if (!this.searchPaginationContainer) return;
+    renderBrowsePagination(metadata) {
+        if (!this.browsePaginationContainer) return;
         if (!metadata || metadata.totalPages <= 1) {
-            this.searchPaginationContainer.innerHTML = '';
-            this.searchPagination = { ...this.searchPagination, ...metadata };
+            this.browsePaginationContainer.innerHTML = '';
+            this.browsePagination = { ...this.browsePagination, ...metadata };
             return;
         }
 
-        this.searchPagination = { ...this.searchPagination, ...metadata };
-        const { currentPage, totalPages, totalItems } = this.searchPagination;
+        this.browsePagination = { ...this.browsePagination, ...metadata };
+        const { currentPage, totalPages, totalItems } = this.browsePagination;
 
         const createButton = (text, page, isDisabled = false, isCurrent = false) => {
             const button = document.createElement('button');
-            button.className = `civitai-button small civitai-page-button ${isCurrent ? 'primary active' : ''}`;
+            button.className = `civitai-button small civitai-browse-page-button ${isCurrent ? 'primary active' : ''}`;
             button.dataset.page = page;
             button.disabled = isDisabled;
             button.innerHTML = text;
@@ -415,29 +480,31 @@ export class CivitaiDownloaderUI {
 
         const fragment = document.createDocumentFragment();
         fragment.appendChild(createButton('&laquo; Prev', currentPage - 1, currentPage === 1));
-        
+
         let startPage = Math.max(1, currentPage - 2);
         let endPage = Math.min(totalPages, currentPage + 2);
 
         if (startPage > 1) fragment.appendChild(createButton('1', 1));
-        if (startPage > 2) fragment.appendChild(document.createElement('span')).textContent = '...';
+        if (startPage > 2) { const sp = document.createElement('span'); sp.textContent = '...'; fragment.appendChild(sp); }
 
         for (let i = startPage; i <= endPage; i++) {
             fragment.appendChild(createButton(i, i, false, i === currentPage));
         }
 
-        if (endPage < totalPages - 1) fragment.appendChild(document.createElement('span')).textContent = '...';
+        if (endPage < totalPages - 1) { const sp = document.createElement('span'); sp.textContent = '...'; fragment.appendChild(sp); }
         if (endPage < totalPages) fragment.appendChild(createButton(totalPages, totalPages));
-        
+
         fragment.appendChild(createButton('Next &raquo;', currentPage + 1, currentPage === totalPages));
 
-        const info = document.createElement('div');
-        info.className = 'civitai-pagination-info';
-        info.textContent = `Page ${currentPage} of ${totalPages} (${totalItems.toLocaleString()} models)`;
-        fragment.appendChild(info);
+        if (totalItems !== undefined) {
+            const info = document.createElement('div');
+            info.className = 'civitai-pagination-info';
+            info.textContent = `Page ${currentPage} of ${totalPages} (${Number(totalItems).toLocaleString()} models)`;
+            fragment.appendChild(info);
+        }
 
-        this.searchPaginationContainer.innerHTML = '';
-        this.searchPaginationContainer.appendChild(fragment);
+        this.browsePaginationContainer.innerHTML = '';
+        this.browsePaginationContainer.appendChild(fragment);
     }
 
     // --- Event Handlers and State Management (delegated to handlers) ---
@@ -448,11 +515,12 @@ export class CivitaiDownloaderUI {
     saveSettingsToCookie = () => saveSettingsToCookie(this);
     applySettings = () => applySettings(this);
     handleSettingsSave = () => handleSettingsSave(this);
-    loadGlobalRootSetting = () => loadGlobalRootSetting(this);
-    handleSetGlobalRoot = () => handleSetGlobalRoot(this);
-    handleClearGlobalRoot = () => handleClearGlobalRoot(this);
+    saveBrowseSettings = () => saveBrowseSettings(this);
+    loadBrowseSettings = () => loadBrowseSettings(this);
+    saveMyModelsSettings = () => saveMyModelsSettings(this);
+    loadMyModelsSettings = () => loadMyModelsSettings(this);
     handleDownloadSubmit = () => handleDownloadSubmit(this);
-    handleSearchSubmit = () => handleSearchSubmit(this);
+    handleBrowseLoad = () => handleBrowseLoad(this);
     fetchAndDisplayDownloadPreview = () => fetchAndDisplayDownloadPreview(this);
     debounceFetchDownloadPreview = (delay) => debounceFetchDownloadPreview(this, delay);
     startStatusUpdates = () => startStatusUpdates(this);
@@ -462,4 +530,11 @@ export class CivitaiDownloaderUI {
     handleRetryDownload = (downloadId, button) => handleRetryDownload(this, downloadId, button);
     handleOpenPath = (downloadId, button) => handleOpenPath(this, downloadId, button);
     handleClearHistory = () => handleClearHistory(this);
+
+    // My Models tab
+    handleMyModelsLoad = () => handleMyModelsLoad(this);
+    renderMyModels = () => renderMyModels(this);
+    handleMyModelOpenOnCivit = (modelId) => handleMyModelOpenOnCivit(modelId);
+    handleMyModelViewDetail = (relPath) => handleMyModelViewDetail(this, relPath);
+    handleMyModelDelete = (relPath, name, btn) => handleMyModelDelete(this, relPath, name, btn);
 }

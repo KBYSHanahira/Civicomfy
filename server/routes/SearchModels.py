@@ -7,15 +7,16 @@ import traceback
 from aiohttp import web
 
 import server # ComfyUI server instance
-from ..utils import get_request_json, resolve_civitai_api_key
+from ..utils import get_request_json
 from ...api.civitai import CivitaiAPI
-from ...config import CIVITAI_API_TYPE_MAP
+from ...config import CIVITAI_API_TYPE_MAP, FOLDER_TO_CIVITAI_TYPE_MAP
 
 prompt_server = server.PromptServer.instance
 
 @prompt_server.routes.post("/civitai/search")
 async def route_search_models(request):
     """API Endpoint for searching models using Civitai's Meilisearch."""
+    api_key = None # Meili might not use the standard key
     try:
         data = await get_request_json(request)
 
@@ -27,14 +28,14 @@ async def route_search_models(request):
         # period = data.get("period", "AllTime")
         limit = int(data.get("limit", 20))
         page = int(data.get("page", 1))
-        resolved_api_key = resolve_civitai_api_key(data)
+        api_key = data.get("api_key", "") # Keep for potential future use or different endpoints
         nsfw = data.get("nsfw", None) # Expect Boolean or None
 
         if not query and not model_type_keys and not base_model_filters:
              raise web.HTTPBadRequest(reason="Search requires a query or at least one filter (type or base model).")
 
-        # API key priority: request payload > CIVITAI_API_KEY env var
-        api = CivitaiAPI(resolved_api_key)
+        # Instantiate API - API key might not be needed for Meili public search
+        api = CivitaiAPI(api_key or None)
 
         # --- Prepare Filters for Meili API call ---
 
@@ -45,7 +46,8 @@ async def route_search_models(request):
             for key in model_type_keys:
                 # Map key.lower() for robustness - use the existing map from config
                 # CIVITAI_API_TYPE_MAP maps internal key -> Civitai API type name (e.g. 'lora' -> 'LORA')
-                api_type = CIVITAI_API_TYPE_MAP.get(key.lower())
+                # FOLDER_TO_CIVITAI_TYPE_MAP maps folder names -> Civitai API type name (e.g. 'loras' -> 'LORA')
+                api_type = CIVITAI_API_TYPE_MAP.get(key.lower()) or FOLDER_TO_CIVITAI_TYPE_MAP.get(key.lower())
                 # Ensure we handle cases where the map might return None or duplicate types
                 if api_type and api_type not in api_types_filter:
                     api_types_filter.append(api_type)

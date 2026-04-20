@@ -1,56 +1,141 @@
-# Civicomfy - Civitai Model Downloader for ComfyUI
+# Civicomfy — Civitai Model Downloader for ComfyUI
 
-Civicomfy seamlessly integrates Civitai's vast model repository directly into ComfyUI, allowing you to search, download, and organize AI models without leaving your workflow.
+Civicomfy integrates Civitai's model library directly into ComfyUI. Browse, search, download, and manage AI models without ever leaving your workflow.
 
-## Features
-
-- **Integrated Model Search**: Search Civitai's extensive library directly from ComfyUI
-- **One-Click Downloads**: Download models with associated metadata and thumbnails
-- **Automatic Organization**: Models are automatically saved to their appropriate directories
-- **Clean UI**: Clean, intuitive interface that complements ComfyUI's aesthetic
+---
 
 ## Installation
 
-Git clone
 ```bash
 cd ComfyUI/custom_nodes
-git clone https://github.com/MoonGoblinDev/Civicomfy.git
+git clone https://github.com/KBYSHanahira/Civicomfy.git
 ```
 
-Comfy-CLI
-```bash
-comfy node registry-install civicomfy
-```
+Then restart ComfyUI. The **Civicomfy** button will appear in the top-right toolbar.
 
-ComfyUI Manager
+---
 
-<img width="813" alt="Screenshot 2025-04-08 at 11 42 46" src="https://github.com/user-attachments/assets/5d4f5261-88f6-4aa0-9c66-d1811bb49e09" />
+## Quick Start
 
-## Usage
+1. Open Civicomfy from the toolbar button
+2. Go to **Settings** and enter your [Civitai API Key](https://civitai.com/user/account)
+3. Use **Browse** to explore models or **Download** to grab a specific model by URL
+4. Monitor progress in the **Status** tab
+5. View your installed models in **My Models**
 
-1. Start ComfyUI with Civicomfy installed
-2. Access the Civicomfy panel from the Civicomfy menu button at the right top area.
-3. Search for models
-4. Click the download button on any model to save it to your local installation
-5. Models become immediately available in ComfyUI nodes
+---
 
-## Configuration
+## Features
 
-- Enter your Civitai API Token in the settings, or set `CIVITAI_API_KEY` in the server environment (useful for cloud deployments like RunPod).
-- Optional: set a **Global Download Root** in Civicomfy settings.
-  - When set, Civicomfy saves to `<global_root>/<model_type>` (for example `/runpod-volume/ComfyUI/checkpoints` or `/runpod-volume/ComfyUI/loras`).
-  - When empty, Civicomfy uses the default ComfyUI paths (`folder_paths` / `extra_model_paths.yaml`).
-  - The global root is persisted on disk in `custom_nodes/Civicomfy/root_settings.json`.
+### Download Tab
 
-## Screenshots
-<img width="911" alt="Screenshot 2025-04-08 at 11 24 40" src="https://github.com/user-attachments/assets/b9be0c32-729d-490e-be61-2dc072cd9b15" />
-<img width="911" alt="Screenshot 2025-04-08 at 11 23 17" src="https://github.com/user-attachments/assets/cb747c22-afd0-4baf-a9a2-39c70fb11e46" />
-<img width="911" alt="Screenshot 2025-04-08 at 11 25 15" src="https://github.com/user-attachments/assets/02b6d841-a0fa-484c-91a4-4095a7554c3f" />
-<img width="911" alt="Screenshot 2025-04-08 at 11 25 24" src="https://github.com/user-attachments/assets/20fcfcb5-3345-4a72-89fe-ee9c50626ebc" />
+Manually queue a download by pasting a Civitai model URL or numeric model ID.
 
+- **Live preview** — fetches model details and renders a preview card (name, images, file list) as you type, with a 500ms debounce
+- **Auto model-type detection** — automatically selects the correct ComfyUI folder based on the model's Civitai type (Checkpoint, LORA, VAE, etc.)
+- **File selector** — choose which file variant to download when a model has multiple files
+- **Model type & subdirectory selectors** — populated dynamically from your actual ComfyUI `models/` folder structure
+- **Create folders** — create new model type folders or subdirectories directly from the UI
+- **Custom filename** — override the saved filename
+- **Parallel connections** — set 1–16 simultaneous chunk connections for faster downloads
+- **Force re-download** — bypass the duplicate-file check
+- **Duplicate detection** — server checks for existing files before queuing and warns you
 
+---
 
+### Browse Tab
+
+Browse Civitai's full model catalogue without leaving ComfyUI.
+
+- **Type tabs** — filter by model type (Checkpoint, LORA, VAE, ControlNet, etc.); tabs are generated dynamically from your installed model folders
+- **Sort options** — Most Downloaded, Newest, Highest Rated, Most Collected, Most Buzz, and more
+- **Base model filter** — multi-select picker with 40+ options (Flux.1, SDXL, SD 1.5, Pony, Illustrious, Wan Video, etc.) with live text search inside the picker
+- **NSFW blur** — thumbnails above your configured NSFW threshold are blurred; click any thumbnail to reveal/hide
+- **Pagination** — numbered pages with ellipsis for large result sets
+- **Per-model download button** — pre-fills the Download tab with the correct model ID, version ID, and model type
+- **Multiple versions** — up to 3 version download buttons shown per card; "All versions" expander for models with more
+- **Persistent settings** — your sort, active type tab, and selected base models are saved to a cookie and restored automatically
+
+---
+
+### Status Tab
+
+Real-time monitor for all downloads.
+
+- **Live polling** — refreshes every 3 seconds while the modal is open; pauses when closed
+- **Active downloads** — filename, progress bar, percentage, download speed, connection mode (Multi/Single), and start time
+- **Queue** — shows jobs waiting to start; up to 3 downloads run concurrently
+- **History** — completed, failed, and cancelled entries with outcome, file size, and duration
+- **Cancel** — cancel any active or queued download instantly
+- **Retry** — re-queue any failed or cancelled download from history using the original parameters
+- **Open folder** — open the file's directory in your OS file explorer (Windows Explorer / Finder / Nautilus)
+- **Clear history** — wipe the history list with a confirmation dialog
+
+---
+
+### My Models Tab
+
+Browse and manage models already installed on your machine.
+
+- **Local scan** — reads all model files from every ComfyUI model directory
+- **Preview images** — displays `.preview.jpeg` sidecar thumbnails saved at download time
+- **Type filter** — dropdown to show only a specific model type
+- **Name/path search** — real-time text filter across model names and relative paths
+- **Sort** — by name (A→Z / Z→A), file size (large→small / small→large), or date modified (newest first / oldest first)
+- **Model count** — shows filtered vs. total count
+- **Card actions** (appear on hover):
+  - **Open on Civitai** — opens the model page in your browser (requires `.cminfo.json` metadata)
+  - **View Detail** — opens an in-modal detail panel showing filename, path, size, type, base model, version, trigger words (click to copy), description, and a direct Civitai link
+  - **Delete** — permanently removes the model file from disk after confirmation
+- **Persistent settings** — sort and type filter are saved to a cookie
+
+---
+
+### Settings Tab
+
+Global preferences saved to a browser cookie (365-day expiry).
+
+| Setting | Description |
+|---|---|
+| **API Key** | Your Civitai API key — required for downloading gated models and for higher rate limits |
+| **Default connections** | Default number of parallel download connections (1–16) |
+| **Default model type** | Pre-selected model type folder in the Download tab |
+| **Auto-open Status tab** | Automatically switch to Status after queuing a download |
+| **Hide mature content** | Filters NSFW results in Browse/Search |
+| **NSFW blur threshold** | Blur thumbnails with a Civitai `nsfwLevel` at or above this value (0–128) |
+
+---
+
+## Download Engine
+
+### Parallel Chunk Downloader
+
+- Issues a `HEAD` request to check if the server supports range requests
+- If the file is **> 100 MB** and range requests are supported, splits the file into N segments and downloads them in parallel threads
+- Falls back to a single streaming connection for smaller files or servers that don't support ranges
+- Up to **3 retries per segment** with exponential backoff
+- Cancellation is handled cleanly — temp files are removed and incomplete output files are deleted
+- Progress (% and bytes/s) is reported to the Status tab in real time
+
+### Sidecar Files
+
+Every downloaded model gets two companion files saved alongside it:
+
+| File | Content |
+|---|---|
+| `<modelname>.cminfo.json` | Full Civitai model/version metadata (ID, base model, trigger words, description, etc.) |
+| `<modelname>.preview.jpeg` | Thumbnail image from Civitai |
+
+These files power the **My Models** detail view and Open-on-Civitai links.
+
+### Queue Limits
+
+- Maximum **3 concurrent** downloads
+- History capped at **100** entries (oldest trimmed automatically)
+- History is persisted to `download_history.json` and survives ComfyUI restarts
+
+---
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please submit a Pull Request.
