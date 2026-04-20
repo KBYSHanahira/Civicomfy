@@ -17,7 +17,7 @@ export async function handleBrowseLoad(ui) {
 
     const selectedType = ui.browseActiveType || 'all';
     const params = {
-        query: '',
+        query: ui.browseSearchInput?.value?.trim() || '',
         model_types: selectedType === 'all' ? [] : [selectedType],
         base_models: ui.getBrowseSelectedBaseModels(),
         sort: ui.browseSortSelect?.value || 'Most Downloaded',

@@ -21,8 +21,9 @@ export class CivitaiDownloaderUI {
         this.statusInterval = null;
         this.statusData = { queue: [], active: [], history: [] };
         this.baseModels = [];
-        this.browsePagination = { currentPage: 1, totalPages: 1, limit: 20 };
-        this.searchPagination = { currentPage: 1, totalPages: 1, limit: 20 };
+        this.browsePagination = { currentPage: 1, totalPages: 1, limit: 25 };
+        this.searchPagination = { currentPage: 1, totalPages: 1, limit: 25 };
+        this.myModelsPagination = { currentPage: 1, limit: 50 };
         this.browseActiveType = 'all';
         this.browseLoaded = false;
         this.settings = this.getDefaultSettings();
@@ -69,7 +70,9 @@ export class CivitaiDownloaderUI {
 
         // Browse Tab
         this.browseTypeTabsContainer = this.modal.querySelector('#civitai-browse-type-tabs');
+        this.browseSearchInput = this.modal.querySelector('#civitai-browse-search');
         this.browseSortSelect = this.modal.querySelector('#civitai-browse-sort');
+        this.browseLimitSelect = this.modal.querySelector('#civitai-browse-limit');
         this.browseBaseModelPickerToggle = this.modal.querySelector('#civitai-browse-base-model-toggle');
         this.browseBaseModelPickerDropdown = this.modal.querySelector('#civitai-browse-base-model-dropdown');
         this.browseBaseModelPickerOptions = this.modal.querySelector('#civitai-browse-base-model-options');
@@ -109,8 +112,10 @@ export class CivitaiDownloaderUI {
         this.myModelsTypeFilter = this.modal.querySelector('#civitai-mymodels-type-filter');
         this.myModelsSearchInput = this.modal.querySelector('#civitai-mymodels-search');
         this.myModelsSortSelect = this.modal.querySelector('#civitai-mymodels-sort');
+        this.myModelsLimitSelect = this.modal.querySelector('#civitai-mymodels-limit');
         this.myModelsRefreshButton = this.modal.querySelector('#civitai-mymodels-refresh');
         this.myModelsListContainer = this.modal.querySelector('#civitai-mymodels-list');
+        this.myModelsPaginationContainer = this.modal.querySelector('#civitai-mymodels-pagination');
         this.myModelsCountEl = this.modal.querySelector('#civitai-mymodels-count');
 
         // Toast Notification
@@ -256,11 +261,13 @@ export class CivitaiDownloaderUI {
     updateBrowseBaseModelLabel() {
         if (!this.browseBaseModelPickerLabel) return;
         const selected = this.getBrowseSelectedBaseModels();
-        this.browseBaseModelPickerLabel.textContent = selected.length === 0
-            ? 'Any Base Model'
-            : selected.length === 1
-                ? selected[0]
-                : `${selected.length} selected`;
+        if (selected.length === 0) {
+            this.browseBaseModelPickerLabel.textContent = 'Any Base Model';
+        } else if (selected.length <= 2) {
+            this.browseBaseModelPickerLabel.textContent = selected.join(', ');
+        } else {
+            this.browseBaseModelPickerLabel.textContent = `${selected.length} selected`;
+        }
     }
 
     switchTab(tabId) {

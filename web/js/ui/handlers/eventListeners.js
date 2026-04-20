@@ -168,6 +168,26 @@ export function setupEventListeners(ui) {
         });
     }
 
+    if (ui.browseLimitSelect) {
+        ui.browseLimitSelect.addEventListener('change', () => {
+            ui.browsePagination.limit = parseInt(ui.browseLimitSelect.value, 10) || 25;
+            ui.browsePagination.currentPage = 1;
+            ui.saveBrowseSettings();
+            ui.handleBrowseLoad();
+        });
+    }
+
+    if (ui.browseSearchInput) {
+        let _browseSearchDebounce = null;
+        ui.browseSearchInput.addEventListener('input', () => {
+            clearTimeout(_browseSearchDebounce);
+            _browseSearchDebounce = setTimeout(() => {
+                ui.browsePagination.currentPage = 1;
+                ui.handleBrowseLoad();
+            }, 500);
+        });
+    }
+
     if (ui.browseBaseModelPickerToggle) {
         ui.browseBaseModelPickerToggle.addEventListener('click', (event) => {
             event.stopPropagation();
@@ -324,6 +344,15 @@ export function setupEventListeners(ui) {
     });
 
     // --- My Models Tab ---
+    if (ui.myModelsLimitSelect) {
+        ui.myModelsLimitSelect.addEventListener('change', () => {
+            ui.myModelsPagination.limit = parseInt(ui.myModelsLimitSelect.value, 10) || 50;
+            ui.myModelsPagination.currentPage = 1;
+            ui.saveMyModelsSettings();
+            ui.renderMyModels();
+        });
+    }
+
     if (ui.myModelsRefreshButton) {
         ui.myModelsRefreshButton.addEventListener('click', () => {
             ui._myModelsLoaded = true;
@@ -343,12 +372,16 @@ export function setupEventListeners(ui) {
         let _myModelsSearchDebounce = null;
         ui.myModelsSearchInput.addEventListener('input', () => {
             clearTimeout(_myModelsSearchDebounce);
-            _myModelsSearchDebounce = setTimeout(() => ui.renderMyModels(), 200);
+            _myModelsSearchDebounce = setTimeout(() => {
+                if (ui.myModelsPagination) ui.myModelsPagination.currentPage = 1;
+                ui.renderMyModels();
+            }, 200);
         });
     }
 
     if (ui.myModelsSortSelect) {
         ui.myModelsSortSelect.addEventListener('change', () => {
+            if (ui.myModelsPagination) ui.myModelsPagination.currentPage = 1;
             ui.saveMyModelsSettings();
             ui.renderMyModels();
         });

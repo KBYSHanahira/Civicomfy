@@ -25,7 +25,7 @@ function addMenuButton() {
     }
 
     const civitaiButton = document.createElement("button");
-    civitaiButton.textContent = "Civicomfy";
+    civitaiButton.innerHTML = `<i class="fas fa-cloud-download-alt"></i> Civicomfy`;
     civitaiButton.id = "civitai-downloader-button";
     civitaiButton.title = "Open Civicomfy";
 

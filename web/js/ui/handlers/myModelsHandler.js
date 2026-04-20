@@ -49,7 +49,7 @@ export async function handleMyModelsLoad(ui) {
 }
 
 /**
- * Re-render the model list applying current name/type filter.
+ * Re-render the model list applying current name/type filter and pagination.
  * @param {object} ui
  */
 export function renderMyModels(ui) {
@@ -81,20 +81,91 @@ export function renderMyModels(ui) {
         }
     });
 
+    // Pagination
+    const limit = ui.myModelsPagination?.limit || 50;
+    const totalItems = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+    if (!ui.myModelsPagination) ui.myModelsPagination = { currentPage: 1, limit };
+    // Clamp currentPage if filter changed
+    if (ui.myModelsPagination.currentPage > totalPages) ui.myModelsPagination.currentPage = 1;
+    const currentPage = ui.myModelsPagination.currentPage;
+    const startIdx = (currentPage - 1) * limit;
+    const pageItems = filtered.slice(startIdx, startIdx + limit);
+
     if (countEl) {
-        countEl.textContent = `${filtered.length} model${filtered.length !== 1 ? 's' : ''}${all.length !== filtered.length ? ` (of ${all.length})` : ''}`;
+        const showingStart = totalItems === 0 ? 0 : startIdx + 1;
+        const showingEnd = Math.min(startIdx + limit, totalItems);
+        countEl.textContent = totalItems === 0
+            ? '0 models'
+            : `${showingStart}–${showingEnd} of ${totalItems} model${totalItems !== 1 ? 's' : ''}${all.length !== totalItems ? ` (filtered from ${all.length})` : ''}`;
     }
 
     if (filtered.length === 0) {
         listEl.innerHTML = '<p>No models found.</p>';
+        if (ui.myModelsPaginationContainer) ui.myModelsPaginationContainer.innerHTML = '';
         return;
     }
 
     listEl.innerHTML = '';
-    filtered.forEach(model => {
+    pageItems.forEach(model => {
         listEl.appendChild(_buildModelRow(model));
     });
+
+    _renderMyModelsPagination(ui, currentPage, totalPages);
 }
+
+function _renderMyModelsPagination(ui, currentPage, totalPages) {
+    const container = ui.myModelsPaginationContainer;
+    if (!container) return;
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+    const frag = document.createDocumentFragment();
+
+    const makeBtn = (html, page, disabled = false, active = false) => {
+        const btn = document.createElement('button');
+        btn.className = `civitai-button small civitai-mymodels-page-button${active ? ' primary active' : ''}`;
+        btn.innerHTML = html;
+        btn.disabled = disabled;
+        btn.type = 'button';
+        btn.dataset.page = page;
+        return btn;
+    };
+
+    frag.appendChild(makeBtn('&laquo;', currentPage - 1, currentPage === 1));
+
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, currentPage + 2);
+
+    if (start > 1) { frag.appendChild(makeBtn('1', 1)); }
+    if (start > 2) { const sp = document.createElement('span'); sp.textContent = '…'; sp.style.padding = '0 4px'; frag.appendChild(sp); }
+    for (let i = start; i <= end; i++) { frag.appendChild(makeBtn(i, i, false, i === currentPage)); }
+    if (end < totalPages - 1) { const sp = document.createElement('span'); sp.textContent = '…'; sp.style.padding = '0 4px'; frag.appendChild(sp); }
+    if (end < totalPages) { frag.appendChild(makeBtn(totalPages, totalPages)); }
+
+    frag.appendChild(makeBtn('&raquo;', currentPage + 1, currentPage === totalPages));
+
+    const info = document.createElement('div');
+    info.className = 'civitai-pagination-info';
+    info.textContent = `Page ${currentPage} of ${totalPages}`;
+    frag.appendChild(info);
+
+    container.innerHTML = '';
+    container.appendChild(frag);
+
+    // Replace onclick to avoid listener accumulation (container persists between renders)
+    container.onclick = (e) => {
+        const btn = e.target.closest('.civitai-mymodels-page-button');
+        if (btn && !btn.disabled) {
+            const page = parseInt(btn.dataset.page, 10);
+            if (page && page !== ui.myModelsPagination.currentPage) {
+                ui.myModelsPagination.currentPage = page;
+                renderMyModels(ui);
+                ui.myModelsListContainer?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    };
+}
+
 
 /**
  * Build a DOM card for a single model entry.
@@ -176,16 +247,21 @@ function _buildModelRow(model) {
     name.textContent = displayName;
     name.title = model.rel_path;
 
-    const meta = document.createElement('span');
+    const meta = document.createElement('div');
     meta.className = 'civitai-mymodel-meta';
     const sizeMB = model.size_bytes > 0 ? (model.size_bytes / 1024 / 1024).toFixed(1) + ' MB' : '';
     const dateStr = model.modified ? new Date(model.modified * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
-    const parts = [
-        model.version_name,
-        sizeMB ? `<i class="fas fa-hdd" style="opacity:.6;"></i> ${sizeMB}` : '',
-        dateStr ? `<i class="fas fa-clock" style="opacity:.6;"></i> ${dateStr}` : '',
+    const metaLines = [
+        model.version_name ? { icon: 'fa-tag', text: model.version_name } : null,
+        sizeMB ? { icon: 'fa-hdd', text: sizeMB } : null,
+        dateStr ? { icon: 'fa-clock', text: dateStr } : null,
     ].filter(Boolean);
-    meta.innerHTML = parts.join(' · ');
+    metaLines.forEach(({ icon, text }) => {
+        const line = document.createElement('span');
+        line.className = 'civitai-mymodel-meta-line';
+        line.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
+        meta.appendChild(line);
+    });
 
     body.appendChild(name);
     body.appendChild(meta);
@@ -248,11 +324,32 @@ function _showDetailModal(ui, model) {
     const left = document.createElement('div');
     left.className = 'civitai-mymodel-detail-left';
     if (model.has_preview) {
+        const imgUrl = `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`;
         const img = document.createElement('img');
-        img.src = `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`;
+        img.src = imgUrl;
         img.alt = model.name;
-        img.className = 'civitai-mymodel-detail-preview';
+        img.className = 'civitai-mymodel-detail-preview civitai-zoomable';
+        img.title = 'Click to zoom';
         img.onerror = () => img.remove();
+        img.addEventListener('click', () => {
+            const lb = document.createElement('div');
+            lb.id = 'civitai-lightbox';
+            lb.className = 'civitai-lightbox';
+            const closeX = document.createElement('button');
+            closeX.className = 'civitai-lightbox-close';
+            closeX.innerHTML = '&times;';
+            closeX.addEventListener('click', (e) => { e.stopPropagation(); lb.remove(); });
+            const zoomImg = document.createElement('img');
+            zoomImg.src = imgUrl;
+            zoomImg.className = 'civitai-lightbox-media';
+            zoomImg.addEventListener('click', (e) => e.stopPropagation());
+            lb.appendChild(closeX);
+            lb.appendChild(zoomImg);
+            lb.addEventListener('click', () => lb.remove());
+            const onKey = (e) => { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', onKey); } };
+            document.addEventListener('keydown', onKey);
+            document.body.appendChild(lb);
+        });
         left.appendChild(img);
     }
 

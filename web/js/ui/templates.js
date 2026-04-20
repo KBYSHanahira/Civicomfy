@@ -77,6 +77,7 @@ export function modalTemplate(settings = {}) {
               <!-- Model type tabs will be injected here by JS -->
             </div>
             <div class="civitai-browse-controls">
+              <input type="text" id="civitai-browse-search" class="civitai-input civitai-browse-search-input" placeholder="Search model name..." autocomplete="off" style="min-width:180px; flex:1 1 180px;">
               <select id="civitai-browse-sort" class="civitai-select" style="min-width:160px;">
                 <option value="Most Downloaded">Most Downloaded</option>
                 <option value="Highest Rated">Highest Rated</option>
@@ -99,6 +100,12 @@ export function modalTemplate(settings = {}) {
                   </div>
                 </div>
               </div>
+              <select id="civitai-browse-limit" class="civitai-select" style="width:auto;" title="Results per page">
+                <option value="25" selected>25 / page</option>
+                <option value="50">50 / page</option>
+                <option value="75">75 / page</option>
+                <option value="100">100 / page</option>
+              </select>
               <button id="civitai-browse-refresh" class="civitai-button" title="Refresh"><i class="fas fa-sync-alt"></i></button>
             </div>
           </div>
@@ -113,25 +120,36 @@ export function modalTemplate(settings = {}) {
         <div id="civitai-tab-mymodels" class="civitai-downloader-tab-content">
           <div class="civitai-mymodels-header">
             <div class="civitai-mymodels-controls">
-              <select id="civitai-mymodels-type-filter" class="civitai-select">
-                <option value="">All Types</option>
-              </select>
-              <select id="civitai-mymodels-sort" class="civitai-select" title="Sort models">
-                <option value="name_asc">Name (A → Z)</option>
-                <option value="name_desc">Name (Z → A)</option>
-                <option value="time_desc" selected>Newest First</option>
-                <option value="time_asc">Oldest First</option>
-                <option value="size_desc">Size (Large first)</option>
-                <option value="size_asc">Size (Small first)</option>
-              </select>
-              <input type="text" id="civitai-mymodels-search" class="civitai-input" placeholder="Filter by name...">
-              <span id="civitai-mymodels-count" class="civitai-mymodels-count"></span>
-              <button id="civitai-mymodels-refresh" class="civitai-button" title="Refresh list"><i class="fas fa-sync-alt"></i> Refresh</button>
+              <div class="civitai-mymodels-controls-row">
+                <select id="civitai-mymodels-type-filter" class="civitai-select">
+                  <option value="">All Types</option>
+                </select>
+                <select id="civitai-mymodels-sort" class="civitai-select" title="Sort models">
+                  <option value="name_asc">Name (A → Z)</option>
+                  <option value="name_desc">Name (Z → A)</option>
+                  <option value="time_desc" selected>Newest First</option>
+                  <option value="time_asc">Oldest First</option>
+                  <option value="size_desc">Size (Large first)</option>
+                  <option value="size_asc">Size (Small first)</option>
+                </select>
+                <input type="text" id="civitai-mymodels-search" class="civitai-input" placeholder="Filter by name...">
+                <select id="civitai-mymodels-limit" class="civitai-select" style="width:auto;" title="Items per page">
+                  <option value="25">25 / page</option>
+                  <option value="50" selected>50 / page</option>
+                  <option value="75">75 / page</option>
+                  <option value="100">100 / page</option>
+                </select>
+              </div>
+              <div class="civitai-mymodels-controls-row civitai-mymodels-controls-row--info">
+                <span id="civitai-mymodels-count" class="civitai-mymodels-count"></span>
+                <button id="civitai-mymodels-refresh" class="civitai-button" title="Refresh list"><i class="fas fa-sync-alt"></i> Refresh</button>
+              </div>
             </div>
           </div>
           <div id="civitai-mymodels-list" class="civitai-mymodels-list">
             <p>Click Refresh to load your local models.</p>
           </div>
+          <div id="civitai-mymodels-pagination" class="civitai-mymodels-pagination"></div>
         </div>
         <div id="civitai-tab-status" class="civitai-downloader-tab-content">
           <div id="civitai-status-content">

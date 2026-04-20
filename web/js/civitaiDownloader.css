@@ -777,6 +777,12 @@
     align-items: center;
 }
 
+.civitai-browse-search-input {
+    flex: 1 1 180px;
+    min-width: 140px;
+    max-width: 280px;
+}
+
 #civitai-tab-browse {
     display: none;
     flex-direction: column;
@@ -889,9 +895,20 @@
 
 .civitai-mymodels-controls {
     display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.civitai-mymodels-controls-row {
+    display: flex;
     gap: 8px;
     align-items: center;
     flex-wrap: nowrap;
+}
+
+.civitai-mymodels-controls-row--info {
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 /* Override global width:100% for selects/inputs inside the controls row */
@@ -937,7 +954,7 @@
     transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
     cursor: default;
     /* Fixed total height so body is always visible */
-    height: 240px;
+    height: 278px;
 }
 
 .civitai-mymodel-card:hover {
@@ -1072,11 +1089,28 @@
 }
 
 .civitai-mymodel-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     font-size: 0.7em;
     color: var(--comfy-text-color-secondary, #888);
+    overflow: hidden;
+}
+
+.civitai-mymodel-meta-line {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    opacity: 0.8;
+}
+.civitai-mymodel-meta-line i {
+    opacity: 0.55;
+    flex-shrink: 0;
+    width: 10px;
+    text-align: center;
 }
 
 /* ===== My Models Detail Modal ===== */
@@ -1332,7 +1366,7 @@
    MY MODELS — SORT ROW & ROW ENHANCEMENTS
    =================================================== */
 .civitai-mymodels-controls {
-    gap: 8px;
+    gap: 6px;
 }
 
 .civitai-mymodel-name {
@@ -1388,7 +1422,7 @@
     overflow: hidden;
     transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
     cursor: default;
-    height: 295px;
+    height: 318px;
 }
 
 .civitai-browse-card:hover {
@@ -1610,11 +1644,28 @@
 }
 
 .civitai-browse-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     font-size: 0.7em;
     color: var(--comfy-text-color-secondary, #888);
+    overflow: hidden;
+}
+
+.civitai-browse-card-meta-line {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    opacity: 0.8;
+}
+.civitai-browse-card-meta-line i {
+    opacity: 0.55;
+    flex-shrink: 0;
+    width: 10px;
+    text-align: center;
 }
 
 /* ===================================================
@@ -1980,4 +2031,138 @@
 /* Modal elevated shadow */
 .civitai-downloader-modal-content {
     box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(92,138,255,0.12);
+}
+
+/* ===================================================
+   MY MODELS PAGINATION
+   =================================================== */
+.civitai-mymodels-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0 4px;
+    flex-shrink: 0;
+}
+
+.civitai-pagination-info {
+    width: 100%;
+    text-align: center;
+    font-size: 0.8em;
+    opacity: 0.6;
+    margin-top: 4px;
+}
+
+/* ===================================================
+   ZOOMABLE IMAGE CURSOR
+   =================================================== */
+.civitai-zoomable {
+    cursor: zoom-in;
+}
+.civitai-browse-info-main-image.civitai-zoomable {
+    position: relative;
+}
+.civitai-mymodel-detail-preview.civitai-zoomable {
+    position: relative;
+    display: block;
+}
+
+/* ===================================================
+   IMAGE LIGHTBOX
+   =================================================== */
+#civitai-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+    animation: civitai-lightbox-fadein 0.15s ease;
+}
+
+@keyframes civitai-lightbox-fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.civitai-lightbox-close {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    background: rgba(0,0,0,0.5);
+    border: none;
+    color: #fff;
+    font-size: 32px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: background 0.15s;
+}
+.civitai-lightbox-close:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.civitai-lightbox-media {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 6px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+    cursor: default;
+    display: block;
+}
+
+/* ===================================================
+   CIVICOMFY LAUNCHER BUTTON
+   =================================================== */
+#civitai-downloader-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 13px;
+    background: linear-gradient(135deg, #3a5bcc 0%, #5c8aff 50%, #7c6af7 100%);
+    background-size: 200% 200%;
+    animation: civitai-btn-shimmer 4s ease infinite;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 6px;
+    font-size: 0.88em;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(92,138,255,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+    transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
+    white-space: nowrap;
+}
+
+#civitai-downloader-button i {
+    font-size: 1em;
+    filter: drop-shadow(0 0 3px rgba(255,255,255,0.4));
+}
+
+#civitai-downloader-button:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 18px rgba(92,138,255,0.55), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+#civitai-downloader-button:active {
+    transform: translateY(0);
+    filter: brightness(0.95);
+    box-shadow: 0 1px 6px rgba(92,138,255,0.3);
+}
+
+@keyframes civitai-btn-shimmer {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }

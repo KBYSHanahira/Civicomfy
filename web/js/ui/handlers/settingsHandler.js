@@ -116,6 +116,8 @@ export function saveBrowseSettings(ui) {
             sort: ui.browseSortSelect?.value || 'Most Downloaded',
             activeType: ui.browseActiveType || 'all',
             baseModels: ui.getBrowseSelectedBaseModels(),
+            searchQuery: ui.browseSearchInput?.value?.trim() || '',
+            limit: ui.browsePagination?.limit || 25,
         };
         setCookie(BROWSE_SETTINGS_COOKIE, JSON.stringify(data), 365);
     } catch (e) {
@@ -144,6 +146,17 @@ export function loadBrowseSettings(ui) {
             });
             ui.updateBrowseBaseModelLabel();
         }
+        if (data.searchQuery && ui.browseSearchInput) {
+            ui.browseSearchInput.value = data.searchQuery;
+        }
+        if (data.limit && ui.browseLimitSelect) {
+            const validLimits = ['25', '50', '75', '100'];
+            const limitStr = String(data.limit);
+            if (validLimits.includes(limitStr)) {
+                ui.browseLimitSelect.value = limitStr;
+                ui.browsePagination.limit = data.limit;
+            }
+        }
     } catch (e) {
         console.error('[Civicomfy] Failed to load browse settings:', e);
     }
@@ -157,6 +170,7 @@ export function saveMyModelsSettings(ui) {
         const data = {
             sort: ui.myModelsSortSelect?.value || 'time_desc',
             typeFilter: ui.myModelsTypeFilter?.value || '',
+            limit: ui.myModelsPagination?.limit || 50,
         };
         setCookie(MYMODELS_SETTINGS_COOKIE, JSON.stringify(data), 365);
     } catch (e) {
@@ -176,6 +190,14 @@ export function loadMyModelsSettings(ui) {
         // Store saved typeFilter so handleMyModelsLoad can restore it after populating options
         if (data.typeFilter !== undefined) {
             ui._savedMyModelsTypeFilter = data.typeFilter;
+        }
+        if (data.limit && ui.myModelsLimitSelect) {
+            const validLimits = ['25', '50', '75', '100'];
+            const limitStr = String(data.limit);
+            if (validLimits.includes(limitStr)) {
+                ui.myModelsLimitSelect.value = limitStr;
+                if (ui.myModelsPagination) ui.myModelsPagination.limit = data.limit;
+            }
         }
     } catch (e) {
         console.error('[Civicomfy] Failed to load My Models settings:', e);

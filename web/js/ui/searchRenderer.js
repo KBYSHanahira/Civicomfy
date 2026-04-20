@@ -8,6 +8,51 @@ const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 // Module-level cache so info modal can access full hit data
 const _browseHitData = new Map();
 
+/**
+ * Open a fullscreen lightbox to zoom an image or video.
+ */
+function _openLightbox(url, isVideo = false) {
+    const existing = document.getElementById('civitai-lightbox');
+    if (existing) existing.remove();
+
+    const lb = document.createElement('div');
+    lb.id = 'civitai-lightbox';
+    lb.className = 'civitai-lightbox';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'civitai-lightbox-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.title = 'Close';
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); lb.remove(); });
+
+    let media;
+    if (isVideo) {
+        media = document.createElement('video');
+        media.src = url;
+        media.autoplay = true;
+        media.loop = true;
+        media.muted = true;
+        media.controls = true;
+        media.setAttribute('playsinline', '');
+    } else {
+        media = document.createElement('img');
+        media.src = url;
+        media.alt = 'Full size image';
+    }
+    media.className = 'civitai-lightbox-media';
+    media.addEventListener('click', (e) => e.stopPropagation());
+
+    lb.appendChild(closeBtn);
+    lb.appendChild(media);
+    lb.addEventListener('click', () => lb.remove());
+
+    // ESC key closes lightbox
+    const onKey = (e) => { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', onKey); } };
+    document.addEventListener('keydown', onKey);
+
+    document.body.appendChild(lb);
+}
+
 // Return a consistent accent color for a model type
 function _typeColor(modelType) {
     const t = (modelType || '').toLowerCase();
@@ -189,15 +234,21 @@ export function renderBrowseCards(ui, items) {
         nameRow.appendChild(nameEl);
         nameRow.appendChild(infoBtn);
 
-        // Row 2: meta (type chip row removed — type & base model shown on preview image)
-        const metaParts = [
-            creator ? `<i class="fas fa-user" style="opacity:.6;margin-right:3px;"></i>${creator}` : '',
-            stats.downloadCount ? `<i class="fas fa-download" style="opacity:.6;margin-right:3px;"></i>${stats.downloadCount.toLocaleString()}` : '',
-        ].filter(Boolean);
-
-        const metaEl = document.createElement('span');
+        // Row 2: meta (split into per-line spans)
+        const metaEl = document.createElement('div');
         metaEl.className = 'civitai-browse-card-meta';
-        metaEl.innerHTML = metaParts.join(' &nbsp;·&nbsp; ');
+        if (creator) {
+            const creatorLine = document.createElement('span');
+            creatorLine.className = 'civitai-browse-card-meta-line';
+            creatorLine.innerHTML = `<i class="fas fa-user"></i> ${creator}`;
+            metaEl.appendChild(creatorLine);
+        }
+        if (stats.downloadCount) {
+            const dlLine = document.createElement('span');
+            dlLine.className = 'civitai-browse-card-meta-line';
+            dlLine.innerHTML = `<i class="fas fa-download"></i> ${stats.downloadCount.toLocaleString()}`;
+            metaEl.appendChild(dlLine);
+        }
 
         body.appendChild(nameRow);
         body.appendChild(metaEl);
@@ -307,9 +358,13 @@ function _renderBrowseInfoModal(ui, hit) {
     galleryWrap.className = 'civitai-browse-info-gallery';
 
     const mainImgWrap = document.createElement('div');
-    mainImgWrap.className = 'civitai-browse-info-main-image';
+    mainImgWrap.className = 'civitai-browse-info-main-image civitai-zoomable';
+    mainImgWrap.title = 'Click to zoom';
+
+    let _currentImg = images.length > 0 ? images[0] : null;
 
     function _setMainMedia(img) {
+        _currentImg = img;
         mainImgWrap.innerHTML = '';
         let el;
         if (img.type === 'video') {
@@ -325,6 +380,10 @@ function _renderBrowseInfoModal(ui, hit) {
         }
         mainImgWrap.appendChild(el);
     }
+
+    mainImgWrap.addEventListener('click', () => {
+        if (_currentImg?.url) _openLightbox(_currentImg.url, _currentImg.type === 'video');
+    });
 
     if (images.length > 0) {
         _setMainMedia(images[0]);
