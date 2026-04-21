@@ -14,6 +14,10 @@ import server
 import folder_paths
 from ...api.civitai import CivitaiAPI
 from ...config import METADATA_SUFFIX, PREVIEW_SUFFIX, METADATA_DOWNLOAD_TIMEOUT
+from ..maintenance_state import (
+    reset as maint_reset, update as maint_update, finish as maint_finish,
+    set_current_item as maint_set_item, is_stop_requested, consume_skip,
+)
 
 prompt_server = server.PromptServer.instance
 
@@ -163,24 +167,47 @@ async def route_update_thumbnails(request):
     api = CivitaiAPI(api_key or None)
     loop = asyncio.get_event_loop()
 
-    # Resolve missing thumbnail URLs via Civitai API first (sync)
+    # Resolve missing thumbnail URLs via Civitai API first
     for entry in models:
         if entry['thumb_url']:
             continue
+        if is_stop_requested():
+            break
         version_id = entry['version_id']
         model_id = entry['model_id']
+        maint_set_item(f"{entry['filename']} (ID: {version_id or model_id or '?'}) – looking up URL")
         try:
             version_info = None
             if version_id:
-                res = await loop.run_in_executor(None, api.get_model_version_info, int(version_id))
+                try:
+                    res = await asyncio.wait_for(
+                        loop.run_in_executor(None, api.get_model_version_info, int(version_id)),
+                        timeout=5.0
+                    )
+                except asyncio.TimeoutError:
+                    print(f"[UpdateThumbnail] Timeout looking up URL for {entry['filename']}, skipping")
+                    continue
                 if res and 'error' not in res:
                     version_info = res
+                elif isinstance(res, dict) and res.get('status_code') in (502, 503, 504):
+                    print(f"[UpdateThumbnail] Skipping URL lookup for {entry['filename']}: HTTP {res.get('status_code')}")
+                    continue
             if not version_info and model_id:
-                res = await loop.run_in_executor(None, api.get_model_info, int(model_id))
+                try:
+                    res = await asyncio.wait_for(
+                        loop.run_in_executor(None, api.get_model_info, int(model_id)),
+                        timeout=5.0
+                    )
+                except asyncio.TimeoutError:
+                    print(f"[UpdateThumbnail] Timeout looking up model info for {entry['filename']}, skipping")
+                    continue
                 if res and 'error' not in res:
                     versions = res.get('modelVersions') or []
                     if versions:
                         version_info = versions[0]
+                elif isinstance(res, dict) and res.get('status_code') in (502, 503, 504):
+                    print(f"[UpdateThumbnail] Skipping URL lookup for {entry['filename']}: HTTP {res.get('status_code')}")
+                    continue
             if version_info:
                 images = version_info.get('images') or []
                 for img in images:
@@ -195,6 +222,8 @@ async def route_update_thumbnails(request):
     skipped = 0
     failed = 0
     errors = []
+    total = len(models)
+    maint_reset('thumbnails', total)
 
     # Download thumbnails using aiohttp async session
     headers = {'User-Agent': 'Civicomfy/1.0'}
@@ -202,24 +231,64 @@ async def route_update_thumbnails(request):
         headers['Authorization'] = f'Bearer {api_key}'
 
     connector = aiohttp_lib.TCPConnector(limit=4)
-    async with aiohttp_lib.ClientSession(connector=connector, headers=headers) as session:
-        for entry in models:
-            if not entry['thumb_url']:
-                skipped += 1
-                continue
-            ok, err = await _download_image(session, entry['thumb_url'], entry['preview_path'])
-            if ok:
-                downloaded += 1
-            else:
-                failed += 1
-                errors.append(f"{entry['filename']}: {err}")
+    i = 0
+    try:
+        async with aiohttp_lib.ClientSession(connector=connector, headers=headers) as session:
+            for i, entry in enumerate(models):
+                # --- Stop check ---
+                if is_stop_requested():
+                    break
 
+                # --- Skip check ---
+                if consume_skip():
+                    skipped += 1
+                    maint_update(i + 1, downloaded, skipped, failed)
+                    continue
+
+                maint_set_item(f"{entry['filename']} (ID: {entry['version_id'] or '?'})")
+
+                if not entry['thumb_url']:
+                    skipped += 1
+                    maint_update(i + 1, downloaded, skipped, failed)
+                    continue
+
+                try:
+                    ok, err = await asyncio.wait_for(
+                        _download_image(session, entry['thumb_url'], entry['preview_path']),
+                        timeout=5.0
+                    )
+                except asyncio.TimeoutError:
+                    print(f"[UpdateThumbnail] Timeout downloading {entry['filename']}, skipping")
+                    skipped += 1
+                    maint_update(i + 1, downloaded, skipped, failed)
+                    continue
+
+                if ok:
+                    downloaded += 1
+                else:
+                    if err and any(code in err for code in ('HTTP 502', 'HTTP 503', 'HTTP 504')):
+                        print(f"[UpdateThumbnail] Skipping {entry['filename']}: {err}")
+                        skipped += 1
+                    else:
+                        failed += 1
+                        errors.append(f"{entry['filename']}: {err}")
+                maint_update(i + 1, downloaded, skipped, failed)
+    finally:
+        maint_finish()
+
+    stopped = is_stop_requested()
+    message = (
+        f"Stopped at {i + 1}/{total}. Downloaded {downloaded} thumbnails."
+        if stopped
+        else f"Done. Downloaded {downloaded} thumbnails, {skipped} skipped, {failed} failed."
+    )
     return web.json_response({
         'success': True,
-        'total': len(models),
+        'stopped': stopped,
+        'total': total,
         'downloaded': downloaded,
         'skipped': skipped,
         'failed': failed,
         'errors': errors[:20],
-        'message': f"Done. Downloaded {downloaded} thumbnails, {skipped} skipped, {failed} failed.",
+        'message': message,
     })

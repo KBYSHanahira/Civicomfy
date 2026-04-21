@@ -171,6 +171,18 @@ export class CivitaiDownloaderAPI {
     });
   }
 
+  static async getMaintenanceProgress() {
+    return await this._request("/civitai/maintenance_progress");
+  }
+
+  static async maintenanceStop() {
+    return await this._request("/civitai/maintenance_stop", { method: "POST" });
+  }
+
+  static async maintenanceSkip() {
+    return await this._request("/civitai/maintenance_skip", { method: "POST" });
+  }
+
   static async openModelFolder(relPath) {
     return await this._request("/civitai/open_model_folder", {
       method: "POST",

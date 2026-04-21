@@ -117,6 +117,9 @@ export class CivitaiDownloaderUI {
         this.refreshModelInfoBtn = this.modal.querySelector('#civitai-refresh-model-info-btn');
         this.updateThumbnailsBtn = this.modal.querySelector('#civitai-update-thumbnails-btn');
         this.maintenanceResultEl = this.modal.querySelector('#civitai-maintenance-result');
+        this.maintenanceControlsEl = this.modal.querySelector('#civitai-maintenance-controls');
+        this.maintenanceStopBtn = this.modal.querySelector('#civitai-maint-stop-btn');
+        this.maintenanceSkipBtn = this.modal.querySelector('#civitai-maint-skip-btn');
 
         // My Models Tab
         this.myModelsTypeFilter = this.modal.querySelector('#civitai-mymodels-type-filter');
@@ -341,7 +344,28 @@ export class CivitaiDownloaderUI {
     async handleRefreshModelInfo() {
         const btn = this.refreshModelInfoBtn;
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing…'; }
-        this._showMaintenanceResult('<i class="fas fa-spinner fa-spin"></i> Fetching model info from Civitai…', 'info');
+        if (this.maintenanceControlsEl) this.maintenanceControlsEl.style.display = 'flex';
+        this._showMaintenanceResult('<i class="fas fa-spinner fa-spin"></i> Fetching model info from Civitai… <strong>0/?</strong>', 'info');
+
+        // Poll progress every 600 ms while the POST is running
+        const pollInterval = setInterval(async () => {
+            try {
+                const prog = await CivitaiDownloaderAPI.getMaintenanceProgress();
+                if (prog && prog.active && prog.operation === 'refresh') {
+                    const skippedBadge = prog.skipped > 0
+                        ? ` &bull; <span style="color:var(--cfy-warning);">Skipped: ${prog.skipped}</span>`
+                        : '';
+                    const itemBadge = prog.current_item
+                        ? `<br><small style="opacity:0.75;font-style:italic;">${prog.current_item}</small>`
+                        : '';
+                    this._showMaintenanceResult(
+                        `<i class="fas fa-spinner fa-spin"></i> Refreshing model info… <strong>${prog.current}/${prog.total}</strong>${skippedBadge}${itemBadge}`,
+                        'info'
+                    );
+                }
+            } catch (e) { /* ignore polling errors */ }
+        }, 600);
+
         try {
             const types = this._getMaintenanceSelectedTypes();
             const result = await CivitaiDownloaderAPI.refreshModelInfo({
@@ -349,13 +373,19 @@ export class CivitaiDownloaderUI {
                 api_key: this.settings.apiKey || '',
             });
             if (result && result.success) {
+                const skippedPart = result.skipped > 0
+                    ? ` &bull; <span style="color:var(--cfy-warning);">Skipped: ${result.skipped}</span>`
+                    : '';
+                const stoppedNote = result.stopped
+                    ? `<br><small style="color:var(--cfy-warning);"><i class="fas fa-stop-circle"></i> Stopped early by user.</small>`
+                    : '';
                 this._showMaintenanceResult(
                     `<i class="fas fa-check-circle"></i> <strong>${result.message}</strong>` +
-                    `<br><small>Total: ${result.total} &bull; Updated: ${result.updated} &bull; Skipped: ${result.skipped} &bull; Failed: ${result.failed}</small>` +
+                    `<br><small>Total: ${result.total} &bull; Updated: ${result.updated}${skippedPart} &bull; Failed: ${result.failed}</small>` +
+                    stoppedNote +
                     (result.errors?.length ? `<br><small style="color:var(--cfy-danger);">Errors: ${result.errors.slice(0, 5).join(', ')}</small>` : ''),
-                    'success'
+                    result.stopped ? 'info' : 'success'
                 );
-                // Invalidate my-models cache so next visit re-fetches
                 this._myModelsLoaded = false;
             } else {
                 this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${result?.error || 'Unknown error'}`, 'error');
@@ -363,6 +393,8 @@ export class CivitaiDownloaderUI {
         } catch (err) {
             this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${err.message || 'Request failed'}`, 'error');
         } finally {
+            clearInterval(pollInterval);
+            if (this.maintenanceControlsEl) this.maintenanceControlsEl.style.display = 'none';
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-database"></i> Refresh Model Info'; }
         }
     }
@@ -370,7 +402,28 @@ export class CivitaiDownloaderUI {
     async handleUpdateThumbnails() {
         const btn = this.updateThumbnailsBtn;
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating…'; }
-        this._showMaintenanceResult('<i class="fas fa-spinner fa-spin"></i> Downloading thumbnails…', 'info');
+        if (this.maintenanceControlsEl) this.maintenanceControlsEl.style.display = 'flex';
+        this._showMaintenanceResult('<i class="fas fa-spinner fa-spin"></i> Downloading thumbnails… <strong>0/?</strong>', 'info');
+
+        // Poll progress every 600 ms while the POST is running
+        const pollInterval = setInterval(async () => {
+            try {
+                const prog = await CivitaiDownloaderAPI.getMaintenanceProgress();
+                if (prog && prog.active && prog.operation === 'thumbnails') {
+                    const skippedBadge = prog.skipped > 0
+                        ? ` &bull; <span style="color:var(--cfy-warning);">Skipped: ${prog.skipped}</span>`
+                        : '';
+                    const itemBadge = prog.current_item
+                        ? `<br><small style="opacity:0.75;font-style:italic;">${prog.current_item}</small>`
+                        : '';
+                    this._showMaintenanceResult(
+                        `<i class="fas fa-spinner fa-spin"></i> Downloading thumbnails… <strong>${prog.current}/${prog.total}</strong>${skippedBadge}${itemBadge}`,
+                        'info'
+                    );
+                }
+            } catch (e) { /* ignore polling errors */ }
+        }, 600);
+
         try {
             const types = this._getMaintenanceSelectedTypes();
             const forceRedownload = this.maintenanceForceThumbCheckbox?.checked || false;
@@ -380,13 +433,19 @@ export class CivitaiDownloaderUI {
                 api_key: this.settings.apiKey || '',
             });
             if (result && result.success) {
+                const skippedPart = result.skipped > 0
+                    ? ` &bull; <span style="color:var(--cfy-warning);">Skipped: ${result.skipped}</span>`
+                    : '';
+                const stoppedNote = result.stopped
+                    ? `<br><small style="color:var(--cfy-warning);"><i class="fas fa-stop-circle"></i> Stopped early by user.</small>`
+                    : '';
                 this._showMaintenanceResult(
                     `<i class="fas fa-check-circle"></i> <strong>${result.message}</strong>` +
-                    `<br><small>Total: ${result.total} &bull; Downloaded: ${result.downloaded} &bull; Skipped: ${result.skipped} &bull; Failed: ${result.failed}</small>` +
+                    `<br><small>Total: ${result.total} &bull; Downloaded: ${result.downloaded}${skippedPart} &bull; Failed: ${result.failed}</small>` +
+                    stoppedNote +
                     (result.errors?.length ? `<br><small style="color:var(--cfy-danger);">Errors: ${result.errors.slice(0, 5).join(', ')}</small>` : ''),
-                    'success'
+                    result.stopped ? 'info' : 'success'
                 );
-                // Invalidate my-models cache
                 this._myModelsLoaded = false;
             } else {
                 this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${result?.error || 'Unknown error'}`, 'error');
@@ -394,6 +453,8 @@ export class CivitaiDownloaderUI {
         } catch (err) {
             this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${err.message || 'Request failed'}`, 'error');
         } finally {
+            clearInterval(pollInterval);
+            if (this.maintenanceControlsEl) this.maintenanceControlsEl.style.display = 'none';
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-image"></i> Update Thumbnails'; }
         }
     }

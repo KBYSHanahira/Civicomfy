@@ -271,6 +271,16 @@ export function modalTemplate(settings = {}) {
                   </button>
                 </div>
 
+                <!-- Controls shown while an operation is running -->
+                <div id="civitai-maintenance-controls" style="display:none; margin-top:8px; gap:6px; flex-wrap:wrap;">
+                  <button type="button" id="civitai-maint-stop-btn" class="civitai-button danger small">
+                    <i class="fas fa-stop"></i> Stop
+                  </button>
+                  <button type="button" id="civitai-maint-skip-btn" class="civitai-button secondary small">
+                    <i class="fas fa-forward"></i> Skip
+                  </button>
+                </div>
+
                 <!-- Progress / result area -->
                 <div id="civitai-maintenance-result" class="civitai-maintenance-result" style="display:none;"></div>
               </div>

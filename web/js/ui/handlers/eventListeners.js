@@ -433,4 +433,14 @@ export function setupEventListeners(ui) {
     if (ui.updateThumbnailsBtn) {
         ui.updateThumbnailsBtn.addEventListener('click', () => ui.handleUpdateThumbnails());
     }
+    if (ui.maintenanceStopBtn) {
+        ui.maintenanceStopBtn.addEventListener('click', async () => {
+            try { await CivitaiDownloaderAPI.maintenanceStop(); } catch (e) { /* ignore */ }
+        });
+    }
+    if (ui.maintenanceSkipBtn) {
+        ui.maintenanceSkipBtn.addEventListener('click', async () => {
+            try { await CivitaiDownloaderAPI.maintenanceSkip(); } catch (e) { /* ignore */ }
+        });
+    }
 }

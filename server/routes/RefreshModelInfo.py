@@ -14,6 +14,10 @@ import server
 import folder_paths
 from ...api.civitai import CivitaiAPI
 from ...config import METADATA_SUFFIX, PREVIEW_SUFFIX
+from ..maintenance_state import (
+    reset as maint_reset, update as maint_update, finish as maint_finish,
+    set_current_item as maint_set_item, is_stop_requested, consume_skip,
+)
 
 prompt_server = server.PromptServer.instance
 
@@ -186,53 +190,114 @@ async def route_refresh_model_info(request):
     errors = []
 
     loop = asyncio.get_event_loop()
+    total = len(models)
+    maint_reset('refresh', total)
 
-    for entry in models:
-        version_id = entry['version_id']
-        model_id = entry['model_id']
-        sidecar = entry['sidecar']
-        base_no_ext = entry['base_no_ext']
+    try:
+        for i, entry in enumerate(models):
+            # --- Stop check ---
+            if is_stop_requested():
+                break
 
-        try:
-            version_info = {}
-            model_info = {}
+            version_id = entry['version_id']
+            model_id = entry['model_id']
+            sidecar = entry['sidecar']
+            base_no_ext = entry['base_no_ext']
+            entry_updated = False
+            entry_skipped = False
+            entry_failed = False
 
-            # Fetch version info (preferred)
-            if version_id:
-                result = await loop.run_in_executor(None, api.get_model_version_info, int(version_id))
-                if result and 'error' not in result:
-                    version_info = result
-                    if not model_id and version_info.get('modelId'):
-                        model_id = version_info['modelId']
+            item_label = f"{entry['filename']} (ID: {version_id or model_id or '?'})"
+            maint_set_item(item_label)
 
-            # Fetch model info
-            if model_id:
-                result = await loop.run_in_executor(None, api.get_model_info, int(model_id))
-                if result and 'error' not in result:
-                    model_info = result
+            # --- Skip check (requested before this item started) ---
+            if consume_skip():
+                entry_skipped = True
 
-            if not version_info and not model_info:
-                skipped += 1
-                continue
+            try:
+                version_info = {}
+                model_info = {}
 
-            merged = _merge_sidecar(sidecar, model_info, version_info)
-            if _write_sidecar(base_no_ext, merged):
+                # Fetch version info (preferred) – 5-second timeout
+                if not entry_skipped and version_id:
+                    try:
+                        result = await asyncio.wait_for(
+                            loop.run_in_executor(None, api.get_model_version_info, int(version_id)),
+                            timeout=5.0
+                        )
+                    except asyncio.TimeoutError:
+                        print(f"[RefreshModelInfo] Timeout for {entry['filename']}, skipping")
+                        entry_skipped = True
+                        result = None
+                    if result and 'error' not in result:
+                        version_info = result
+                        if not model_id and version_info.get('modelId'):
+                            model_id = version_info['modelId']
+                    elif isinstance(result, dict) and result.get('status_code') in (502, 503, 504):
+                        print(f"[RefreshModelInfo] Skipping {entry['filename']}: HTTP {result.get('status_code')}")
+                        entry_skipped = True
+
+                # Check skip after first API call
+                if not entry_skipped and consume_skip():
+                    entry_skipped = True
+
+                # Fetch model info – 5-second timeout
+                if not entry_skipped and model_id:
+                    try:
+                        result = await asyncio.wait_for(
+                            loop.run_in_executor(None, api.get_model_info, int(model_id)),
+                            timeout=5.0
+                        )
+                    except asyncio.TimeoutError:
+                        print(f"[RefreshModelInfo] Timeout fetching model info for {entry['filename']}, skipping")
+                        entry_skipped = True
+                        result = None
+                    if result and 'error' not in result:
+                        model_info = result
+                    elif isinstance(result, dict) and result.get('status_code') in (502, 503, 504):
+                        print(f"[RefreshModelInfo] Skipping {entry['filename']}: HTTP {result.get('status_code')}")
+                        entry_skipped = True
+
+                if not entry_skipped and not version_info and not model_info:
+                    entry_skipped = True
+
+                if not entry_skipped:
+                    merged = _merge_sidecar(sidecar, model_info, version_info)
+                    if _write_sidecar(base_no_ext, merged):
+                        entry_updated = True
+                    else:
+                        entry_failed = True
+                        errors.append(entry['filename'])
+
+            except Exception as e:
+                print(f"[RefreshModelInfo] Error processing {entry['filename']}: {e}")
+                entry_failed = True
+                errors.append(f"{entry['filename']}: {str(e)[:100]}")
+
+            if entry_updated:
                 updated += 1
-            else:
+            elif entry_skipped:
+                skipped += 1
+            elif entry_failed:
                 failed += 1
-                errors.append(entry['filename'])
 
-        except Exception as e:
-            print(f"[RefreshModelInfo] Error processing {entry['filename']}: {e}")
-            failed += 1
-            errors.append(f"{entry['filename']}: {str(e)[:100]}")
+            maint_update(i + 1, updated, skipped, failed)
+    finally:
+        maint_finish()
 
+    stopped = is_stop_requested()
+    message = (
+        f"Stopped at {i + 1}/{total}. Updated {updated} models."
+        if stopped
+        else f"Done. Updated {updated}/{total} models."
+    )
     return web.json_response({
         'success': True,
-        'total': len(models),
+        'stopped': stopped,
+        'total': total,
         'updated': updated,
         'skipped': skipped,
         'failed': failed,
         'errors': errors[:20],
-        'message': f"Done. Updated {updated}/{len(models)} models.",
+        'message': message,
     })

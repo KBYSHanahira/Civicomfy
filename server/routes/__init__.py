@@ -22,5 +22,6 @@ from . import OpenPath
 from . import RetryDownload
 from . import SearchModels
 from . import DownloadModelHF
+from . import MaintenanceProgress
 
 print("[Civicomfy] All server route modules loaded.")
