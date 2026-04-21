@@ -124,6 +124,23 @@ async def route_get_model_details(request):
              placeholder_filename = os.path.basename(PLACEHOLDER_IMAGE_PATH) if PLACEHOLDER_IMAGE_PATH else "placeholder.jpeg"
              thumbnail_url = f"./{placeholder_filename}" # Relative path for JS
 
+        # Build preview images list (up to 8 images for gallery)
+        preview_images = []
+        if images and isinstance(images, list):
+            for img in images[:8]:
+                if isinstance(img, dict) and img.get("url"):
+                    try:
+                        lvl = int(img.get("nsfwLevel", 0) or 0)
+                    except Exception:
+                        lvl = 0
+                    preview_images.append({
+                        "url": img["url"],
+                        "nsfwLevel": lvl,
+                        "type": img.get("type", "image"),
+                        "width": img.get("width"),
+                        "height": img.get("height"),
+                    })
+
         # Build minimal files listing for selection in UI/clients
         files_list = []
         vfiles = version_info.get("files", []) or []
@@ -169,9 +186,11 @@ async def route_get_model_details(request):
             "files": files_list,
             "thumbnail_url": thumbnail_url,
             "nsfw_level": nsfw_level,
+            "preview_images": preview_images,
             # Optionally include basic version info like baseModel
             "base_model": version_info.get("baseModel", "N/A"),
-            # You could add tags here too if desired: model_info.get('tags', [])
+            "tags": model_info.get("tags", []),
+            "trained_words": version_info.get("trainedWords", []),
         })
 
     except web.HTTPError as http_err:

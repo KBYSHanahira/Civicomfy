@@ -157,7 +157,6 @@ export function modalTemplate(settings = {}) {
           </div>
           <div id="civitai-mymodels-pagination" class="civitai-mymodels-pagination"></div>
         </div>
-        </div>
         <div id="civitai-tab-status" class="civitai-downloader-tab-content">
           <div id="civitai-status-content">
             <div class="civitai-status-section">

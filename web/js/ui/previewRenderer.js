@@ -6,91 +6,184 @@ export function renderDownloadPreview(ui, data) {
   if (!ui.downloadPreviewArea) return;
   ui.ensureFontAwesome();
 
-  const modelId = data.model_id;
-  const modelName = data.model_name || 'Untitled Model';
-  const creator = data.creator_username || 'Unknown Creator';
-  const modelType = data.model_type || 'N/A';
-  const versionName = data.version_name || 'N/A';
-  const baseModel = data.base_model || 'N/A';
-  const stats = data.stats || {};
-  const descriptionHtml = data.description_html || '<p><em>No description.</em></p>';
-  const version_description_html = data.version_description_html || '<p><em>No description.</em></p>';
-  const fileInfo = data.file_info || {};
-  const files = Array.isArray(data.files) ? data.files : [];
-  const thumbnail = data.thumbnail_url || PLACEHOLDER_IMAGE_URL;
-  const nsfwLevel = Number(data.nsfw_level ?? 0);
+  const modelId      = data.model_id;
+  const modelName    = data.model_name || 'Untitled Model';
+  const creator      = data.creator_username || 'Unknown Creator';
+  const modelType    = data.model_type || 'N/A';
+  const versionName  = data.version_name || 'N/A';
+  const baseModel    = data.base_model || 'N/A';
+  const stats        = data.stats || {};
+  const descHtml     = data.description_html || '<p><em>No description.</em></p>';
+  const verDescHtml  = data.version_description_html || '<p><em>No description.</em></p>';
+  const fileInfo     = data.file_info || {};
+  const files        = Array.isArray(data.files) ? data.files : [];
+  const tags         = Array.isArray(data.tags) ? data.tags.slice(0, 12) : [];
+  const trainedWords = Array.isArray(data.trained_words) ? data.trained_words : [];
+  const previewImages = Array.isArray(data.preview_images) ? data.preview_images : [];
+  const nsfwLevel    = Number(data.nsfw_level ?? 0);
   const blurMinLevel = Number(ui.settings?.nsfwBlurMinLevel ?? 4);
-  const shouldBlur = ui.settings?.hideMatureInSearch === true && nsfwLevel >= blurMinLevel;
-  const civitaiLink = `https://civitai.com/models/${modelId}${data.version_id ? '?modelVersionId=' + data.version_id : ''}`;
+  const shouldBlur   = ui.settings?.hideMatureInSearch === true && nsfwLevel >= blurMinLevel;
+  const civitaiLink  = `https://civitai.com/models/${modelId}${data.version_id ? '?modelVersionId=' + data.version_id : ''}`;
+  const onError      = `this.onerror=null; this.src='${PLACEHOLDER_IMAGE_URL}';`;
+  const thumbnail    = data.thumbnail_url || PLACEHOLDER_IMAGE_URL;
 
-  const onErrorScript = `this.onerror=null; this.src='${PLACEHOLDER_IMAGE_URL}'; this.style.backgroundColor='#444';`;
+  // Gallery images: prefer previewImages array, fall back to thumbnail
+  const galleryImgs = previewImages.length > 0
+    ? previewImages
+    : [{ url: thumbnail, nsfwLevel }];
 
-  const overlayHtml = shouldBlur ? `<div class="civitai-nsfw-overlay" title="R-rated: click to reveal">R</div>` : '';
-  const containerClasses = `civitai-thumbnail-container${shouldBlur ? ' blurred' : ''}`;
+  function isImgBlurred(img) {
+    return shouldBlur && (img.nsfwLevel ?? 0) >= blurMinLevel;
+  }
 
-  const previewHtml = `
-    <div class="civitai-search-item" style="background-color: var(--comfy-input-bg);">
-      <div class="${containerClasses}" data-nsfw-level="${Number.isFinite(nsfwLevel) ? nsfwLevel : ''}">
-        <img src="${thumbnail}" alt="${modelName} thumbnail" class="civitai-search-thumbnail" loading="lazy" onerror="${onErrorScript}">
-        ${overlayHtml}
-        <div class="civitai-type-badge">${modelType}</div>
-      </div>
-      <div class="civitai-search-info">
-        <h4>${modelName} <span style="font-weight: normal; font-size: 0.9em;">by ${creator}</span></h4>
-        <p style="font-weight: bold;">Version: ${versionName} <span class="base-model-badge" style="margin-left: 5px;">${baseModel}</span></p>
-        <div class="civitai-search-stats" title="Stats: Downloads / Rating (Count) / Likes">
-          <span title="Downloads"><i class="fas fa-download"></i> ${stats.downloads?.toLocaleString() || 0}</span>
-          <span title="Likes"><i class="fas fa-thumbs-up"></i> ${stats.likes?.toLocaleString(0) || 0}</span>
-          <span title="Dislikes"><i class="fas fa-thumbs-down"></i> ${stats.dislikes?.toLocaleString() || 0}</span>
-          <span title="Buzz"><i class="fas fa-bolt"></i> ${stats.buzz?.toLocaleString() || 0}</span>
+  // Thumbnail strip
+  const thumbsHtml = galleryImgs.map((img, i) => `
+    <div class="cfy-prev-gallery-thumb${i === 0 ? ' active' : ''}" data-idx="${i}">
+      <img src="${img.url}" loading="lazy" onerror="${onError}" class="${isImgBlurred(img) ? 'blurred' : ''}">
+      ${isImgBlurred(img) ? '<span class="cfy-prev-nsfw-badge">R</span>' : ''}
+    </div>`).join('');
+
+  // Stats row
+  function statItem(icon, val, tip) {
+    const fmt = (typeof val === 'number') ? val.toLocaleString() : (val || '0');
+    return `<div class="cfy-prev-stat" title="${tip}"><i class="fas fa-${icon}"></i><span>${fmt}</span></div>`;
+  }
+
+  // File chips
+  function chip(label) {
+    return label && label !== 'N/A' ? `<span class="cfy-prev-chip">${label}</span>` : '';
+  }
+
+  // Files dropdown
+  const filesDropdown = files.length > 1 ? `
+    <div class="cfy-prev-section">
+      <div class="cfy-prev-section-label"><i class="fas fa-file-alt"></i> File Variant</div>
+      <select id="civitai-file-select" class="civitai-select" style="margin-top:4px;">
+        <option value="">Auto (primary / best)</option>
+        ${files.map(f => {
+          const id   = f.id ?? '';
+          const name = (f.name || '').replace(/</g, '&lt;');
+          const fmt  = f.format || '';
+          const prec = (f.precision || '').toUpperCase();
+          const ms   = f.model_size || '';
+          const sz   = typeof f.size_kb === 'number' ? ui.formatBytes(f.size_kb * 1024) : '';
+          const label = [fmt, prec, ms, sz].filter(Boolean).join(' · ');
+          const dis  = f.downloadable ? '' : 'disabled';
+          return `<option value="${id}" ${dis}>${name}${label ? ' — ' + label : ''}${f.downloadable ? '' : ' (unavailable)'}</option>`;
+        }).join('')}
+      </select>
+    </div>` : `<input type="hidden" id="civitai-file-select" value="">`;
+
+  const hero0 = galleryImgs[0];
+  const html = `
+    <div class="cfy-preview-card">
+
+      <!-- LEFT: image gallery -->
+      <div class="cfy-prev-gallery">
+        <div class="cfy-prev-gallery-main" id="cfy-prev-main-wrap">
+          <img id="cfy-prev-hero" src="${hero0.url}" loading="lazy" onerror="${onError}"
+               class="${isImgBlurred(hero0) ? 'blurred' : ''}">
+          ${isImgBlurred(hero0) ? '<span class="cfy-prev-nsfw-badge large">R</span>' : ''}
         </div>
-        <p style="font-weight: bold; margin-top: 10px;">Primary File:</p>
-        <p style="font-size: 0.9em; color: #ccc;">
-          Name: ${fileInfo.name || 'N/A'}<br>
-          Size: ${ui.formatBytes(fileInfo.size_kb * 1024) || 'N/A'} <br>
-          Format: ${fileInfo.format || 'N/A'}<br>
-          Precision: ${fileInfo.precision || 'N/A'}<br>
-          Model Size: ${fileInfo.model_size || 'N/A'}
-        </p>
-        ${files.length > 0 ? `
-          <div class=\"civitai-form-group\" style=\"margin-top: 10px;\">
-            <label for=\"civitai-file-select\">Choose File (optional)</label>
-            <select id=\"civitai-file-select\" class=\"civitai-select\">
-              <option value=\"\">Auto (primary/best)</option>
-              ${files.map(f => {
-                const id = f.id ?? '';
-                const name = (f.name || '').replace(/</g,'&lt;');
-                const fmt = f.format || 'N/A';
-                const prec = (f.precision || '').toUpperCase();
-                const msize = f.model_size || '';
-                const size = (typeof f.size_kb === 'number') ? ui.formatBytes(f.size_kb * 1024) : 'N/A';
-                const disabled = f.downloadable ? '' : 'disabled';
-                const title = f.downloadable ? '' : ' (not downloadable)';
-                const extras = [prec, msize].filter(Boolean).join(' • ');
-                return `<option value=\"${id}\" ${disabled}>#${id} • ${name} • ${fmt}${extras ? ' • ' + extras : ''} • ${size}${title}</option>`;
-              }).join('')}
-            </select>
-            <p style=\"font-size: 0.9em; color: #aaa; margin-top: 6px;\">Pick other variants when available.</p>
-          </div>
-        ` : ''}
-        <a href="${civitaiLink}" target="_blank" rel="noopener noreferrer" class="civitai-button small" title="Open on Civitai website" style="margin-top: 5px; display: inline-block;">
-          View on Civitai <i class="fas fa-external-link-alt"></i>
-        </a>
+        ${galleryImgs.length > 1 ? `<div class="cfy-prev-thumbstrip">${thumbsHtml}</div>` : ''}
       </div>
-    </div>
-    <div style="margin-top: 15px;">
-      <h5 style="margin-bottom: 5px;">Model Description:</h5>
-      <div class="model-description-content" style="max-height: 200px; overflow-y: auto; background-color: var(--comfy-input-bg); padding: 10px; border-radius: 4px; font-size: 0.9em; border: 1px solid var(--border-color, #555);">
-        ${descriptionHtml}
-      </div>
-    </div>
-    <div style="margin-top: 15px;">
-      <h5 style="margin-bottom: 5px;">Version Description:</h5>
-      <div class="model-description-content" style="max-height: 200px; overflow-y: auto; background-color: var(--comfy-input-bg); padding: 10px; border-radius: 4px; font-size: 0.9em; border: 1px solid var(--border-color, #555);">
-        ${version_description_html}
-      </div>
-    </div>
-  `;
 
-  ui.downloadPreviewArea.innerHTML = previewHtml;
+      <!-- RIGHT: details -->
+      <div class="cfy-prev-info">
+
+        <div class="cfy-prev-header">
+          <span class="cfy-prev-type-badge">${modelType}</span>
+          <h3 class="cfy-prev-title">${modelName}</h3>
+          <div class="cfy-prev-meta">
+            <span><i class="fas fa-user"></i> ${creator}</span>
+            <span><i class="fas fa-code-branch"></i> ${versionName}</span>
+            <span class="cfy-prev-base-badge">${baseModel}</span>
+          </div>
+        </div>
+
+        <div class="cfy-prev-stats">
+          ${statItem('download', stats.downloads, 'Downloads')}
+          ${statItem('thumbs-up', stats.likes, 'Likes')}
+          ${statItem('thumbs-down', stats.dislikes, 'Dislikes')}
+          ${statItem('bolt', stats.buzz, 'Buzz')}
+        </div>
+
+        <div class="cfy-prev-section">
+          <div class="cfy-prev-section-label"><i class="fas fa-file-archive"></i> Primary File</div>
+          <div class="cfy-prev-file-name" title="${fileInfo.name || ''}">${fileInfo.name || 'N/A'}</div>
+          <div class="cfy-prev-chips">
+            ${chip(fileInfo.size_kb ? ui.formatBytes(fileInfo.size_kb * 1024) : '')}
+            ${chip(fileInfo.format)}
+            ${chip(fileInfo.precision && fileInfo.precision !== 'N/A' ? fileInfo.precision.toUpperCase() : '')}
+            ${chip(fileInfo.model_size)}
+          </div>
+        </div>
+
+        ${filesDropdown}
+
+        ${trainedWords.length > 0 ? `
+        <div class="cfy-prev-section">
+          <div class="cfy-prev-section-label"><i class="fas fa-pen-nib"></i> Trigger Words</div>
+          <div class="cfy-prev-words">
+            ${trainedWords.map(w => `<span class="cfy-prev-trained-word">${w}</span>`).join('')}
+          </div>
+        </div>` : ''}
+
+        ${tags.length > 0 ? `
+        <div class="cfy-prev-section">
+          <div class="cfy-prev-section-label"><i class="fas fa-tags"></i> Tags</div>
+          <div class="cfy-prev-tags">
+            ${tags.map(t => `<span class="cfy-prev-tag">${t}</span>`).join('')}
+          </div>
+        </div>` : ''}
+
+        <details class="cfy-prev-details">
+          <summary><i class="fas fa-align-left"></i> Model Description</summary>
+          <div class="cfy-prev-desc-body">${descHtml}</div>
+        </details>
+
+        <details class="cfy-prev-details">
+          <summary><i class="fas fa-sticky-note"></i> Version Notes</summary>
+          <div class="cfy-prev-desc-body">${verDescHtml}</div>
+        </details>
+
+        <a href="${civitaiLink}" target="_blank" rel="noopener noreferrer"
+           class="civitai-button small secondary" style="margin-top:4px;align-self:flex-start;">
+          <i class="fas fa-external-link-alt"></i> View on Civitai
+        </a>
+
+      </div>
+    </div>`;
+
+  ui.downloadPreviewArea.innerHTML = html;
+
+  // Gallery thumb interaction
+  if (galleryImgs.length > 1) {
+    const thumbEls  = ui.downloadPreviewArea.querySelectorAll('.cfy-prev-gallery-thumb');
+    const heroEl    = ui.downloadPreviewArea.querySelector('#cfy-prev-hero');
+    const wrapEl    = ui.downloadPreviewArea.querySelector('#cfy-prev-main-wrap');
+
+    thumbEls.forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = parseInt(el.dataset.idx, 10);
+        const img = galleryImgs[idx];
+        if (!img) return;
+
+        thumbEls.forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+
+        heroEl.src = img.url;
+        heroEl.className = isImgBlurred(img) ? 'blurred' : '';
+
+        const oldBadge = wrapEl.querySelector('.cfy-prev-nsfw-badge.large');
+        if (oldBadge) oldBadge.remove();
+        if (isImgBlurred(img)) {
+          const b = document.createElement('span');
+          b.className = 'cfy-prev-nsfw-badge large';
+          b.textContent = 'R';
+          wrapEl.appendChild(b);
+        }
+      });
+    });
+  }
 }
