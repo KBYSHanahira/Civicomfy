@@ -7,16 +7,27 @@ export class Feedback {
   }
 
   ensureFontAwesome() {
-    if (!document.getElementById('civitai-fontawesome-link')) {
-      const faLink = document.createElement('link');
-      faLink.id = 'civitai-fontawesome-link';
-      faLink.rel = 'stylesheet';
-      faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
-      faLink.integrity = 'sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==';
-      faLink.crossOrigin = 'anonymous';
-      faLink.referrerPolicy = 'no-referrer';
-      document.head.appendChild(faLink);
-    }
+    if (document.getElementById('civitai-fontawesome-link')) return;
+
+    const localPath = '/extensions/Civicomfy/fontawesome/css/all.min.css';
+    const cdnPath   = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
+
+    const faLink = document.createElement('link');
+    faLink.id   = 'civitai-fontawesome-link';
+    faLink.rel  = 'stylesheet';
+    faLink.href = localPath;
+
+    // If local file fails (first-run before files exist), fall back to CDN
+    faLink.onerror = () => {
+      if (faLink.href !== cdnPath) {
+        console.warn('[Civicomfy] Local Font Awesome not found, falling back to CDN.');
+        faLink.removeAttribute('integrity');
+        faLink.removeAttribute('crossorigin');
+        faLink.href = cdnPath;
+      }
+    };
+
+    document.head.appendChild(faLink);
   }
 
   show(message, type = 'info', duration = 3000) {

@@ -69,7 +69,7 @@ export class CivitaiDownloaderUI {
         this.downloadSubmitButton = this.modal.querySelector('#civitai-download-submit');
 
         // Browse Tab
-        this.browseTypeTabsContainer = this.modal.querySelector('#civitai-browse-type-tabs');
+        this.browseTypeSelect = this.modal.querySelector('#civitai-browse-type-select');
         this.browseSearchModeSelect = this.modal.querySelector('#civitai-browse-search-mode');
         this.browseSearchInput = this.modal.querySelector('#civitai-browse-search');
         this.browseSortSelect = this.modal.querySelector('#civitai-browse-sort');
@@ -81,6 +81,7 @@ export class CivitaiDownloaderUI {
         this.browseBaseModelPickerSearch = this.modal.querySelector('#civitai-browse-base-model-search');
         this.browseBaseModelClearButton = this.modal.querySelector('#civitai-browse-base-model-clear');
         this.browseRefreshButton = this.modal.querySelector('#civitai-browse-refresh');
+        this.browseCardSizeSlider = this.modal.querySelector('#civitai-browse-card-size');
         this.browseResultsContainer = this.modal.querySelector('#civitai-browse-results');
         this.browsePaginationContainer = this.modal.querySelector('#civitai-browse-pagination');
         this.browseSelectedBar = this.modal.querySelector('#civitai-browse-selected-bar');
@@ -109,12 +110,21 @@ export class CivitaiDownloaderUI {
         this.settingsNsfwThresholdInput = this.modal.querySelector('#civitai-settings-nsfw-threshold');
         this.settingsSaveButton = this.modal.querySelector('#civitai-settings-save');
 
+        // Settings – Model Maintenance
+        this.maintenanceTypePicker = this.modal.querySelector('#civitai-maintenance-type-picker');
+        this.maintenanceAllCheckbox = this.modal.querySelector('#civitai-maint-all');
+        this.maintenanceForceThumbCheckbox = this.modal.querySelector('#civitai-maint-force-thumb');
+        this.refreshModelInfoBtn = this.modal.querySelector('#civitai-refresh-model-info-btn');
+        this.updateThumbnailsBtn = this.modal.querySelector('#civitai-update-thumbnails-btn');
+        this.maintenanceResultEl = this.modal.querySelector('#civitai-maintenance-result');
+
         // My Models Tab
         this.myModelsTypeFilter = this.modal.querySelector('#civitai-mymodels-type-filter');
         this.myModelsSearchInput = this.modal.querySelector('#civitai-mymodels-search');
         this.myModelsSortSelect = this.modal.querySelector('#civitai-mymodels-sort');
         this.myModelsLimitSelect = this.modal.querySelector('#civitai-mymodels-limit');
         this.myModelsRefreshButton = this.modal.querySelector('#civitai-mymodels-refresh');
+        this.myModelsCardSizeSlider = this.modal.querySelector('#civitai-mymodels-card-size');
         this.myModelsListContainer = this.modal.querySelector('#civitai-mymodels-list');
         this.myModelsPaginationContainer = this.modal.querySelector('#civitai-mymodels-pagination');
         this.myModelsCountEl = this.modal.querySelector('#civitai-mymodels-count');
@@ -156,9 +166,9 @@ export class CivitaiDownloaderUI {
             this.downloadModelTypeSelect.innerHTML = '';
             this.settingsDefaultTypeSelect.innerHTML = '';
 
-            // Rebuild browse type tabs (keep "All" first)
-            if (this.browseTypeTabsContainer) {
-                this.browseTypeTabsContainer.innerHTML = '<button class="civitai-browse-type-tab active" data-type="all">All</button>';
+            // Rebuild browse type select (keep "All" first)
+            if (this.browseTypeSelect) {
+                this.browseTypeSelect.innerHTML = '<option value="all">All Types</option>';
             }
 
             sortedTypes.forEach(([key, displayName]) => {
@@ -168,17 +178,23 @@ export class CivitaiDownloaderUI {
             this.downloadModelTypeSelect.appendChild(option.cloneNode(true));
             this.settingsDefaultTypeSelect.appendChild(option.cloneNode(true));
 
-            // Add browse type tab
-            if (this.browseTypeTabsContainer) {
-                const tabBtn = document.createElement('button');
-                tabBtn.className = 'civitai-browse-type-tab';
-                tabBtn.dataset.type = key;
-                tabBtn.textContent = displayName;
-                this.browseTypeTabsContainer.appendChild(tabBtn);
+            // Add to browse type select
+            if (this.browseTypeSelect) {
+                this.browseTypeSelect.appendChild(option.cloneNode(true));
             }
         });
+        // Restore saved active type after options are populated
+        if (this.browseTypeSelect && this._savedBrowseActiveType) {
+            if (this.browseTypeSelect.querySelector(`option[value="${this._savedBrowseActiveType}"]`)) {
+                this.browseTypeSelect.value = this._savedBrowseActiveType;
+                this.browseActiveType = this._savedBrowseActiveType;
+            }
+            this._savedBrowseActiveType = undefined;
+        }
         // After types are populated, load subdirs for the current selection
         await this.loadAndPopulateSubdirs(this.downloadModelTypeSelect.value);
+        // Populate the maintenance type picker
+        this._buildMaintenanceTypePicker(sortedTypes);
         } catch (error) {
             console.error("[Civicomfy] Failed to get or populate model types:", error);
             this.showToast('Failed to load model types', 'error');
@@ -268,6 +284,117 @@ export class CivitaiDownloaderUI {
             this.browseBaseModelPickerLabel.textContent = selected.join(', ');
         } else {
             this.browseBaseModelPickerLabel.textContent = `${selected.length} selected`;
+        }
+    }
+
+    // --- Maintenance Type Picker ---
+    _buildMaintenanceTypePicker(sortedTypes) {
+        const picker = this.maintenanceTypePicker;
+        if (!picker) return;
+        // Remove previously injected checkboxes (keep "All")
+        picker.querySelectorAll('.civitai-maintenance-type-opt:not(:first-child)').forEach(el => el.remove());
+
+        sortedTypes.forEach(([key, displayName]) => {
+            const label = document.createElement('label');
+            label.className = 'civitai-maintenance-type-opt';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = key;
+            cb.className = 'civitai-checkbox civitai-maint-type-cb';
+            const span = document.createElement('span');
+            span.textContent = displayName;
+            label.appendChild(cb);
+            label.appendChild(span);
+            picker.appendChild(label);
+        });
+
+        // "All" checkbox toggles the rest
+        if (this.maintenanceAllCheckbox) {
+            this.maintenanceAllCheckbox.addEventListener('change', () => {
+                if (this.maintenanceAllCheckbox.checked) {
+                    picker.querySelectorAll('.civitai-maint-type-cb').forEach(cb => { cb.checked = false; });
+                }
+            });
+        }
+        picker.querySelectorAll('.civitai-maint-type-cb').forEach(cb => {
+            cb.addEventListener('change', () => {
+                if (this.maintenanceAllCheckbox) this.maintenanceAllCheckbox.checked = false;
+            });
+        });
+    }
+
+    _getMaintenanceSelectedTypes() {
+        if (!this.maintenanceTypePicker) return [];
+        if (this.maintenanceAllCheckbox?.checked) return [];
+        return Array.from(this.maintenanceTypePicker.querySelectorAll('.civitai-maint-type-cb:checked'))
+            .map(cb => cb.value);
+    }
+
+    _showMaintenanceResult(html, type = 'info') {
+        const el = this.maintenanceResultEl;
+        if (!el) return;
+        el.className = `civitai-maintenance-result civitai-maintenance-result--${type}`;
+        el.innerHTML = html;
+        el.style.display = 'block';
+    }
+
+    async handleRefreshModelInfo() {
+        const btn = this.refreshModelInfoBtn;
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing…'; }
+        this._showMaintenanceResult('<i class="fas fa-spinner fa-spin"></i> Fetching model info from Civitai…', 'info');
+        try {
+            const types = this._getMaintenanceSelectedTypes();
+            const result = await CivitaiDownloaderAPI.refreshModelInfo({
+                model_types: types,
+                api_key: this.settings.apiKey || '',
+            });
+            if (result && result.success) {
+                this._showMaintenanceResult(
+                    `<i class="fas fa-check-circle"></i> <strong>${result.message}</strong>` +
+                    `<br><small>Total: ${result.total} &bull; Updated: ${result.updated} &bull; Skipped: ${result.skipped} &bull; Failed: ${result.failed}</small>` +
+                    (result.errors?.length ? `<br><small style="color:var(--cfy-danger);">Errors: ${result.errors.slice(0, 5).join(', ')}</small>` : ''),
+                    'success'
+                );
+                // Invalidate my-models cache so next visit re-fetches
+                this._myModelsLoaded = false;
+            } else {
+                this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${result?.error || 'Unknown error'}`, 'error');
+            }
+        } catch (err) {
+            this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${err.message || 'Request failed'}`, 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-database"></i> Refresh Model Info'; }
+        }
+    }
+
+    async handleUpdateThumbnails() {
+        const btn = this.updateThumbnailsBtn;
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating…'; }
+        this._showMaintenanceResult('<i class="fas fa-spinner fa-spin"></i> Downloading thumbnails…', 'info');
+        try {
+            const types = this._getMaintenanceSelectedTypes();
+            const forceRedownload = this.maintenanceForceThumbCheckbox?.checked || false;
+            const result = await CivitaiDownloaderAPI.updateThumbnails({
+                model_types: types,
+                force_redownload: forceRedownload,
+                api_key: this.settings.apiKey || '',
+            });
+            if (result && result.success) {
+                this._showMaintenanceResult(
+                    `<i class="fas fa-check-circle"></i> <strong>${result.message}</strong>` +
+                    `<br><small>Total: ${result.total} &bull; Downloaded: ${result.downloaded} &bull; Skipped: ${result.skipped} &bull; Failed: ${result.failed}</small>` +
+                    (result.errors?.length ? `<br><small style="color:var(--cfy-danger);">Errors: ${result.errors.slice(0, 5).join(', ')}</small>` : ''),
+                    'success'
+                );
+                // Invalidate my-models cache
+                this._myModelsLoaded = false;
+            } else {
+                this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${result?.error || 'Unknown error'}`, 'error');
+            }
+        } catch (err) {
+            this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${err.message || 'Request failed'}`, 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-image"></i> Update Thumbnails'; }
         }
     }
 

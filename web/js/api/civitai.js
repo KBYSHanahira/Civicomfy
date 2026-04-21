@@ -155,6 +155,22 @@ export class CivitaiDownloaderAPI {
     });
   }
 
+  static async refreshModelInfo(params) {
+    return await this._request("/civitai/refresh_model_info", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+  }
+
+  static async updateThumbnails(params) {
+    return await this._request("/civitai/update_thumbnails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+  }
+
   static async openModelFolder(relPath) {
     return await this._request("/civitai/open_model_folder", {
       method: "POST",

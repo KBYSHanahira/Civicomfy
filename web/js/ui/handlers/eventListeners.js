@@ -143,16 +143,9 @@ export function setupEventListeners(ui) {
     });
 
 
-    if (ui.browseTypeTabsContainer) {
-        ui.browseTypeTabsContainer.addEventListener('click', (event) => {
-            const tab = event.target.closest('.civitai-browse-type-tab');
-            if (!tab) return;
-            const type = tab.dataset.type;
-            if (type === ui.browseActiveType) return;
-
-            // Update active state
-            ui.browseTypeTabsContainer.querySelectorAll('.civitai-browse-type-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
+    if (ui.browseTypeSelect) {
+        ui.browseTypeSelect.addEventListener('change', () => {
+            const type = ui.browseTypeSelect.value;
             ui.browseActiveType = type;
             ui.browsePagination.currentPage = 1;
             ui.saveBrowseSettings();
@@ -248,8 +241,15 @@ export function setupEventListeners(ui) {
 
     if (ui.browseRefreshButton) {
         ui.browseRefreshButton.addEventListener('click', () => {
-            ui.browsePagination.currentPage = 1;
             ui.handleBrowseLoad();
+        });
+    }
+
+    if (ui.browseCardSizeSlider) {
+        ui.browseCardSizeSlider.addEventListener('input', () => {
+            const val = parseInt(ui.browseCardSizeSlider.value, 10);
+            ui.modal.style.setProperty('--cfy-browse-card-min-w', `${val}px`);
+            ui.saveBrowseSettings();
         });
     }
 
@@ -372,6 +372,14 @@ export function setupEventListeners(ui) {
         });
     }
 
+    if (ui.myModelsCardSizeSlider) {
+        ui.myModelsCardSizeSlider.addEventListener('input', () => {
+            const val = parseInt(ui.myModelsCardSizeSlider.value, 10);
+            ui.modal.style.setProperty('--cfy-mymodels-card-min-w', `${val}px`);
+            ui.saveMyModelsSettings();
+        });
+    }
+
     if (ui.myModelsTypeFilter) {
         ui.myModelsTypeFilter.addEventListener('change', () => {
             ui._myModelsLoaded = true;
@@ -416,5 +424,13 @@ export function setupEventListeners(ui) {
                 ui.handleMyModelDelete(deleteBtn.dataset.relPath, deleteBtn.dataset.name, deleteBtn);
             }
         });
+    }
+
+    // --- Settings: Model Maintenance ---
+    if (ui.refreshModelInfoBtn) {
+        ui.refreshModelInfoBtn.addEventListener('click', () => ui.handleRefreshModelInfo());
+    }
+    if (ui.updateThumbnailsBtn) {
+        ui.updateThumbnailsBtn.addEventListener('click', () => ui.handleUpdateThumbnails());
     }
 }

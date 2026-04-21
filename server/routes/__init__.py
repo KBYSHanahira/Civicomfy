@@ -12,6 +12,8 @@ from . import DeleteModel
 from . import DownloadModel
 from . import GetBaseModels
 from . import GetLocalModels
+from . import RefreshModelInfo
+from . import UpdateThumbnail
 from . import GetModelDetails
 from . import GetModelTypes
 from . import GetModelDirs

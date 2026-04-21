@@ -73,11 +73,11 @@ export function modalTemplate(settings = {}) {
         </div>
         <div id="civitai-tab-browse" class="civitai-downloader-tab-content">
           <div class="civitai-browse-header">
-            <div class="civitai-browse-type-tabs" id="civitai-browse-type-tabs">
-              <button class="civitai-browse-type-tab active" data-type="all"><i class="fas fa-th-large" style="margin-right:4px;"></i>All</button>
-              <!-- Model type tabs will be injected here by JS -->
-            </div>
             <div class="civitai-browse-controls">
+              <select id="civitai-browse-type-select" class="civitai-select" style="width:auto;flex-shrink:0;" title="Model Type">
+                <option value="all">All Types</option>
+                <!-- Model type options will be injected here by JS -->
+              </select>
               <select id="civitai-browse-search-mode" class="civitai-select" style="width:auto;flex-shrink:0;" title="Search field">
                 <option value="all">All Fields</option>
                 <option value="name">By Name</option>
@@ -112,6 +112,10 @@ export function modalTemplate(settings = {}) {
                 <option value="75">75 / page</option>
                 <option value="100">100 / page</option>
               </select>
+              <div class="civitai-card-size-control" title="Card size">
+                <i class="fas fa-th" style="font-size:0.8em;opacity:0.55;"></i>
+                <input type="range" id="civitai-browse-card-size" min="120" max="280" step="10" value="158" style="width:70px;cursor:pointer;">
+              </div>
               <button id="civitai-browse-refresh" class="civitai-button" title="Refresh"><i class="fas fa-sync-alt"></i></button>
             </div>
           </div>
@@ -145,6 +149,10 @@ export function modalTemplate(settings = {}) {
                   <option value="75">75 / page</option>
                   <option value="100">100 / page</option>
                 </select>
+                <div class="civitai-card-size-control" title="Card size">
+                  <i class="fas fa-th" style="font-size:0.8em;opacity:0.55;"></i>
+                  <input type="range" id="civitai-mymodels-card-size" min="100" max="260" step="10" value="148" style="width:70px;cursor:pointer;">
+                </div>
               </div>
               <div class="civitai-mymodels-controls-row civitai-mymodels-controls-row--info">
                 <span id="civitai-mymodels-count" class="civitai-mymodels-count"></span>
@@ -226,6 +234,45 @@ export function modalTemplate(settings = {}) {
                     Blur thumbnails when nsfwLevel &ge; this value. Safe: 1 &bull; PG-13: 2 &bull; R: 4 &bull; X: 5 &bull; Explicit: 16/32+
                   </p>
                 </div>
+              </div>
+
+              <!-- ── Model Maintenance ─────────────────── -->
+              <div class="civitai-settings-section">
+                <h4><i class="fas fa-sync-alt"></i> Model Maintenance</h4>
+                <p class="civitai-field-hint" style="margin-bottom:10px;">
+                  Select the model categories to process, then use the buttons below to refresh metadata or update thumbnails from Civitai.
+                </p>
+
+                <!-- Category picker -->
+                <div class="civitai-form-group">
+                  <label>Model Categories</label>
+                  <div class="civitai-maintenance-type-picker" id="civitai-maintenance-type-picker">
+                    <label class="civitai-maintenance-type-opt">
+                      <input type="checkbox" value="" id="civitai-maint-all" class="civitai-checkbox" checked>
+                      <span>All</span>
+                    </label>
+                    <!-- Additional checkboxes injected by JS after model types are loaded -->
+                  </div>
+                </div>
+
+                <!-- Force re-download option for thumbnails -->
+                <div class="civitai-form-group inline">
+                  <input type="checkbox" id="civitai-maint-force-thumb" class="civitai-checkbox">
+                  <label for="civitai-maint-force-thumb">Force re-download existing thumbnails</label>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="civitai-maintenance-actions">
+                  <button type="button" id="civitai-refresh-model-info-btn" class="civitai-button secondary">
+                    <i class="fas fa-database"></i> Refresh Model Info
+                  </button>
+                  <button type="button" id="civitai-update-thumbnails-btn" class="civitai-button secondary">
+                    <i class="fas fa-image"></i> Update Thumbnails
+                  </button>
+                </div>
+
+                <!-- Progress / result area -->
+                <div id="civitai-maintenance-result" class="civitai-maintenance-result" style="display:none;"></div>
               </div>
             </div>
             <div class="civitai-form-actions">

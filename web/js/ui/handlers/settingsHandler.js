@@ -114,11 +114,12 @@ export function saveBrowseSettings(ui) {
     try {
         const data = {
             sort: ui.browseSortSelect?.value || 'Most Downloaded',
-            activeType: ui.browseActiveType || 'all',
+            activeType: ui.browseTypeSelect?.value || 'all',
             baseModels: ui.getBrowseSelectedBaseModels(),
             searchQuery: ui.browseSearchInput?.value?.trim() || '',
             searchMode: ui.browseSearchModeSelect?.value || 'all',
             limit: ui.browsePagination?.limit || 25,
+            cardSize: parseInt(ui.browseCardSizeSlider?.value, 10) || 158,
         };
         setCookie(BROWSE_SETTINGS_COOKIE, JSON.stringify(data), 365);
     } catch (e) {
@@ -135,11 +136,13 @@ export function loadBrowseSettings(ui) {
         if (data.sort && ui.browseSortSelect) {
             ui.browseSortSelect.value = data.sort;
         }
-        if (data.activeType && ui.browseTypeTabsContainer) {
+        if (data.activeType && ui.browseTypeSelect) {
             ui.browseActiveType = data.activeType;
-            ui.browseTypeTabsContainer.querySelectorAll('.civitai-browse-type-tab').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.type === data.activeType);
-            });
+            // browseTypeSelect options may not be populated yet; store for later
+            ui._savedBrowseActiveType = data.activeType;
+            if (ui.browseTypeSelect.querySelector(`option[value="${data.activeType}"]`)) {
+                ui.browseTypeSelect.value = data.activeType;
+            }
         }
         if (Array.isArray(data.baseModels) && data.baseModels.length > 0 && ui.browseBaseModelPickerOptions) {
             ui.browseBaseModelPickerOptions.querySelectorAll('input[type=checkbox]').forEach(cb => {
@@ -163,6 +166,12 @@ export function loadBrowseSettings(ui) {
                 ui.browsePagination.limit = data.limit;
             }
         }
+        if (data.cardSize && ui.browseCardSizeSlider) {
+            const val = Math.max(120, Math.min(280, Math.round(data.cardSize / 10) * 10));
+            ui.browseCardSizeSlider.value = val;
+            if (ui.modal) ui.modal.style.setProperty('--cfy-browse-card-min-w', `${val}px`);
+        }
+
     } catch (e) {
         console.error('[Civicomfy] Failed to load browse settings:', e);
     }
@@ -177,6 +186,7 @@ export function saveMyModelsSettings(ui) {
             sort: ui.myModelsSortSelect?.value || 'time_desc',
             typeFilter: ui.myModelsTypeFilter?.value || '',
             limit: ui.myModelsPagination?.limit || 50,
+            cardSize: parseInt(ui.myModelsCardSizeSlider?.value, 10) || 148,
         };
         setCookie(MYMODELS_SETTINGS_COOKIE, JSON.stringify(data), 365);
     } catch (e) {
@@ -204,6 +214,11 @@ export function loadMyModelsSettings(ui) {
                 ui.myModelsLimitSelect.value = limitStr;
                 if (ui.myModelsPagination) ui.myModelsPagination.limit = data.limit;
             }
+        }
+        if (data.cardSize && ui.myModelsCardSizeSlider) {
+            const val = Math.max(100, Math.min(260, Math.round(data.cardSize / 10) * 10));
+            ui.myModelsCardSizeSlider.value = val;
+            if (ui.modal) ui.modal.style.setProperty('--cfy-mymodels-card-min-w', `${val}px`);
         }
     } catch (e) {
         console.error('[Civicomfy] Failed to load My Models settings:', e);

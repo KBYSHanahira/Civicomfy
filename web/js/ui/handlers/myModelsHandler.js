@@ -160,7 +160,7 @@ function _renderMyModelsPagination(ui, currentPage, totalPages) {
             if (page && page !== ui.myModelsPagination.currentPage) {
                 ui.myModelsPagination.currentPage = page;
                 renderMyModels(ui);
-                ui.myModelsListContainer?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                ui.tabContents?.['mymodels']?.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
     };
