@@ -174,6 +174,18 @@ export function renderBrowseCards(ui, items) {
             preview.appendChild(bmBadge);
         }
 
+        // "Installed" overlay — shown when this model exists locally
+        const installedIds = ui._installedModelIds;
+        if (installedIds && installedIds.has(String(modelId))) {
+            const installedOverlay = document.createElement('div');
+            installedOverlay.className = 'civitai-browse-card-installed-overlay';
+            const installedBadge = document.createElement('div');
+            installedBadge.className = 'civitai-browse-card-installed-badge';
+            installedBadge.innerHTML = '<i class="fas fa-check-circle"></i> Installed';
+            installedOverlay.appendChild(installedBadge);
+            preview.appendChild(installedOverlay);
+        }
+
         // Hover overlay: version download buttons + view link
         const overlay = document.createElement('div');
         overlay.className = 'civitai-browse-card-overlay';

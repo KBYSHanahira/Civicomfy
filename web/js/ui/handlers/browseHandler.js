@@ -1,6 +1,25 @@
 import { CivitaiDownloaderAPI } from "../../api/civitai.js";
 
 /**
+ * Refresh the set of locally-installed Civitai model IDs stored on `ui._installedModelIds`.
+ * Silently ignores errors so browse still works without local model data.
+ */
+export async function refreshInstalledModelIds(ui) {
+    try {
+        const data = await CivitaiDownloaderAPI.getLocalModels('');
+        const ids = new Set();
+        if (data && Array.isArray(data.models)) {
+            data.models.forEach(m => {
+                if (m.civitai_model_id != null) ids.add(String(m.civitai_model_id));
+            });
+        }
+        ui._installedModelIds = ids;
+    } catch (_) {
+        ui._installedModelIds = ui._installedModelIds || new Set();
+    }
+}
+
+/**
  * Load browse results based on current browse state (type tab, sort, base model, page).
  * Reuses the same search API with an empty query.
  */
@@ -28,7 +47,10 @@ export async function handleBrowseLoad(ui) {
     };
 
     try {
-        const response = await CivitaiDownloaderAPI.searchModels(params);
+        const [response] = await Promise.all([
+            CivitaiDownloaderAPI.searchModels(params),
+            refreshInstalledModelIds(ui),
+        ]);
         if (!response || !response.metadata || !Array.isArray(response.items)) {
             throw new Error("Received invalid data from browse API.");
         }
