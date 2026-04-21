@@ -164,8 +164,10 @@ class CivitaiAPI:
              filter_groups.append(type_filters)
 
         # Base Model Filter Group (OR logic)
+        # Use "versions.baseModel" (array field) so that models with multiple versions
+        # across different base models are still matched when any version matches.
         if base_models and isinstance(base_models, list) and len(base_models) > 0:
-            base_model_filters = [f'"version.baseModel"="{bm}"' for bm in base_models]
+            base_model_filters = [f'"versions.baseModel"="{bm}"' for bm in base_models]
             filter_groups.append(base_model_filters)
 
         # NSFW Filter (applied as AND) - Meili typically uses boolean facets or numeric levels
