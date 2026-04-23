@@ -111,6 +111,7 @@ app.registerExtension({
         class CiviComfyModelInfoNode extends LG.LGraphNode {
             constructor() {
                 super();
+                this.isVirtualNode = true;
                 this.title = "CiviComfy Model Info";
                 this.properties = {
                     modelName: "",
