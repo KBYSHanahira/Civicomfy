@@ -1,6 +1,10 @@
 ﻿import { CivitaiDownloaderAPI } from "../../api/civitai.js";
+import { app } from "../../../../../scripts/app.js";
 
 const CIVITAI_BASE = 'https://civitai.com/models/';
+
+// Track the CiviComfyModelInfo node added to workflow so it can be updated
+let _workflowNodeId = null;
 
 /**
  * Load local models from the server, populate type filter, and render the list.
@@ -610,6 +614,88 @@ function _showDetailModal(ui, model) {
 
     const footerRight = document.createElement('div');
     footerRight.className = 'civitai-mymodel-detail-footer-right';
+
+    // ── Send to Workflow button ────────────────────
+    // Recover node ID from graph after page reload (module var reset to null)
+    if (_workflowNodeId === null && app.graph) {
+        const found = app.graph._nodes?.find(n => n.type === 'CiviComfyModelInfo');
+        if (found) _workflowNodeId = found.id;
+    }
+    const _nodeExists = () => _workflowNodeId !== null && !!(app.graph && app.graph.getNodeById(_workflowNodeId));
+
+    const sendToWfBtn = document.createElement('button');
+    sendToWfBtn.className = 'civitai-button small';
+    sendToWfBtn.style.cssText = 'background:var(--cfy-accent,#5c8aff);color:#fff;';
+    sendToWfBtn.title = 'Add or update model info as a CiviComfy Model Info node in the workflow';
+    sendToWfBtn.innerHTML = _nodeExists()
+        ? '<i class="fas fa-sync-alt"></i> Update Workflow'
+        : '<i class="fas fa-project-diagram"></i> Send to Workflow';
+
+    sendToWfBtn.addEventListener('click', () => {
+        try {
+            const LG = window.LiteGraph;
+            if (!LG || !app.graph) { ui.showToast('ComfyUI graph not available.', 'error'); return; }
+
+            const imageUrl = model.has_preview
+                ? `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`
+                : '';
+            const civitaiUrl = model.civitai_model_id
+                ? `https://civitai.com/models/${model.civitai_model_id}${model.civitai_version_id ? '?modelVersionId=' + model.civitai_version_id : ''}`
+                : '';
+            const nodeProps = {
+                modelName:      model.model_name || model.name || '',
+                imageUrl,
+                modelType:      model.model_type || model.model_type_civitai || '',
+                baseModel:      model.base_model || '',
+                creator:        model.creator || '',
+                modelId:        String(model.civitai_model_id || ''),
+                versionName:    model.version_name || '',
+                civitaiUrl,
+                triggerWords:   Array.isArray(model.trained_words)   ? model.trained_words   : [],
+                examplePrompts: Array.isArray(model.example_prompts) ? model.example_prompts : [],
+                fileName:       model.name || '',
+                filePath:       model.rel_path || '',
+            };
+
+            let wfNode = _nodeExists() ? app.graph.getNodeById(_workflowNodeId) : null;
+
+            if (wfNode) {
+                // Update existing node
+                Object.assign(wfNode.properties, nodeProps);
+                if (nodeProps.imageUrl !== wfNode._imgSrc) wfNode._loadImg?.(nodeProps.imageUrl);
+                wfNode.title = nodeProps.modelName ? `CiviComfy — ${nodeProps.modelName}` : 'CiviComfy Model Info';
+                app.graph.setDirtyCanvas(true, true);
+                ui.showToast('Workflow node updated!', 'success', 2000);
+            } else {
+                // Create new CiviComfyModelInfo node
+                wfNode = LG.createNode('CiviComfyModelInfo');
+                if (!wfNode) { ui.showToast('CiviComfyModelInfo node type not registered yet.', 'error'); return; }
+                const cvs = app.canvas;
+                let px = 100, py = 100;
+                if (cvs && cvs.ds) {
+                    px = -cvs.ds.offset[0] + cvs.canvas.width  / 2 / cvs.ds.scale - 260;
+                    py = -cvs.ds.offset[1] + cvs.canvas.height / 2 / cvs.ds.scale - 130;
+                }
+                wfNode.pos  = [px, py];
+                wfNode.size = [520, 260];
+                wfNode.title = nodeProps.modelName ? `CiviComfy — ${nodeProps.modelName}` : 'CiviComfy Model Info';
+                Object.assign(wfNode.properties, nodeProps);
+                if (nodeProps.imageUrl) wfNode._loadImg?.(nodeProps.imageUrl);
+                app.graph.add(wfNode);
+                _workflowNodeId = wfNode.id;
+                app.graph.setDirtyCanvas(true, true);
+                ui.showToast('Model info added to workflow!', 'success', 2000);
+            }
+
+            sendToWfBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Update Workflow';
+        } catch (err) {
+            console.error('[Civicomfy] sendToWorkflow error:', err);
+            ui.showToast('Failed to add to workflow.', 'error');
+        }
+    });
+
+    footerRight.appendChild(sendToWfBtn);
+
     if (model.civitai_model_id) {
         const civitBtn = document.createElement('a');
         civitBtn.href = `${CIVITAI_BASE}${model.civitai_model_id}`;
