@@ -1901,8 +1901,21 @@
   flex-shrink: 0;
   align-self: center;
 }
-.civitai-progress-container {
+.civitai-progress-header {
+  display: flex;
+  justify-content: flex-end;
   margin-top: 6px;
+  margin-bottom: 2px;
+}
+.civitai-progress-pct {
+  font-size: 0.75em;
+  font-weight: 600;
+  color: var(--cfy-text);
+  min-width: 36px;
+  text-align: right;
+}
+.civitai-progress-container {
+  margin-top: 0;
   width: 100%;
   background: rgba(0,0,0,0.4);
   border-radius: 10px;

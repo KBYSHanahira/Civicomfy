@@ -72,10 +72,11 @@ export function renderDownloadList(ui, items, container, emptyMessage) {
     if (status === 'downloading' || status === 'starting' || status === 'completed') {
       const statusLine = `<div ${durationTooltip} ${endedTooltip}>Status: ${statusText} ${connectionInfoHtml}</div>`;
       innerHTML += `
+        <div class="civitai-progress-header">
+          <span class="civitai-progress-pct">${progress.toFixed(0)}%</span>
+        </div>
         <div class="civitai-progress-container" title="${statusText} - ${progress.toFixed(1)}%">
-          <div class="civitai-progress-bar ${progressBarClass}" style="width: ${progress}%;">
-            ${progress > 15 ? progress.toFixed(0)+'%' : ''}
-          </div>
+          <div class="civitai-progress-bar ${progressBarClass}" style="width: ${progress}%;"></div>
         </div>
       `;
       const speedText = (status === 'downloading' && speed > 0) ? ui.formatSpeed(speed) : '';
