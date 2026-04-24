@@ -2503,7 +2503,6 @@
 }
 .civitai-mymodel-detail-trigger-word:hover {
   background: rgba(92,138,255,0.32);
-  transform: scale(1.03);
 }
 /* Legacy trigger word aliases */
 .civitai-mymodel-detail-tags {
@@ -2562,8 +2561,6 @@
   font-size: 0.8em;
   line-height: 1.5;
   color: var(--cfy-text);
-  max-height: 90px;
-  overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -2573,15 +2570,26 @@
   font-size: 0.83em;
   color: var(--cfy-text-dim);
   line-height: 1.55;
-  max-height: 140px;
-  overflow-y: auto;
   padding: 8px 10px;
   background: var(--cfy-surface);
   border: 1px solid var(--cfy-border);
   border-radius: var(--cfy-radius);
-  white-space: pre-wrap;
   word-break: break-word;
 }
+.civitai-mymodel-detail-desc p { margin: 0 0 8px; }
+.civitai-mymodel-detail-desc p:last-child { margin-bottom: 0; }
+.civitai-mymodel-detail-desc ul,
+.civitai-mymodel-detail-desc ol { padding-left: 20px; margin: 4px 0 8px; }
+.civitai-mymodel-detail-desc li { margin: 2px 0; }
+.civitai-mymodel-detail-desc strong,
+.civitai-mymodel-detail-desc b { color: var(--cfy-text); font-weight: 700; }
+.civitai-mymodel-detail-desc h1,
+.civitai-mymodel-detail-desc h2,
+.civitai-mymodel-detail-desc h3,
+.civitai-mymodel-detail-desc h4 { font-size: 1em; font-weight: 700; margin: 8px 0 4px; color: var(--cfy-text); }
+.civitai-mymodel-detail-desc a { color: var(--cfy-accent); text-decoration: underline; }
+.civitai-mymodel-detail-desc a:hover { color: #8bb0ff; }
+.civitai-mymodel-detail-desc br + br { display: block; content: ''; margin-top: 6px; }
 
 /* Footer bar */
 .civitai-mymodel-detail-footer-bar {

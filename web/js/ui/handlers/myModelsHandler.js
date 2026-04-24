@@ -576,9 +576,7 @@ function _showDetailModal(ui, model) {
         const descSec = _mmSection('Description', 'fa-align-left');
         const desc = document.createElement('div');
         desc.className = 'civitai-mymodel-detail-desc';
-        const tmp = document.createElement('div');
-        tmp.innerHTML = model.description;
-        desc.textContent = tmp.textContent || tmp.innerText || '';
+        desc.innerHTML = model.description;
         descSec.appendChild(desc);
         right.appendChild(descSec);
     }
