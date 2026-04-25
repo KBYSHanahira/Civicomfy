@@ -16,6 +16,7 @@ export function modalTemplate(settings = {}) {
           <button class="civitai-downloader-tab active" data-tab="download"><i class="fas fa-download"></i> Download</button>
           <button class="civitai-downloader-tab" data-tab="browse"><i class="fas fa-compass"></i> Browse</button>
           <button class="civitai-downloader-tab" data-tab="mymodels"><i class="fas fa-layer-group"></i> My Models</button>
+          <button class="civitai-downloader-tab" data-tab="gallery"><i class="fas fa-images"></i> Gallery</button>
           <button class="civitai-downloader-tab" data-tab="status"><i class="fas fa-tasks"></i> Status <span id="civitai-status-indicator" style="display:none;">(<span id="civitai-active-count">0</span>)</span></button>
           <button class="civitai-downloader-tab" data-tab="settings"><i class="fas fa-cog"></i> Settings</button>
         </div>
@@ -164,6 +165,61 @@ export function modalTemplate(settings = {}) {
             <p>Click Refresh to load your local models.</p>
           </div>
           <div id="civitai-mymodels-pagination" class="civitai-mymodels-pagination"></div>
+        </div>
+        <div id="civitai-tab-gallery" class="civitai-downloader-tab-content">
+          <div class="civitai-gallery-header">
+            <div class="civitai-gallery-controls">
+              <select id="civitai-gallery-subfolder" class="civitai-select" style="min-width:140px;" title="Filter by subfolder">
+                <option value="">All Subfolders</option>
+              </select>
+              <select id="civitai-gallery-sort" class="civitai-select" style="width:auto;" title="Sort">
+                <option value="time_desc" selected>Newest First</option>
+                <option value="time_asc">Oldest First</option>
+                <option value="name_asc">Name (A → Z)</option>
+                <option value="name_desc">Name (Z → A)</option>
+              </select>
+              <select id="civitai-gallery-limit" class="civitai-select" style="width:auto;" title="Images per page">
+                <option value="30" selected>30 / page</option>
+                <option value="50">50 / page</option>
+                <option value="100">100 / page</option>
+                <option value="200">200 / page</option>
+              </select>
+              <div class="civitai-card-size-control" title="Thumbnail size">
+                <i class="fas fa-th" style="font-size:0.8em;opacity:0.55;"></i>
+                <input type="range" id="civitai-gallery-card-size" min="100" max="300" step="10" value="148" style="width:70px;cursor:pointer;">
+              </div>
+              <button id="civitai-gallery-refresh" class="civitai-button" title="Refresh gallery"><i class="fas fa-sync-alt"></i></button>
+            </div>
+            <div class="civitai-gallery-info">
+              <span id="civitai-gallery-count" class="civitai-mymodels-count"></span>
+            </div>
+          </div>
+          <!-- Multi-select action bar -->
+          <div id="civitai-gallery-select-bar" class="civitai-gallery-select-bar" style="display:none;">
+            <i class="fas fa-check-circle" style="color:var(--cfy-accent);flex-shrink:0;"></i>
+            <span id="civitai-gallery-select-count" class="civitai-gallery-select-count">0 selected</span>
+            <button id="civitai-gallery-select-all" class="civitai-button small secondary"><i class="fas fa-check-double"></i> Select All</button>
+            <button id="civitai-gallery-deselect-all" class="civitai-button small secondary"><i class="fas fa-times"></i> Deselect All</button>
+            <div style="flex:1;"></div>
+            <button id="civitai-gallery-download-selected" class="civitai-button small primary"><i class="fas fa-download"></i> Download</button>
+            <button id="civitai-gallery-delete-selected" class="civitai-button small danger"><i class="fas fa-trash-alt"></i> Delete</button>
+          </div>
+          <div id="civitai-gallery-grid" class="civitai-gallery-grid"></div>
+          <div id="civitai-gallery-pagination" class="civitai-gallery-pagination"></div>
+        </div>
+        <!-- Gallery Lightbox -->
+        <div id="civitai-gallery-lightbox" class="civitai-gallery-lightbox" style="display:none;">
+          <div class="civitai-gallery-lightbox-backdrop"></div>
+          <div class="civitai-gallery-lightbox-content">
+            <button class="civitai-gallery-lightbox-close" id="civitai-gallery-lightbox-close" title="Close"><i class="fas fa-times"></i></button>
+            <button class="civitai-gallery-lightbox-nav prev" id="civitai-gallery-lightbox-prev" title="Previous"><i class="fas fa-chevron-left"></i></button>
+            <button class="civitai-gallery-lightbox-nav next" id="civitai-gallery-lightbox-next" title="Next"><i class="fas fa-chevron-right"></i></button>
+            <img id="civitai-gallery-lightbox-img" src="" alt="" class="civitai-gallery-lightbox-img">
+            <div class="civitai-gallery-lightbox-info">
+              <span id="civitai-gallery-lightbox-name" class="civitai-gallery-lightbox-name"></span>
+              <span id="civitai-gallery-lightbox-meta" class="civitai-gallery-lightbox-meta"></span>
+            </div>
+          </div>
         </div>
         <div id="civitai-tab-status" class="civitai-downloader-tab-content">
           <div id="civitai-status-content">

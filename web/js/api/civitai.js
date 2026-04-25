@@ -191,6 +191,27 @@ export class CivitaiDownloaderAPI {
     });
   }
 
+  // ---- Gallery / Output Images ----
+
+  static async deleteOutputImages(images) {
+    return await this._request("/civitai/delete_output_image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ images }),
+    });
+  }
+
+  static async getOutputImages(params = {}) {
+    const query = new URLSearchParams();
+    if (params.page)     query.set('page',     params.page);
+    if (params.limit)    query.set('limit',    params.limit);
+    if (params.subfolder !== undefined && params.subfolder !== null)
+                         query.set('subfolder', params.subfolder);
+    if (params.sort)     query.set('sort',     params.sort);
+    const qs = query.toString();
+    return await this._request(`/civitai/output_images${qs ? '?' + qs : ''}`);
+  }
+
   // ---- HuggingFace ----
 
   static async getModelDetailsHF(params) {

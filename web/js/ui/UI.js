@@ -5,6 +5,7 @@ import { handleBrowseLoad } from "./handlers/browseHandler.js";
 import { handleSettingsSave, loadAndApplySettings, loadSettingsFromCookie, saveSettingsToCookie, applySettings, getDefaultSettings, saveBrowseSettings, loadBrowseSettings, saveMyModelsSettings, loadMyModelsSettings } from "./handlers/settingsHandler.js";
 import { startStatusUpdates, stopStatusUpdates, updateStatus, handleCancelDownload, handleRetryDownload, handleOpenPath, handleClearHistory } from "./handlers/statusHandler.js";
 import { handleMyModelsLoad, renderMyModels, handleMyModelOpenOnCivit, handleMyModelViewDetail, handleMyModelDelete } from "./handlers/myModelsHandler.js";
+import { handleGalleryLoad, renderGalleryGrid, openGalleryLightbox, closeGalleryLightbox, lightboxPrev, lightboxNext, toggleGallerySelect, updateGallerySelectionBar, deleteSelectedGallery, downloadSelectedGallery, deleteGalleryImage } from "./handlers/galleryHandler.js";
 import { renderDownloadList } from "./statusRenderer.js";
 import { renderSearchResults, renderBrowseCards, showBrowseCardInfo } from "./searchRenderer.js";
 import { renderDownloadPreview } from "./previewRenderer.js";
@@ -31,6 +32,11 @@ export class CivitaiDownloaderUI {
         this.modelPreviewDebounceTimeout = null;
         this._myModelsAll = [];
         this._myModelsLoaded = false;
+        this._galleryImages = [];
+        this._galleryPage = 1;
+        this._galleryLoaded = false;
+        this._lightboxIndex = 0;
+        this._gallerySelected = new Set();
 
         this.updateStatus();
         this.buildModalHTML();
@@ -131,6 +137,29 @@ export class CivitaiDownloaderUI {
         this.myModelsListContainer = this.modal.querySelector('#civitai-mymodels-list');
         this.myModelsPaginationContainer = this.modal.querySelector('#civitai-mymodels-pagination');
         this.myModelsCountEl = this.modal.querySelector('#civitai-mymodels-count');
+
+        // Gallery Tab
+        this.gallerySubfolderSelect = this.modal.querySelector('#civitai-gallery-subfolder');
+        this.gallerySortSelect = this.modal.querySelector('#civitai-gallery-sort');
+        this.galleryLimitSelect = this.modal.querySelector('#civitai-gallery-limit');
+        this.galleryCardSizeSlider = this.modal.querySelector('#civitai-gallery-card-size');
+        this.galleryRefreshButton = this.modal.querySelector('#civitai-gallery-refresh');
+        this.galleryGrid = this.modal.querySelector('#civitai-gallery-grid');
+        this.galleryPaginationContainer = this.modal.querySelector('#civitai-gallery-pagination');
+        this.galleryCountEl = this.modal.querySelector('#civitai-gallery-count');
+        this.gallerySelectBar = this.modal.querySelector('#civitai-gallery-select-bar');
+        this.gallerySelectCount = this.modal.querySelector('#civitai-gallery-select-count');
+        this.gallerySelectAllBtn = this.modal.querySelector('#civitai-gallery-select-all');
+        this.galleryDeselectAllBtn = this.modal.querySelector('#civitai-gallery-deselect-all');
+        this.galleryDownloadSelectedBtn = this.modal.querySelector('#civitai-gallery-download-selected');
+        this.galleryDeleteSelectedBtn = this.modal.querySelector('#civitai-gallery-delete-selected');
+        this.galleryLightbox = this.modal.querySelector('#civitai-gallery-lightbox');
+        this.galleryLightboxImg = this.modal.querySelector('#civitai-gallery-lightbox-img');
+        this.galleryLightboxName = this.modal.querySelector('#civitai-gallery-lightbox-name');
+        this.galleryLightboxMeta = this.modal.querySelector('#civitai-gallery-lightbox-meta');
+        this.galleryLightboxClose = this.modal.querySelector('#civitai-gallery-lightbox-close');
+        this.galleryLightboxPrev = this.modal.querySelector('#civitai-gallery-lightbox-prev');
+        this.galleryLightboxNext = this.modal.querySelector('#civitai-gallery-lightbox-next');
 
         // Toast Notification
         this.toastElement = this.modal.querySelector('#civitai-toast');
@@ -484,6 +513,13 @@ export class CivitaiDownloaderUI {
                 this.handleMyModelsLoad();
             }
         }
+        else if (tabId === 'gallery') {
+            if (!this._galleryLoaded) {
+                this._galleryLoaded = true;
+                this._galleryPage = 1;
+                this.handleGalleryLoad();
+            }
+        }
         else if (tabId === 'settings') this.applySettings();
         else if(tabId === 'download') {
             this.downloadConnectionsInput.value = this.settings.numConnections;
@@ -731,4 +767,17 @@ export class CivitaiDownloaderUI {
     handleMyModelOpenOnCivit = (modelId) => handleMyModelOpenOnCivit(modelId);
     handleMyModelViewDetail = (relPath) => handleMyModelViewDetail(this, relPath);
     handleMyModelDelete = (relPath, name, btn) => handleMyModelDelete(this, relPath, name, btn);
+
+    // Gallery tab
+    handleGalleryLoad = () => handleGalleryLoad(this);
+    renderGalleryGrid = () => renderGalleryGrid(this, this._galleryImages);
+    openGalleryLightbox = (index) => openGalleryLightbox(this, index);
+    closeGalleryLightbox = () => closeGalleryLightbox(this);
+    lightboxPrev = () => lightboxPrev(this);
+    lightboxNext = () => lightboxNext(this);
+    toggleGallerySelect = (key) => toggleGallerySelect(this, key);
+    updateGallerySelectionBar = () => updateGallerySelectionBar(this);
+    deleteSelectedGallery = () => deleteSelectedGallery(this);
+    downloadSelectedGallery = () => downloadSelectedGallery(this);
+    deleteGalleryImage = (img) => deleteGalleryImage(this, img);
 }

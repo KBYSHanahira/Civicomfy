@@ -2878,3 +2878,371 @@
   .civitai-browse-search-input { max-width: 100%; }
   .civitai-mymodels-controls-row { flex-wrap: wrap; }
 }
+
+/* =============================================================
+   GALLERY TAB
+   ============================================================= */
+#civitai-tab-gallery {
+  display: none;
+  flex-direction: column;
+  padding: 14px 18px;
+}
+#civitai-tab-gallery.active { display: flex; }
+
+.civitai-gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--cfy-border);
+  padding-bottom: 12px;
+  flex-shrink: 0;
+}
+.civitai-gallery-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.civitai-gallery-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85em;
+  color: var(--cfy-text-dim);
+}
+
+/* ── Multi-select action bar ──────────────────────────────── */
+.civitai-gallery-select-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  background: var(--cfy-accent-dim);
+  border: 1px solid var(--cfy-accent-glow);
+  border-radius: var(--cfy-radius);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.civitai-gallery-select-count {
+  font-size: 0.84em;
+  font-weight: 700;
+  color: var(--cfy-accent);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* ── Gallery Grid ─────────────────────────────────────────── */
+.civitai-gallery-grid {
+  --cfy-gallery-card-w: 148px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--cfy-gallery-card-w), 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+/* ── Gallery Card ─────────────────────────────────────────── */
+.civitai-gallery-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-radius: var(--cfy-radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color var(--cfy-transition), transform var(--cfy-transition), box-shadow var(--cfy-transition);
+}
+.civitai-gallery-card:hover {
+  border-color: var(--cfy-accent);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(92,138,255,0.22);
+}
+.civitai-gallery-card.selected {
+  border-color: var(--cfy-accent);
+  box-shadow: 0 0 0 2px var(--cfy-accent-glow), 0 8px 24px rgba(92,138,255,0.18);
+}
+
+/* ── Card Preview ─────────────────────────────────────────── */
+.civitai-gallery-card-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  flex-shrink: 0;
+  background: #111;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.civitai-gallery-card-preview > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+.civitai-gallery-card:hover .civitai-gallery-card-preview > img {
+  transform: scale(1.06);
+}
+.civitai-gallery-card-preview.no-preview {
+  border-bottom: 1px dashed var(--cfy-border);
+  color: var(--cfy-text-dim);
+}
+
+/* ── Date badge (top-right) ───────────────────────────────── */
+.civitai-gallery-card-date-badge {
+  position: absolute;
+  top: 6px; right: 6px;
+  background: rgba(0,0,0,0.72);
+  color: #d0d0d0;
+  font-size: 0.66em;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  z-index: 2;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── Selection checkbox (top-left) ───────────────────────── */
+.civitai-gallery-card-select-wrap {
+  position: absolute;
+  top: 6px; left: 6px;
+  z-index: 4;
+  width: 22px; height: 22px;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.civitai-gallery-card:hover .civitai-gallery-card-select-wrap,
+.civitai-gallery-card.selected .civitai-gallery-card-select-wrap {
+  opacity: 1;
+}
+.civitai-gallery-card-checkbox {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.7);
+  background: rgba(20,20,35,0.75);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7em;
+  color: #fff;
+  transition: background 0.18s, border-color 0.18s;
+}
+.civitai-gallery-card.selected .civitai-gallery-card-checkbox {
+  background: var(--cfy-accent);
+  border-color: var(--cfy-accent);
+}
+.civitai-gallery-card-checkbox:hover {
+  background: rgba(92,138,255,0.6);
+  border-color: var(--cfy-accent);
+}
+
+/* ── Hover action overlay ─────────────────────────────────── */
+.civitai-gallery-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 3;
+}
+.civitai-gallery-card:hover .civitai-gallery-card-overlay { opacity: 1; }
+.civitai-gallery-card.selected .civitai-gallery-card-overlay { pointer-events: none; }
+
+.civitai-gallery-card-overlay .civitai-button {
+  height: auto;
+  padding: 7px 11px;
+  font-size: 0.88em;
+  border-radius: var(--cfy-radius);
+  backdrop-filter: blur(4px);
+  background: rgba(30,30,50,0.88);
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: none;
+  transform: none;
+}
+.civitai-gallery-card-overlay .civitai-button:hover:not(:disabled) {
+  background: rgba(92,138,255,0.85);
+  border-color: var(--cfy-accent);
+  transform: none;
+  box-shadow: none;
+}
+.civitai-gallery-card-overlay .civitai-button.danger:hover:not(:disabled) {
+  background: rgba(230,75,75,0.9);
+  border-color: var(--cfy-danger);
+}
+
+/* ── Card body ────────────────────────────────────────────── */
+.civitai-gallery-card-body {
+  padding: 7px 9px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.civitai-gallery-card-name {
+  font-size: 0.84em;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--cfy-text);
+}
+.civitai-gallery-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.68em;
+  color: var(--cfy-text-dim);
+  overflow: hidden;
+}
+.civitai-gallery-card-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+.civitai-gallery-card-meta i {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* ── Gallery Pagination ───────────────────────────────────── */
+.civitai-gallery-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.civitai-gallery-pagination .civitai-gallery-page-btn {
+  min-width: 34px;
+  height: 30px;
+  font-size: 0.84em;
+  padding: 0 9px;
+}
+
+/* ── Gallery Lightbox ─────────────────────────────────────── */
+.civitai-gallery-lightbox {
+  position: absolute;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--cfy-radius-lg);
+  overflow: hidden;
+}
+
+.civitai-gallery-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(4px);
+  cursor: zoom-out;
+}
+
+.civitai-gallery-lightbox-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 92%;
+  max-height: 90%;
+  gap: 10px;
+}
+
+.civitai-gallery-lightbox-img {
+  max-width: 100%;
+  max-height: calc(100vh - 200px);
+  border-radius: var(--cfy-radius);
+  box-shadow: var(--cfy-shadow-lg);
+  object-fit: contain;
+  display: block;
+  background: #111;
+}
+
+.civitai-gallery-lightbox-close {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  background: rgba(30, 30, 50, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--cfy-text);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background var(--cfy-transition), color var(--cfy-transition);
+  z-index: 2;
+}
+.civitai-gallery-lightbox-close:hover {
+  background: rgba(230, 75, 75, 0.85);
+  color: #fff;
+  border-color: var(--cfy-danger);
+}
+
+.civitai-gallery-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(30, 30, 50, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--cfy-text);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background var(--cfy-transition), border-color var(--cfy-transition);
+  z-index: 2;
+}
+.civitai-gallery-lightbox-nav:hover {
+  background: var(--cfy-accent);
+  border-color: var(--cfy-accent);
+  color: #fff;
+}
+.civitai-gallery-lightbox-nav.prev { left: -50px; }
+.civitai-gallery-lightbox-nav.next { right: -50px; }
+
+.civitai-gallery-lightbox-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+}
+.civitai-gallery-lightbox-name {
+  font-size: 0.88em;
+  font-weight: 600;
+  color: var(--cfy-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 600px;
+}
+.civitai-gallery-lightbox-meta {
+  font-size: 0.78em;
+  color: var(--cfy-text-dim);
+}

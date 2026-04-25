@@ -443,4 +443,112 @@ export function setupEventListeners(ui) {
             try { await CivitaiDownloaderAPI.maintenanceSkip(); } catch (e) { /* ignore */ }
         });
     }
+
+    // --- Gallery Tab ---
+    if (ui.galleryRefreshButton) {
+        ui.galleryRefreshButton.addEventListener('click', () => {
+            ui._galleryPage = 1;
+            ui.handleGalleryLoad();
+        });
+    }
+
+    if (ui.gallerySubfolderSelect) {
+        ui.gallerySubfolderSelect.addEventListener('change', () => {
+            ui._galleryPage = 1;
+            ui.handleGalleryLoad();
+        });
+    }
+
+    if (ui.gallerySortSelect) {
+        ui.gallerySortSelect.addEventListener('change', () => {
+            ui._galleryPage = 1;
+            ui.handleGalleryLoad();
+        });
+    }
+
+    if (ui.galleryLimitSelect) {
+        ui.galleryLimitSelect.addEventListener('change', () => {
+            ui._galleryPage = 1;
+            ui.handleGalleryLoad();
+        });
+    }
+
+    if (ui.galleryCardSizeSlider) {
+        ui.galleryCardSizeSlider.addEventListener('input', () => {
+            const val = parseInt(ui.galleryCardSizeSlider.value, 10);
+            if (ui.galleryGrid) ui.galleryGrid.style.setProperty('--cfy-gallery-card-w', `${val}px`);
+        });
+    }
+
+    // Gallery grid click → handled by per-card listeners built in galleryHandler.js
+    // (Grid-level listener kept only as fallback — card-level listeners take priority)
+
+    // Lightbox controls
+    if (ui.galleryLightboxClose) {
+        ui.galleryLightboxClose.addEventListener('click', () => ui.closeGalleryLightbox());
+    }
+    if (ui.galleryLightboxPrev) {
+        ui.galleryLightboxPrev.addEventListener('click', () => ui.lightboxPrev());
+    }
+    if (ui.galleryLightboxNext) {
+        ui.galleryLightboxNext.addEventListener('click', () => ui.lightboxNext());
+    }
+    if (ui.galleryLightbox) {
+        // Close on backdrop click
+        ui.galleryLightbox.addEventListener('click', (event) => {
+            if (event.target.classList.contains('civitai-gallery-lightbox-backdrop')) {
+                ui.closeGalleryLightbox();
+            }
+        });
+    }
+
+    // Multi-select action bar
+    if (ui.gallerySelectAllBtn) {
+        ui.gallerySelectAllBtn.addEventListener('click', () => {
+            if (!ui._galleryImages) return;
+            ui._gallerySelected = new Set();
+            ui._galleryImages.forEach(img => {
+                ui._gallerySelected.add(`${img.filename}|||${img.subfolder ?? ''}`);
+            });
+            // Sync card DOM
+            if (ui.galleryGrid) {
+                ui.galleryGrid.querySelectorAll('.civitai-gallery-card').forEach(card => {
+                    card.classList.add('selected');
+                    const cb = card.querySelector('.civitai-gallery-card-checkbox');
+                    if (cb) cb.innerHTML = '<i class="fas fa-check"></i>';
+                });
+            }
+            ui.updateGallerySelectionBar();
+        });
+    }
+
+    if (ui.galleryDeselectAllBtn) {
+        ui.galleryDeselectAllBtn.addEventListener('click', () => {
+            if (ui._gallerySelected) ui._gallerySelected.clear();
+            if (ui.galleryGrid) {
+                ui.galleryGrid.querySelectorAll('.civitai-gallery-card').forEach(card => {
+                    card.classList.remove('selected');
+                    const cb = card.querySelector('.civitai-gallery-card-checkbox');
+                    if (cb) cb.innerHTML = '';
+                });
+            }
+            ui.updateGallerySelectionBar();
+        });
+    }
+
+    if (ui.galleryDownloadSelectedBtn) {
+        ui.galleryDownloadSelectedBtn.addEventListener('click', () => ui.downloadSelectedGallery());
+    }
+
+    if (ui.galleryDeleteSelectedBtn) {
+        ui.galleryDeleteSelectedBtn.addEventListener('click', () => ui.deleteSelectedGallery());
+    }
+
+    // Keyboard navigation for lightbox
+    document.addEventListener('keydown', (event) => {
+        if (!ui.galleryLightbox || ui.galleryLightbox.style.display === 'none') return;
+        if (event.key === 'ArrowLeft')  { ui.lightboxPrev(); event.preventDefault(); }
+        if (event.key === 'ArrowRight') { ui.lightboxNext(); event.preventDefault(); }
+        if (event.key === 'Escape')     { ui.closeGalleryLightbox(); event.preventDefault(); }
+    });
 }
