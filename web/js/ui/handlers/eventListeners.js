@@ -447,7 +447,6 @@ export function setupEventListeners(ui) {
     // --- Gallery Tab ---
     if (ui.galleryRefreshButton) {
         ui.galleryRefreshButton.addEventListener('click', () => {
-            ui._galleryPage = 1;
             ui.handleGalleryLoad();
         });
     }
