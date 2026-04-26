@@ -96,6 +96,7 @@ app.registerExtension({
 
         /** Rounded-rect path helper — caller must open beginPath first */
         function _rrect(ctx, x, y, w, h, r) {
+            r = Math.min(r, w / 2, h / 2);
             ctx.moveTo(x + r, y);
             ctx.lineTo(x + w - r, y);
             ctx.arcTo(x + w, y, x + w, y + r, r);
@@ -127,13 +128,13 @@ app.registerExtension({
                     fileName: "",
                     filePath: "",
                 };
-                this.size = [560, 320];
+                this.size = [580, 360];
                 this.resizable = true;
                 this._img = null;
                 this._imgLoaded = false;
                 this._imgSrc = "";
-                this._clickZones = []; // [{x,y,w,h,action}]
-                this.bgcolor = "#16213e";
+                this._clickZones = [];
+                this.bgcolor = "#0f1825";
             }
 
             onPropertyChanged(name, val) {
@@ -164,28 +165,86 @@ app.registerExtension({
                 return lines;
             }
 
-            /** Draw a small clickable chip button; returns its left-edge x */
-            _drawChip(ctx, label, actionFn, rightEdgeX, baselineY) {
-                ctx.font = "10px Arial";
-                const bW = Math.ceil(ctx.measureText(label).width) + 12;
-                const bH = 16;
+            /** Draw a copy button chip, returns the left-edge x */
+            _drawCopyChip(ctx, label, actionFn, rightEdgeX, centerY,
+                          bgColor = "#1a2d50", borderColor = "#2e4e8a", textColor = "#7aabee") {
+                ctx.font = "bold 9px Arial";
+                const bW = Math.ceil(ctx.measureText(label).width) + 14;
+                const bH = 17;
                 const bX = rightEdgeX - bW;
-                const bY = baselineY - 12;
+                const bY = centerY - bH / 2;
                 ctx.beginPath();
-                _rrect(ctx, bX, bY, bW, bH, 4);
-                ctx.fillStyle = "#1e3258";
+                _rrect(ctx, bX, bY, bW, bH, 5);
+                ctx.fillStyle = bgColor;
                 ctx.fill();
-                ctx.strokeStyle = "#3a5a9a";
+                ctx.strokeStyle = borderColor;
                 ctx.lineWidth = 0.8;
                 ctx.stroke();
-                ctx.fillStyle = "#78aaee";
+                ctx.fillStyle = textColor;
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
-                ctx.fillText(label, bX + bW / 2, bY + bH / 2);
+                ctx.fillText(label, bX + bW / 2, centerY);
                 ctx.textAlign = "left";
                 ctx.textBaseline = "alphabetic";
                 this._clickZones.push({ x: bX, y: bY, w: bW, h: bH, action: actionFn });
                 return bX;
+            }
+
+            /**
+             * Draw word/tag chips and return new Y after all rows.
+             * Words wrap to new lines; each chip is a rounded pill.
+             */
+            _drawWordChips(ctx, words, startX, startY, maxW,
+                           chipBg, chipBorder, chipText, maxRows = 4) {
+                const CHIP_H = 17, CHIP_GAP_X = 5, CHIP_GAP_Y = 5, PAD_X = 8, FONT = "10px Arial";
+                ctx.font = FONT;
+                let cx = startX, cy = startY, rows = 0;
+                const chipZones = [];
+                for (const w of words) {
+                    const wW = ctx.measureText(w).width + PAD_X * 2;
+                    if (cx + wW > startX + maxW && cx > startX) {
+                        cx = startX; cy += CHIP_H + CHIP_GAP_Y; rows++;
+                        if (rows >= maxRows) { /* draw "…more" */ break; }
+                    }
+                    ctx.beginPath();
+                    _rrect(ctx, cx, cy, wW, CHIP_H, 5);
+                    ctx.fillStyle = chipBg;
+                    ctx.fill();
+                    ctx.strokeStyle = chipBorder;
+                    ctx.lineWidth = 0.7;
+                    ctx.stroke();
+                    ctx.fillStyle = chipText;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(w, cx + wW / 2, cy + CHIP_H / 2);
+                    ctx.textAlign = "left";
+                    ctx.textBaseline = "alphabetic";
+                    chipZones.push({ x: cx, y: cy, w: wW, h: CHIP_H, word: w });
+                    cx += wW + CHIP_GAP_X;
+                }
+                return cy + CHIP_H; // bottom of last row
+            }
+
+            /** Draw a section box header bar and return y after the header */
+            _drawSectionHeader(ctx, label, x, y, w,
+                               bgColor = "rgba(255,255,255,0.05)",
+                               borderColor = "rgba(255,255,255,0.1)",
+                               textColor = "rgba(200,210,230,0.7)") {
+                const H = 20;
+                ctx.beginPath();
+                _rrect(ctx, x, y, w, H, 5);
+                ctx.fillStyle = bgColor;
+                ctx.fill();
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
+                ctx.font = "bold 10px Arial";
+                ctx.fillStyle = textColor;
+                ctx.textAlign = "left";
+                ctx.textBaseline = "middle";
+                ctx.fillText(label, x + 8, y + H / 2);
+                ctx.textBaseline = "alphabetic";
+                return y + H;
             }
 
             onMouseDown(e, pos) {
@@ -193,7 +252,7 @@ app.registerExtension({
                     if (pos[0] >= z.x && pos[0] <= z.x + z.w &&
                         pos[1] >= z.y && pos[1] <= z.y + z.h) {
                         z.action();
-                        return true; // consumed
+                        return true;
                     }
                 }
                 return false;
@@ -205,30 +264,50 @@ app.registerExtension({
                 const [W, H] = this.size;
                 const pad = 10;
 
-                // ── Background ──────────────────────────────
-                ctx.fillStyle = "#16213e";
+                // ── Background ──────────────────────────────────
+                ctx.fillStyle = "#0f1825";
                 ctx.fillRect(0, 0, W, H);
 
-                // ── Image column ────────────────────────────
-                const imgW = Math.min(150, Math.floor(W * 0.28));
+                // Subtle inner border
+                ctx.strokeStyle = "rgba(92,138,255,0.15)";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0.5, 0.5, W - 1, H - 1);
+
+                // ── Image column ─────────────────────────────────
+                const imgW = Math.min(160, Math.floor(W * 0.28));
                 const imgColH = H - pad * 2;
 
                 if (this._img && this._imgLoaded) {
                     const ratio = this._img.naturalHeight / this._img.naturalWidth;
                     const dH = Math.min(imgColH, Math.round(imgW * ratio));
+                    // Shadow behind image
                     ctx.save();
+                    ctx.shadowColor = "rgba(0,0,0,0.6)";
+                    ctx.shadowBlur = 12;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
                     ctx.beginPath();
-                    _rrect(ctx, pad, pad, imgW, dH, 6);
+                    _rrect(ctx, pad, pad, imgW, dH, 7);
                     ctx.clip();
+                    ctx.shadowColor = "transparent";
                     ctx.drawImage(this._img, pad, pad, imgW, dH);
                     ctx.restore();
-                } else {
-                    ctx.fillStyle = "#1e2a44";
+                    // Thin border around image
                     ctx.beginPath();
-                    _rrect(ctx, pad, pad, imgW, imgColH, 6);
+                    _rrect(ctx, pad, pad, imgW, dH, 7);
+                    ctx.strokeStyle = "rgba(92,138,255,0.3)";
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                } else {
+                    ctx.beginPath();
+                    _rrect(ctx, pad, pad, imgW, imgColH, 7);
+                    ctx.fillStyle = "#1a2540";
                     ctx.fill();
-                    ctx.fillStyle = "#404060";
+                    ctx.strokeStyle = "rgba(92,138,255,0.2)";
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
                     ctx.font = "28px Arial";
+                    ctx.fillStyle = "#2a3a5a";
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
                     ctx.fillText("🖼", pad + imgW / 2, H / 2);
@@ -236,109 +315,170 @@ app.registerExtension({
                     ctx.textBaseline = "alphabetic";
                 }
 
-                // ── Right text column ────────────────────────
+                // ── Right text column ─────────────────────────────
                 const tx = pad * 2 + imgW;
                 const tw = W - tx - pad;
                 let ty = pad + 14;
                 const p = this.properties;
 
-                // ── Model Name (large, bold) ──────────────────
-                ctx.font = "bold 14px Arial";
-                ctx.fillStyle = "#ddeeff";
+                // ── Model Name ────────────────────────────────────
+                ctx.font = "bold 13px Arial";
+                ctx.fillStyle = "#e0eaff";
                 const nameLines = this._wrap(ctx, p.modelName || "–", tw);
                 nameLines.slice(0, 2).forEach(l => { ctx.fillText(l, tx, ty, tw); ty += 17; });
-                ty += 3;
+                ty += 2;
 
-                // ── Meta badges ──────────────────────────────
-                ctx.font = "11px Arial";
-                if (p.modelType)   { ctx.fillStyle = "#5c8aff"; ctx.fillText(p.modelType, tx, ty, tw); ty += 14; }
-                if (p.baseModel)   { ctx.fillStyle = "#80b8d8"; ctx.fillText("Base: " + p.baseModel, tx, ty, tw); ty += 14; }
-                if (p.creator)     { ctx.fillStyle = "#7888b0"; ctx.fillText("By: " + p.creator, tx, ty, tw); ty += 14; }
-                if (p.versionName) { ctx.fillStyle = "#607090"; ctx.fillText("Ver: " + p.versionName, tx, ty, tw); ty += 14; }
+                // ── Meta pills row ────────────────────────────────
+                if (p.modelType || p.baseModel) {
+                    let mx = tx;
+                    const drawPill = (text, bg, border, col) => {
+                        ctx.font = "bold 9px Arial";
+                        const pw = ctx.measureText(text).width + 12;
+                        const ph = 15;
+                        const py = ty - 12;
+                        ctx.beginPath();
+                        _rrect(ctx, mx, py, pw, ph, 7);
+                        ctx.fillStyle = bg;
+                        ctx.fill();
+                        ctx.strokeStyle = border;
+                        ctx.lineWidth = 0.7;
+                        ctx.stroke();
+                        ctx.fillStyle = col;
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(text, mx + pw / 2, py + ph / 2);
+                        ctx.textAlign = "left";
+                        ctx.textBaseline = "alphabetic";
+                        mx += pw + 5;
+                    };
+                    if (p.modelType) drawPill(p.modelType.toUpperCase(), "rgba(92,138,255,0.2)", "rgba(92,138,255,0.5)", "#7aabff");
+                    if (p.baseModel) drawPill(p.baseModel, "rgba(128,184,216,0.12)", "rgba(128,184,216,0.35)", "#80b8d8");
+                    ty += 18;
+                }
 
-                // ── Filename row ─────────────────────────────
+                // ── Creator / Version ─────────────────────────────
+                ctx.font = "10px Arial";
+                if (p.creator)     { ctx.fillStyle = "#6878a0"; ctx.fillText("by  " + p.creator, tx, ty, tw); ty += 14; }
+                if (p.versionName) { ctx.fillStyle = "#505878"; ctx.fillText("ver  " + p.versionName, tx, ty, tw); ty += 14; }
+                ty += 2;
+
+                // ── Filename box ──────────────────────────────────
                 const fname = p.fileName || (p.filePath ? p.filePath.split(/[\/\\]/).pop() : '');
                 if (fname) {
-                    this._drawChip(ctx, "📋 Copy", () => {
+                    const boxH = 24;
+                    const boxY = ty - 2;
+                    ctx.beginPath();
+                    _rrect(ctx, tx, boxY, tw, boxH, 5);
+                    ctx.fillStyle = "rgba(160,224,176,0.07)";
+                    ctx.fill();
+                    ctx.strokeStyle = "rgba(160,224,176,0.2)";
+                    ctx.lineWidth = 0.8;
+                    ctx.stroke();
+
+                    const chipCenterY = boxY + boxH / 2;
+                    const chipRight = tx + tw - 4;
+                    this._drawCopyChip(ctx, "⎘ Copy", () => {
                         navigator.clipboard?.writeText(fname).catch(() => {});
-                    }, tx + tw, ty);
-                    ctx.font = "11px Arial";
-                    ctx.fillStyle = "#a0e0b0";
-                    ctx.fillText(fname, tx, ty, tw - 65);
-                    ty += 14;
+                    }, chipRight, chipCenterY, "#1a3a28", "#2e6a44", "#70c090");
+
+                    ctx.font = "10px Arial";
+                    ctx.fillStyle = "#90d0a8";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(fname, tx + 8, chipCenterY, tw - 75);
+                    ctx.textBaseline = "alphabetic";
+                    ty = boxY + boxH + 8;
                 }
 
-                // ── Divider ──────────────────────────────────
-                ty += 4;
-                ctx.strokeStyle = "#263558";
-                ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + tw, ty); ctx.stroke();
-                ty += 11;
-
-                // ── Trigger Words ────────────────────────────
+                // ── Trigger Words section ─────────────────────────
                 const words = Array.isArray(p.triggerWords) ? p.triggerWords.filter(Boolean) : [];
-                if (words.length > 0) {
-                    // Label + Copy All chip
-                    ctx.font = "bold 11px Arial";
+                if (words.length > 0 && ty + 30 < H - 4) {
+                    const sectionX = tx;
+                    const sectionW = tw;
+
+                    // Header bar with "Copy All" chip
+                    const headerY = ty;
+                    const headerH = 20;
+                    ctx.beginPath();
+                    _rrect(ctx, sectionX, headerY, sectionW, headerH, 5);
+                    ctx.fillStyle = "rgba(245,158,11,0.12)";
+                    ctx.fill();
+                    ctx.strokeStyle = "rgba(245,158,11,0.3)";
+                    ctx.lineWidth = 0.8;
+                    ctx.stroke();
+
+                    ctx.font = "bold 10px Arial";
                     ctx.fillStyle = "#f0a050";
-                    ctx.fillText("✦ Trigger Words", tx, ty, tw - 75);
+                    ctx.textBaseline = "middle";
+                    ctx.fillText("✦ Trigger Words", sectionX + 8, headerY + headerH / 2);
+                    ctx.textBaseline = "alphabetic";
+
                     const allStr = words.join(", ");
-                    this._drawChip(ctx, "📋 Copy All", () => {
+                    this._drawCopyChip(ctx, "⎘ Copy All", () => {
                         navigator.clipboard?.writeText(allStr).catch(() => {});
-                    }, tx + tw, ty);
-                    ty += 15;
+                    }, sectionX + sectionW - 4, headerY + headerH / 2,
+                       "#2a1e08", "#6a4a18", "#d4900a");
 
-                    // Words text
-                    ctx.font = "11px Arial";
-                    ctx.fillStyle = "#b8d8f8";
-                    const twLines = this._wrap(ctx, allStr, tw);
-                    twLines.slice(0, 3).forEach(l => { ctx.fillText(l, tx, ty, tw); ty += 14; });
-                    ty += 5;
+                    ty = headerY + headerH + 5;
 
-                    // Divider
-                    ctx.strokeStyle = "#263558";
-                    ctx.lineWidth = 1;
-                    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + tw, ty); ctx.stroke();
-                    ty += 11;
-                }
-
-                // ── Example Prompts ──────────────────────────
-                const prompts = Array.isArray(p.examplePrompts) ? p.examplePrompts.filter(Boolean) : [];
-                if (prompts.length > 0) {
-                    ctx.font = "bold 11px Arial";
-                    ctx.fillStyle = "#70d890";
-                    ctx.fillText(`💡 Example Prompts (${prompts.length})`, tx, ty, tw);
-                    ty += 15;
-
-                    prompts.slice(0, 2).forEach((prompt, i) => {
-                        const pStr = String(prompt);
-                        // Chip on right; label row
-                        this._drawChip(ctx, `📋 #${i + 1}`, () => {
-                            navigator.clipboard?.writeText(pStr).catch(() => {});
-                        }, tx + tw, ty);
-
-                        ctx.font = "10px Arial";
-                        ctx.fillStyle = "#88a8c8";
-                        // Reserve space for chip on first line
-                        const pLines = this._wrap(ctx, pStr, tw - 60);
-                        pLines.slice(0, 2).forEach(l => { ctx.fillText(l, tx, ty, tw - 65); ty += 13; });
-                        ty += 5;
-                    });
-
-                    // Divider
-                    if (p.civitaiUrl) {
-                        ctx.strokeStyle = "#263558";
-                        ctx.lineWidth = 1;
-                        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + tw, ty); ctx.stroke();
-                        ty += 9;
+                    // Chips area
+                    if (ty + 22 < H - 4) {
+                        const chipsAreaY = ty;
+                        const availH = Math.min(H - chipsAreaY - 28, 80);
+                        const maxRows = Math.max(1, Math.floor((availH + 5) / 22));
+                        const newY = this._drawWordChips(
+                            ctx, words, sectionX, chipsAreaY, sectionW,
+                            "rgba(245,158,11,0.15)", "rgba(245,158,11,0.4)", "#f0b840",
+                            maxRows
+                        );
+                        ty = newY + 8;
                     }
                 }
 
-                // ── Civitai URL ──────────────────────────────
+                // ── Example Prompts section ───────────────────────
+                const prompts = Array.isArray(p.examplePrompts) ? p.examplePrompts.filter(Boolean) : [];
+                if (prompts.length > 0 && ty + 30 < H - 4) {
+                    // Header
+                    const headerY = ty;
+                    const headerH = 20;
+                    ctx.beginPath();
+                    _rrect(ctx, tx, headerY, tw, headerH, 5);
+                    ctx.fillStyle = "rgba(112,216,144,0.1)";
+                    ctx.fill();
+                    ctx.strokeStyle = "rgba(112,216,144,0.25)";
+                    ctx.lineWidth = 0.8;
+                    ctx.stroke();
+                    ctx.font = "bold 10px Arial";
+                    ctx.fillStyle = "#70d890";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(`💡 Example Prompts  (${prompts.length})`, tx + 8, headerY + headerH / 2);
+                    ctx.textBaseline = "alphabetic";
+                    ty = headerY + headerH + 5;
+
+                    prompts.slice(0, 2).forEach((prompt, i) => {
+                        if (ty + 16 >= H - 24) return;
+                        const pStr = String(prompt);
+                        const chipCenterY = ty + 6;
+                        this._drawCopyChip(ctx, `⎘ #${i + 1}`, () => {
+                            navigator.clipboard?.writeText(pStr).catch(() => {});
+                        }, tx + tw - 4, chipCenterY, "#0e2a18", "#205a30", "#50c070");
+
+                        ctx.font = "9.5px Arial";
+                        ctx.fillStyle = "#78a898";
+                        const pLines = this._wrap(ctx, pStr, tw - 60);
+                        pLines.slice(0, 2).forEach(l => {
+                            if (ty + 2 >= H - 24) return;
+                            ctx.fillText(l, tx, ty + 12, tw - 65);
+                            ty += 13;
+                        });
+                        ty += 4;
+                    });
+                }
+
+                // ── Civitai URL ───────────────────────────────────
                 if (p.civitaiUrl && ty + 12 <= H - 4) {
-                    ctx.font = "10px Arial";
-                    ctx.fillStyle = "#4a78cc";
-                    ctx.fillText(p.civitaiUrl.replace("https://", ""), tx, ty, tw);
+                    ctx.font = "9px Arial";
+                    ctx.fillStyle = "#3a6acc";
+                    ctx.fillText(p.civitaiUrl.replace("https://", ""), tx, H - 6, tw);
                 }
             }
 

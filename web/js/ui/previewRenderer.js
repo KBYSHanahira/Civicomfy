@@ -110,8 +110,10 @@ export function renderDownloadPreview(ui, data) {
           ${statItem('bolt', stats.buzz, 'Buzz')}
         </div>
 
-        <div class="cfy-prev-section">
-          <div class="cfy-prev-section-label"><i class="fas fa-file-archive"></i> Primary File</div>
+        <div class="cfy-prev-box">
+          <div class="cfy-prev-box-header">
+            <span class="cfy-prev-section-label"><i class="fas fa-file-archive"></i> Primary File</span>
+          </div>
           <div class="cfy-prev-file-name" title="${fileInfo.name || ''}">${fileInfo.name || 'N/A'}</div>
           <div class="cfy-prev-chips">
             ${chip(fileInfo.size_kb ? ui.formatBytes(fileInfo.size_kb * 1024) : '')}
@@ -124,18 +126,28 @@ export function renderDownloadPreview(ui, data) {
         ${filesDropdown}
 
         ${trainedWords.length > 0 ? `
-        <div class="cfy-prev-section">
-          <div class="cfy-prev-section-label"><i class="fas fa-pen-nib"></i> Trigger Words</div>
+        <div class="cfy-prev-box cfy-prev-box--amber">
+          <div class="cfy-prev-box-header">
+            <span class="cfy-prev-section-label"><i class="fas fa-pen-nib"></i> Trigger Words</span>
+            <button class="cfy-copy-btn" data-copy-type="words" title="Copy all trigger words">
+              <i class="fas fa-copy"></i> Copy All
+            </button>
+          </div>
           <div class="cfy-prev-words">
-            ${trainedWords.map(w => `<span class="cfy-prev-trained-word">${w}</span>`).join('')}
+            ${trainedWords.map(w => `<span class="cfy-prev-trained-word" data-word="${w.replace(/"/g,'&quot;')}" title="Click to copy">${w}</span>`).join('')}
           </div>
         </div>` : ''}
 
         ${tags.length > 0 ? `
-        <div class="cfy-prev-section">
-          <div class="cfy-prev-section-label"><i class="fas fa-tags"></i> Tags</div>
+        <div class="cfy-prev-box cfy-prev-box--muted">
+          <div class="cfy-prev-box-header">
+            <span class="cfy-prev-section-label"><i class="fas fa-tags"></i> Tags</span>
+            <button class="cfy-copy-btn" data-copy-type="tags" title="Copy all tags">
+              <i class="fas fa-copy"></i> Copy All
+            </button>
+          </div>
           <div class="cfy-prev-tags">
-            ${tags.map(t => `<span class="cfy-prev-tag">${t}</span>`).join('')}
+            ${tags.map(t => `<span class="cfy-prev-tag" data-tag="${t.replace(/"/g,'&quot;')}" title="Click to copy">${t}</span>`).join('')}
           </div>
         </div>` : ''}
 
@@ -158,6 +170,53 @@ export function renderDownloadPreview(ui, data) {
     </div>`;
 
   ui.downloadPreviewArea.innerHTML = html;
+
+  // ── Copy helpers ────────────────────────────────────────────
+  function showCopyToast(msg) {
+    const existing = document.getElementById('cfy-copy-toast');
+    if (existing) existing.remove();
+    const t = document.createElement('div');
+    t.id = 'cfy-copy-toast';
+    t.className = 'cfy-copy-toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('visible'));
+    setTimeout(() => { t.classList.remove('visible'); setTimeout(() => t.remove(), 300); }, 1800);
+  }
+
+  function copyText(text, btn, toastMsg) {
+    navigator.clipboard.writeText(text).then(() => {
+      showCopyToast(toastMsg || 'Copied!');
+      if (btn) {
+        btn.classList.add('copied');
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 1800);
+      }
+    }).catch(() => showCopyToast('Copy failed'));
+  }
+
+  // Copy All buttons
+  ui.downloadPreviewArea.querySelectorAll('.cfy-copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.dataset.copyType;
+      if (type === 'words') {
+        copyText(trainedWords.join(', '), btn, `Copied ${trainedWords.length} trigger word${trainedWords.length !== 1 ? 's' : ''}!`);
+      } else if (type === 'tags') {
+        copyText(tags.join(', '), btn, `Copied ${tags.length} tag${tags.length !== 1 ? 's' : ''}!`);
+      }
+    });
+  });
+
+  // Individual trigger word click-to-copy
+  ui.downloadPreviewArea.querySelectorAll('.cfy-prev-trained-word').forEach(el => {
+    el.addEventListener('click', () => copyText(el.dataset.word, null, `Copied "${el.dataset.word}"`));
+  });
+
+  // Individual tag click-to-copy
+  ui.downloadPreviewArea.querySelectorAll('.cfy-prev-tag').forEach(el => {
+    el.addEventListener('click', () => copyText(el.dataset.tag, null, `Copied "${el.dataset.tag}"`));
+  });
 
   // Hero image click-to-lightbox (works for single and multiple images)
   const heroEl0 = ui.downloadPreviewArea.querySelector('#cfy-prev-hero');

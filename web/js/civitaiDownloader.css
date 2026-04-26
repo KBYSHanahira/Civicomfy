@@ -583,6 +583,88 @@
   color: var(--cfy-text-dim);
 }
 .cfy-prev-section-label i { margin-right: 4px; opacity: 0.7; }
+
+/* Boxed sections (copyable) */
+.cfy-prev-box {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--cfy-radius-lg);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cfy-prev-box--amber {
+  background: rgba(245,158,11,0.07);
+  border-color: rgba(245,158,11,0.22);
+}
+.cfy-prev-box--muted {
+  background: rgba(255,255,255,0.035);
+  border-color: rgba(255,255,255,0.1);
+}
+.cfy-prev-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cfy-prev-box-header .cfy-prev-section-label {
+  margin: 0;
+}
+
+/* Copy button */
+.cfy-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  color: var(--cfy-text-dim);
+  font-size: 0.68em;
+  font-weight: 600;
+  padding: 2px 9px;
+  cursor: pointer;
+  transition: background var(--cfy-transition), color var(--cfy-transition), border-color var(--cfy-transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.cfy-copy-btn:hover {
+  background: rgba(92,138,255,0.18);
+  border-color: rgba(92,138,255,0.4);
+  color: #a8c0ff;
+}
+.cfy-copy-btn.copied {
+  background: rgba(76,175,80,0.2);
+  border-color: rgba(76,175,80,0.45);
+  color: #81c784;
+}
+.cfy-copy-btn i { font-size: 0.9em; }
+
+/* Copy toast */
+.cfy-copy-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(30,30,40,0.95);
+  border: 1px solid rgba(92,138,255,0.35);
+  color: #c8d8ff;
+  font-size: 0.82em;
+  font-weight: 600;
+  padding: 7px 18px;
+  border-radius: 20px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+  z-index: 99999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.cfy-copy-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .cfy-prev-file-name {
   font-size: 0.82em;
   color: var(--cfy-text);
@@ -619,11 +701,20 @@
   color: #fbbf24;
   font-size: 0.75em;
   font-weight: 600;
-  padding: 2px 9px;
+  padding: 3px 10px;
   border-radius: 10px;
   white-space: nowrap;
   font-family: monospace;
+  cursor: pointer;
+  transition: background var(--cfy-transition), border-color var(--cfy-transition), transform var(--cfy-transition);
+  user-select: none;
 }
+.cfy-prev-trained-word:hover {
+  background: rgba(245,158,11,0.28);
+  border-color: rgba(245,158,11,0.6);
+  transform: translateY(-1px);
+}
+.cfy-prev-trained-word:active { transform: scale(0.96); }
 
 /* Tags */
 .cfy-prev-tags {
@@ -636,9 +727,17 @@
   border: 1px solid rgba(255,255,255,0.14);
   color: var(--cfy-text-dim);
   font-size: 0.72em;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 10px;
   white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--cfy-transition), border-color var(--cfy-transition), color var(--cfy-transition);
+  user-select: none;
+}
+.cfy-prev-tag:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.28);
+  color: var(--cfy-text);
 }
 
 /* Collapsible descriptions */
