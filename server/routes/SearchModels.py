@@ -32,9 +32,6 @@ async def route_search_models(request):
         api_key = data.get("api_key", "") # Keep for potential future use or different endpoints
         nsfw = data.get("nsfw", None) # Expect Boolean or None
 
-        if not query and not model_type_keys and not base_model_filters:
-             raise web.HTTPBadRequest(reason="Search requires a query or at least one filter (type or base model).")
-
         # Instantiate API - API key might not be needed for Meili public search
         api = CivitaiAPI(api_key or None)
 

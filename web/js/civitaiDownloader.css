@@ -1757,7 +1757,48 @@
   border-radius: var(--cfy-radius);
   box-shadow: var(--cfy-shadow-lg);
   cursor: default;
+  user-select: none;
 }
+
+/* ── Lightbox Zoom Badge ────────────────────────────────────── */
+.civitai-lightbox-zoom-badge {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10,10,20,0.88);
+  color: #fff;
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 5px 16px;
+  border-radius: 20px;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  border: 1px solid rgba(255,255,255,0.15);
+  white-space: nowrap;
+  user-select: none;
+}
+.civitai-lightbox-zoom-badge.visible { opacity: 1; }
+
+/* ── Hide buttons when lightbox is zoomed in ────────────────── */
+.civitai-lightbox--zoomed .civitai-lightbox-close,
+.civitai-lightbox--zoomed .civitai-gallery-lightbox-close,
+.civitai-lightbox--zoomed .civitai-gallery-lightbox-nav {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.civitai-lightbox-close,
+.civitai-gallery-lightbox-close,
+.civitai-gallery-lightbox-nav {
+  transition: opacity 0.2s ease, background var(--cfy-transition), color var(--cfy-transition), border-color var(--cfy-transition);
+}
+
+/* ── Preview hero: show zoom cursor ────────────────────────── */
+.cfy-prev-gallery-main { cursor: zoom-in; }
 
 /* =============================================================
    STATUS TAB

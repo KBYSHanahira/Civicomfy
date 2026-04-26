@@ -1,5 +1,6 @@
 ﻿import { CivitaiDownloaderAPI } from "../../api/civitai.js";
 import { app } from "../../../../../scripts/app.js";
+import { attachLightboxZoom } from "../../utils/dom.js";
 
 const CIVITAI_BASE = 'https://civitai.com/models/';
 
@@ -448,6 +449,7 @@ function _showDetailModal(ui, model) {
             const onLbKey = (e) => { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', onLbKey); } };
             document.addEventListener('keydown', onLbKey);
             document.body.appendChild(lb);
+            attachLightboxZoom(zoomImg, lb);
         });
         previewWrap.appendChild(img);
     } else {

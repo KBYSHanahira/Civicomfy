@@ -1,4 +1,5 @@
 import { CivitaiDownloaderAPI } from "../../api/civitai.js";
+import { attachLightboxZoom } from "../../utils/dom.js";
 
 // ---- Helpers ----
 
@@ -143,8 +144,13 @@ function _buildGalleryCard(img, idx, ui) {
 
     selectWrap.addEventListener('click', (e) => {
         e.stopPropagation();
-        toggleGallerySelect(ui, key);
-        _syncCardSelection(card, ui._gallerySelected.has(key));
+        if (e.shiftKey && ui._galleryAnchorIdx !== undefined && ui._gallerySelected.size > 0) {
+            _selectRange(ui, ui._galleryAnchorIdx, idx);
+        } else {
+            toggleGallerySelect(ui, key);
+            _syncCardSelection(card, ui._gallerySelected.has(key));
+            ui._galleryAnchorIdx = idx;
+        }
     });
 
     viewBtn.addEventListener('click', (e) => {
@@ -162,11 +168,16 @@ function _buildGalleryCard(img, idx, ui) {
         deleteGalleryImage(ui, img, card);
     });
 
-    // Card click: if selection active → toggle; else open lightbox
-    card.addEventListener('click', () => {
+    // Card click: if selection active → toggle (with Shift = range); else open lightbox
+    card.addEventListener('click', (e) => {
         if (ui._gallerySelected.size > 0) {
-            toggleGallerySelect(ui, key);
-            _syncCardSelection(card, ui._gallerySelected.has(key));
+            if (e.shiftKey && ui._galleryAnchorIdx !== undefined) {
+                _selectRange(ui, ui._galleryAnchorIdx, idx);
+            } else {
+                toggleGallerySelect(ui, key);
+                _syncCardSelection(card, ui._gallerySelected.has(key));
+                ui._galleryAnchorIdx = idx;
+            }
         } else {
             openGalleryLightbox(ui, idx);
         }
@@ -186,6 +197,27 @@ function _syncCardSelection(card, selected) {
     }
 }
 
+// ---- Range select (Shift+click) ----
+
+function _selectRange(ui, fromIdx, toIdx) {
+    const grid = ui.galleryGrid;
+    if (!grid) return;
+    const min = Math.min(fromIdx, toIdx);
+    const max = Math.max(fromIdx, toIdx);
+    grid.querySelectorAll('.civitai-gallery-card').forEach(card => {
+        const i = parseInt(card.dataset.index, 10);
+        if (i >= min && i <= max) {
+            const k = card.dataset.key;
+            if (k) {
+                ui._gallerySelected.add(k);
+                _syncCardSelection(card, true);
+            }
+        }
+    });
+    ui._galleryAnchorIdx = toIdx;
+    updateGallerySelectionBar(ui);
+}
+
 // ---- Main loader ----
 
 export async function handleGalleryLoad(ui) {
@@ -198,6 +230,7 @@ export async function handleGalleryLoad(ui) {
         ui._gallerySelected = new Set();
         updateGallerySelectionBar(ui);
     }
+    ui._galleryAnchorIdx = undefined;
 
     grid.innerHTML = '<p style="padding:20px;color:var(--cfy-text-dim)"><i class="fas fa-spinner fa-spin"></i> Loading images…</p>';
     if (countEl) countEl.textContent = '';
@@ -315,6 +348,13 @@ export function openGalleryLightbox(ui, index) {
 
     const lb = ui.galleryLightbox;
     if (lb) lb.style.display = 'flex';
+
+    // Attach wheel zoom once; reset on subsequent opens
+    if (!ui._lightboxZoom && ui.galleryLightboxImg && lb) {
+        ui._lightboxZoom = attachLightboxZoom(ui.galleryLightboxImg, lb);
+    } else if (ui._lightboxZoom) {
+        ui._lightboxZoom.reset();
+    }
 }
 
 function _renderLightboxImage(ui) {
@@ -327,6 +367,9 @@ function _renderLightboxImage(ui) {
 
     const imgEl = ui.galleryLightboxImg;
     if (imgEl) { imgEl.src = url; imgEl.alt = img.filename; }
+
+    // Reset zoom when switching images
+    if (ui._lightboxZoom) ui._lightboxZoom.reset();
 
     const nameEl = ui.galleryLightboxName;
     if (nameEl) nameEl.textContent = img.filename;
@@ -350,6 +393,7 @@ export function closeGalleryLightbox(ui) {
     const lb = ui.galleryLightbox;
     if (lb) lb.style.display = 'none';
     if (ui.galleryLightboxImg) ui.galleryLightboxImg.src = '';
+    if (ui._lightboxZoom) ui._lightboxZoom.reset();
 }
 
 export function lightboxPrev(ui) {

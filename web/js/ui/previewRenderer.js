@@ -1,5 +1,7 @@
 // Renders the download preview panel
 
+import { attachLightboxZoom } from "../utils/dom.js";
+
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 
 export function renderDownloadPreview(ui, data) {
@@ -156,6 +158,37 @@ export function renderDownloadPreview(ui, data) {
     </div>`;
 
   ui.downloadPreviewArea.innerHTML = html;
+
+  // Hero image click-to-lightbox (works for single and multiple images)
+  const heroEl0 = ui.downloadPreviewArea.querySelector('#cfy-prev-hero');
+  const wrapEl0 = ui.downloadPreviewArea.querySelector('#cfy-prev-main-wrap');
+  if (heroEl0 && wrapEl0) {
+    wrapEl0.addEventListener('click', () => {
+      const src = heroEl0.src;
+      if (!src || src.includes('placeholder')) return;
+      const existing = document.getElementById('civitai-lightbox');
+      if (existing) existing.remove();
+      const lb = document.createElement('div');
+      lb.id = 'civitai-lightbox';
+      lb.className = 'civitai-lightbox';
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'civitai-lightbox-close';
+      closeBtn.innerHTML = '&times;';
+      closeBtn.addEventListener('click', (e) => { e.stopPropagation(); lb.remove(); });
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = heroEl0.alt || '';
+      img.className = 'civitai-lightbox-media';
+      img.addEventListener('click', (e) => e.stopPropagation());
+      lb.appendChild(closeBtn);
+      lb.appendChild(img);
+      lb.addEventListener('click', () => lb.remove());
+      const onKey = (e) => { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', onKey); } };
+      document.addEventListener('keydown', onKey);
+      document.body.appendChild(lb);
+      attachLightboxZoom(img, lb);
+    });
+  }
 
   // Gallery thumb interaction
   if (galleryImgs.length > 1) {

@@ -4,6 +4,7 @@
 //        showBrowseCardInfo(uiInstance, modelId)
 
 import { app } from "../../../../scripts/app.js";
+import { attachLightboxZoom } from "../utils/dom.js";
 
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 
@@ -56,6 +57,11 @@ function _openLightbox(url, isVideo = false) {
     document.addEventListener('keydown', onKey);
 
     document.body.appendChild(lb);
+
+    // Wheel zoom (images only)
+    if (!isVideo) {
+        attachLightboxZoom(media, lb);
+    }
 }
 
 // Return a consistent accent color for a model type
