@@ -510,11 +510,16 @@ function _showDetailModal(ui, model) {
     // ── Section: Trigger Words
     if (Array.isArray(model.trained_words) && model.trained_words.length > 0) {
         const twSec = _mmSection('Trigger Words', 'fa-tags');
+        twSec.classList.add('tw-section');
 
         const twHeader = document.createElement('div');
         twHeader.className = 'civitai-mymodel-detail-tw-header';
+        const twLabel = twSec.querySelector('.civitai-mymodel-detail-section-label');
+        if (twLabel) {
+            twHeader.appendChild(twLabel);
+        }
         const copyAllBtn = document.createElement('button');
-        copyAllBtn.className = 'civitai-button small secondary';
+        copyAllBtn.className = 'cfy-copy-btn';
         copyAllBtn.innerHTML = '<i class="fas fa-copy"></i> Copy All';
         copyAllBtn.addEventListener('click', () => {
             navigator.clipboard?.writeText(model.trained_words.join(', ')).catch(() => {});

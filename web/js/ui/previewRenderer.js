@@ -56,6 +56,40 @@ export function renderDownloadPreview(ui, data) {
     return label && label !== 'N/A' ? `<span class="cfy-prev-chip">${label}</span>` : '';
   }
 
+  // Split a trained-words string into individual word chips
+  function wordChipsHtml(str) {
+    return str.split(',').map(w => w.trim()).filter(Boolean)
+      .map(w => `<span class="cfy-prev-trained-word" data-word="${w.replace(/"/g,'&quot;')}" title="Click to copy">${w}</span>`)
+      .join('');
+  }
+
+  // Build the full trigger-words box (single group or multi-group)
+  function buildTriggerWordsHtml() {
+    if (trainedWords.length === 0) return '';
+    const groupsHtml = trainedWords.length === 1
+      ? `<div class="cfy-prev-words">${wordChipsHtml(trainedWords[0])}</div>`
+      : trainedWords.map((group, gi) => `
+        <div class="cfy-prev-word-group${gi > 0 ? ' cfy-prev-word-group--sep' : ''}">
+          <div class="cfy-prev-word-group-header">
+            <span class="cfy-prev-word-group-label"><i class="fas fa-layer-group"></i> Group ${gi + 1}</span>
+            <button class="cfy-copy-btn" data-copy-type="group" data-group-idx="${gi}" title="Copy group ${gi + 1}">
+              <i class="fas fa-copy"></i> Copy
+            </button>
+          </div>
+          <div class="cfy-prev-words">${wordChipsHtml(group)}</div>
+        </div>`).join('');
+    return `
+      <div class="cfy-prev-box cfy-prev-box--amber">
+        <div class="cfy-prev-box-header">
+          <span class="cfy-prev-section-label"><i class="fas fa-pen-nib"></i> Trigger Words</span>
+          <button class="cfy-copy-btn" data-copy-type="words" title="Copy all trigger words">
+            <i class="fas fa-copy"></i> Copy All
+          </button>
+        </div>
+        ${groupsHtml}
+      </div>`;
+  }
+
   // Files dropdown
   const filesDropdown = files.length > 1 ? `
     <div class="cfy-prev-section">
@@ -125,18 +159,7 @@ export function renderDownloadPreview(ui, data) {
 
         ${filesDropdown}
 
-        ${trainedWords.length > 0 ? `
-        <div class="cfy-prev-box cfy-prev-box--amber">
-          <div class="cfy-prev-box-header">
-            <span class="cfy-prev-section-label"><i class="fas fa-pen-nib"></i> Trigger Words</span>
-            <button class="cfy-copy-btn" data-copy-type="words" title="Copy all trigger words">
-              <i class="fas fa-copy"></i> Copy All
-            </button>
-          </div>
-          <div class="cfy-prev-words">
-            ${trainedWords.map(w => `<span class="cfy-prev-trained-word" data-word="${w.replace(/"/g,'&quot;')}" title="Click to copy">${w}</span>`).join('')}
-          </div>
-        </div>` : ''}
+        ${buildTriggerWordsHtml()}
 
         ${tags.length > 0 ? `
         <div class="cfy-prev-box cfy-prev-box--muted">
@@ -196,12 +219,17 @@ export function renderDownloadPreview(ui, data) {
     }).catch(() => showCopyToast('Copy failed'));
   }
 
-  // Copy All buttons
+  // Copy buttons (All / per-group)
   ui.downloadPreviewArea.querySelectorAll('.cfy-copy-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const type = btn.dataset.copyType;
       if (type === 'words') {
-        copyText(trainedWords.join(', '), btn, `Copied ${trainedWords.length} trigger word${trainedWords.length !== 1 ? 's' : ''}!`);
+        const all = trainedWords.flatMap(g => g.split(',').map(w => w.trim()).filter(Boolean));
+        copyText(all.join(', '), btn, `Copied ${all.length} trigger word${all.length !== 1 ? 's' : ''}!`);
+      } else if (type === 'group') {
+        const gi = parseInt(btn.dataset.groupIdx, 10);
+        const words = trainedWords[gi].split(',').map(w => w.trim()).filter(Boolean);
+        copyText(words.join(', '), btn, `Copied ${words.length} word${words.length !== 1 ? 's' : ''}!`);
       } else if (type === 'tags') {
         copyText(tags.join(', '), btn, `Copied ${tags.length} tag${tags.length !== 1 ? 's' : ''}!`);
       }

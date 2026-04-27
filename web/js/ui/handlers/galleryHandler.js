@@ -61,7 +61,9 @@ function _buildGalleryCard(img, idx, ui) {
 
     const imgEl = document.createElement('img');
     imgEl.loading = 'lazy';
-    imgEl.src = url;
+    imgEl.decoding = 'async';
+    // Use data-src for IntersectionObserver lazy loading; src set when visible
+    imgEl.dataset.src = url;
     imgEl.alt = img.filename;
     imgEl.onerror = () => {
         imgEl.style.display = 'none';
@@ -282,11 +284,38 @@ export async function handleGalleryLoad(ui) {
     }
 }
 
+// ---- Lazy-load observer (one per grid instance) ----
+
+function _ensureLazyObserver(ui) {
+    if (ui._galleryLazyObserver) return ui._galleryLazyObserver;
+    ui._galleryLazyObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const imgEl = entry.target;
+            const src = imgEl.dataset.src;
+            if (src) {
+                imgEl.src = src;
+                delete imgEl.dataset.src;
+            }
+            ui._galleryLazyObserver.unobserve(imgEl);
+        });
+    }, { rootMargin: '200px' });
+    return ui._galleryLazyObserver;
+}
+
 // ---- Grid renderer ----
+
+const GALLERY_CHUNK_SIZE = 8;
 
 export function renderGalleryGrid(ui, images) {
     const grid = ui.galleryGrid;
     if (!grid) return;
+
+    // Disconnect old observer before clearing grid
+    if (ui._galleryLazyObserver) {
+        ui._galleryLazyObserver.disconnect();
+        ui._galleryLazyObserver = null;
+    }
 
     const cardSize = parseInt(ui.galleryCardSizeSlider?.value ?? '148', 10);
     grid.style.setProperty('--cfy-gallery-card-w', `${cardSize}px`);
@@ -297,9 +326,39 @@ export function renderGalleryGrid(ui, images) {
     }
 
     grid.innerHTML = '';
-    images.forEach((img, idx) => {
-        grid.appendChild(_buildGalleryCard(img, idx, ui));
+    const observer = _ensureLazyObserver(ui);
+
+    // Render first chunk immediately so UI feels instant
+    const firstChunk = images.slice(0, GALLERY_CHUNK_SIZE);
+    const frag = document.createDocumentFragment();
+    firstChunk.forEach((img, idx) => {
+        const card = _buildGalleryCard(img, idx, ui);
+        const imgEl = card.querySelector('img[data-src]');
+        if (imgEl) observer.observe(imgEl);
+        frag.appendChild(card);
     });
+    grid.appendChild(frag);
+
+    // Render remaining chunks via rAF to avoid blocking the main thread
+    if (images.length > GALLERY_CHUNK_SIZE) {
+        let offset = GALLERY_CHUNK_SIZE;
+        function renderNextChunk() {
+            if (offset >= images.length) return;
+            const chunk = images.slice(offset, offset + GALLERY_CHUNK_SIZE);
+            const f = document.createDocumentFragment();
+            chunk.forEach((img, i) => {
+                const card = _buildGalleryCard(img, offset + i, ui);
+                const imgEl = card.querySelector('img[data-src]');
+                if (imgEl) observer.observe(imgEl);
+                f.appendChild(card);
+            });
+            grid.appendChild(f);
+            offset += GALLERY_CHUNK_SIZE;
+            // Use setTimeout(0) to yield to browser between chunks
+            setTimeout(renderNextChunk, 0);
+        }
+        setTimeout(renderNextChunk, 0);
+    }
 }
 
 // ---- Pagination ----
@@ -366,7 +425,11 @@ function _renderLightboxImage(ui) {
     const url = _imageViewUrl(img.filename, img.subfolder);
 
     const imgEl = ui.galleryLightboxImg;
-    if (imgEl) { imgEl.src = url; imgEl.alt = img.filename; }
+    if (imgEl) {
+        imgEl.decoding = 'async';
+        imgEl.src = url;
+        imgEl.alt = img.filename;
+    }
 
     // Reset zoom when switching images
     if (ui._lightboxZoom) ui._lightboxZoom.reset();
@@ -504,7 +567,6 @@ export async function deleteSelectedGallery(ui) {
 
         if (deleted > 0) {
             if (ui.feedback) ui.feedback.show(`Deleted ${deleted} image${deleted !== 1 ? 's' : ''}.`, 'success');
-            ui._galleryPage = 1;
             await handleGalleryLoad(ui);
         }
 
