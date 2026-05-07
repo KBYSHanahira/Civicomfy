@@ -499,7 +499,7 @@ export class CivitaiDownloaderUI {
         this.tabContents[tabId].scrollTop = 0;
         this.activeTab = tabId;
 
-        if (tabId === 'status') this.updateStatus();
+        if (tabId === 'status') { this._statusNeedsRender = true; this.updateStatus(); }
         else if (tabId === 'browse') {
             if (!this.browseLoaded) {
                 this.browseLoaded = true;
@@ -534,7 +534,7 @@ export class CivitaiDownloaderUI {
         this.modal?.classList.add('open');
         document.body.style.setProperty('overflow', 'hidden', 'important');
         this.startStatusUpdates();
-        if (this.activeTab === 'status') this.updateStatus();
+        if (this.activeTab === 'status') { this._statusNeedsRender = true; this.updateStatus(); }
         if (!this.settings.apiKey) this.switchTab('settings');
     }
 

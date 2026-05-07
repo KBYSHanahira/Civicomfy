@@ -27,7 +27,7 @@ async def route_download_model_hf(request):
         explicit_save_root = (data.get("save_root") or "").strip()
         custom_filename_input = (data.get("custom_filename") or "").strip()
         selected_subdir = (data.get("subdir") or "").strip()
-        num_connections = int(data.get("num_connections", 1))
+        num_connections = max(1, min(16, int(data.get("num_connections") or 1)))
         force_redownload = bool(data.get("force_redownload", False))
         hf_token = (data.get("hf_token") or "").strip()
 

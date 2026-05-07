@@ -76,7 +76,7 @@ export async function fetchAndDisplayDownloadPreview(ui) {
     // ---- Civitai branch (original) ----
     const params = {
         model_url_or_id: modelUrlOrId,
-        model_version_id: versionId ? parseInt(versionId, 10) : null,
+        model_version_id: versionId ? (parseInt(versionId, 10) || null) : null,
         api_key: ui.settings.apiKey
     };
 
@@ -129,10 +129,10 @@ export async function handleDownloadSubmit(ui) {
     const params = {
         model_url_or_id: modelUrlOrId,
         model_type: ui.downloadModelTypeSelect.value,
-        model_version_id: ui.modelVersionIdInput.value ? parseInt(ui.modelVersionIdInput.value, 10) : null,
+        model_version_id: ui.modelVersionIdInput.value ? (parseInt(ui.modelVersionIdInput.value, 10) || null) : null,
         custom_filename: userFilename,
         subdir: selectedSubdir,
-        num_connections: parseInt(ui.downloadConnectionsInput.value, 10),
+        num_connections: Math.max(1, Math.min(16, parseInt(ui.downloadConnectionsInput.value, 10) || 1)),
         force_redownload: ui.forceRedownloadCheckbox.checked,
         api_key: ui.settings.apiKey
     };
@@ -181,7 +181,7 @@ async function _handleHFDownloadSubmit(ui, hfUrl) {
         model_type: ui.downloadModelTypeSelect.value,
         custom_filename: userFilename,
         subdir: selectedSubdir,
-        num_connections: parseInt(ui.downloadConnectionsInput.value, 10),
+        num_connections: Math.max(1, Math.min(16, parseInt(ui.downloadConnectionsInput.value, 10) || 1)),
         force_redownload: ui.forceRedownloadCheckbox.checked,
         hf_token: ui.settings.hfToken || '',
     };
