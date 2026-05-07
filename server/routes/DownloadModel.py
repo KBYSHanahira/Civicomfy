@@ -38,7 +38,7 @@ async def route_download_model(request):
         # Optional file selection overrides
         req_file_id = data.get("file_id")
         req_file_name_contains = data.get("file_name_contains", "").strip()
-        num_connections = int(data.get("num_connections", 4))
+        num_connections = max(1, min(16, int(data.get("num_connections") or 1)))
         force_redownload = bool(data.get("force_redownload", False))
         api_key = data.get("api_key", "") # Get API key from frontend settings
 

@@ -210,10 +210,10 @@ export function modalTemplate(settings = {}) {
         <!-- Gallery Lightbox -->
         <div id="civitai-gallery-lightbox" class="civitai-gallery-lightbox" style="display:none;">
           <div class="civitai-gallery-lightbox-backdrop"></div>
+          <button class="civitai-gallery-lightbox-nav prev" id="civitai-gallery-lightbox-prev" title="Previous"><i class="fas fa-chevron-left"></i></button>
+          <button class="civitai-gallery-lightbox-nav next" id="civitai-gallery-lightbox-next" title="Next"><i class="fas fa-chevron-right"></i></button>
           <div class="civitai-gallery-lightbox-content">
             <button class="civitai-gallery-lightbox-close" id="civitai-gallery-lightbox-close" title="Close"><i class="fas fa-times"></i></button>
-            <button class="civitai-gallery-lightbox-nav prev" id="civitai-gallery-lightbox-prev" title="Previous"><i class="fas fa-chevron-left"></i></button>
-            <button class="civitai-gallery-lightbox-nav next" id="civitai-gallery-lightbox-next" title="Next"><i class="fas fa-chevron-right"></i></button>
             <img id="civitai-gallery-lightbox-img" src="" alt="" class="civitai-gallery-lightbox-img">
             <div class="civitai-gallery-lightbox-info">
               <span id="civitai-gallery-lightbox-name" class="civitai-gallery-lightbox-name"></span>

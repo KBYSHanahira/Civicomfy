@@ -18,6 +18,9 @@ export function stopStatusUpdates(ui) {
 
 export async function updateStatus(ui) {
     if (!ui.modal || !ui.modal.classList.contains('open')) return;
+    // Prevent overlapping concurrent requests
+    if (ui._statusUpdateInProgress) return;
+    ui._statusUpdateInProgress = true;
 
     try {
         const newStatusData = await CivitaiDownloaderAPI.getStatus();
@@ -27,19 +30,21 @@ export async function updateStatus(ui) {
 
         const oldStateString = JSON.stringify(ui.statusData);
         const newStateString = JSON.stringify(newStatusData);
+        const dataChanged = oldStateString !== newStateString;
 
         // Cache new state if it differs
-        if (oldStateString !== newStateString) {
+        if (dataChanged) {
             ui.statusData = newStatusData;
         }
 
         // Always keep counters in sync
         const activeCount = ui.statusData.active.length + ui.statusData.queue.length;
-        ui.activeCountSpan.textContent = activeCount;
-        ui.statusIndicator.style.display = activeCount > 0 ? 'inline' : 'none';
+        if (ui.activeCountSpan) ui.activeCountSpan.textContent = activeCount;
+        if (ui.statusIndicator) ui.statusIndicator.style.display = activeCount > 0 ? 'inline' : 'none';
 
-        // Always render when Status tab is active, even if data hasn't changed
-        if (ui.activeTab === 'status') {
+        // Re-render the Status tab only when data has changed or the tab was just switched to
+        if (ui.activeTab === 'status' && (dataChanged || ui._statusNeedsRender)) {
+            ui._statusNeedsRender = false;
             ui.renderDownloadList(ui.statusData.active, ui.activeListContainer, 'No active downloads.');
             ui.renderDownloadList(ui.statusData.queue, ui.queuedListContainer, 'Download queue is empty.');
             ui.renderDownloadList(ui.statusData.history, ui.historyListContainer, 'No download history yet.');
@@ -52,6 +57,8 @@ export async function updateStatus(ui) {
             if (ui.queuedListContainer) ui.queuedListContainer.innerHTML = '';
             if (ui.historyListContainer) ui.historyListContainer.innerHTML = '';
         }
+    } finally {
+        ui._statusUpdateInProgress = false;
     }
 }
 
