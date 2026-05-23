@@ -348,16 +348,18 @@
   display: flex;
   gap: 14px;
   flex-wrap: wrap;
+  align-items: flex-start;
 }
 .civitai-form-row > .civitai-form-group {
-  flex: 1;
-  min-width: 170px;
+  flex: 1 1 200px;
+  min-width: 0;
 }
 .civitai-form-group.inline {
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 .civitai-form-group.inline label {
   text-transform: none;
@@ -366,6 +368,13 @@
   font-size: 0.9em;
   color: var(--cfy-text);
   margin-bottom: 0;
+  line-height: 1.4;
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
+}
+.civitai-form-group.inline > .civitai-checkbox {
+  margin-top: 2px;
 }
 .civitai-checkbox {
   width: 16px;
@@ -2271,7 +2280,7 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 .civitai-mymodels-controls-row--info {
   align-items: center;
@@ -2284,8 +2293,9 @@
 }
 .civitai-mymodels-controls .civitai-input {
   width: auto;
-  flex: 1;
-  min-width: 100px;
+  flex: 1 1 160px;
+  min-width: 120px;
+  max-width: 320px;
 }
 .civitai-mymodels-count {
   display: inline-flex;
@@ -3070,6 +3080,14 @@
 /* =============================================================
    RESPONSIVE
    ============================================================= */
+@media (max-width: 900px) {
+  .civitai-form-row { gap: 10px; }
+  .civitai-form-row > .civitai-form-group { flex-basis: 180px; }
+  .civitai-browse-controls,
+  .civitai-gallery-controls { gap: 6px; }
+  .civitai-browse-search-input { flex-basis: 100%; max-width: 100%; }
+  .civitai-base-model-picker { flex: 1 1 180px; min-width: 0; }
+}
 @media (max-width: 600px) {
   .civitai-downloader-tabs { padding: 0 6px; }
   .civitai-downloader-tab { padding: 8px 10px; font-size: 0.8em; gap: 4px; }
@@ -3077,6 +3095,9 @@
   .civitai-browse-controls { gap: 6px; }
   .civitai-browse-search-input { max-width: 100%; }
   .civitai-mymodels-controls-row { flex-wrap: wrap; }
+  .civitai-form-row > .civitai-form-group { flex-basis: 100%; }
+  #civitai-tab-mymodels,
+  #civitai-tab-gallery { padding: 12px; }
 }
 
 /* =============================================================

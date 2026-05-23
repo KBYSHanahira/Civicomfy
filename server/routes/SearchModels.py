@@ -79,7 +79,21 @@ async def route_search_models(request):
         if meili_results and isinstance(meili_results, dict) and "error" in meili_results:
              status_code = meili_results.get("status_code", 500) or 500
              reason = f"Civitai API Meili Search Error: {meili_results.get('details', meili_results.get('error', 'Unknown error'))}"
-             raise web.HTTPException(reason=reason, status=status_code, body=json.dumps(meili_results))
+             body = json.dumps(meili_results)
+             # Map to the right aiohttp exception subclass; web.HTTPException has no `status` kwarg.
+             exc_cls = {
+                 400: web.HTTPBadRequest,
+                 401: web.HTTPUnauthorized,
+                 403: web.HTTPForbidden,
+                 404: web.HTTPNotFound,
+                 408: web.HTTPRequestTimeout,
+                 429: web.HTTPTooManyRequests,
+                 500: web.HTTPInternalServerError,
+                 502: web.HTTPBadGateway,
+                 503: web.HTTPServiceUnavailable,
+                 504: web.HTTPGatewayTimeout,
+             }.get(int(status_code), web.HTTPInternalServerError)
+             raise exc_cls(reason=reason, body=body, content_type="application/json")
 
         # --- Process Meili Response for Frontend ---
         if meili_results and isinstance(meili_results, dict) and "hits" in meili_results:

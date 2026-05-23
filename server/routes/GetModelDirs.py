@@ -78,13 +78,28 @@ def _get_all_roots_for_type(model_type: str):
     return roots
 
 def _list_subdirs(root_dir: str, max_entries: int = 5000):
-    """Return a sorted list of relative subdirectory paths under root_dir, including nested."""
+    """Return a sorted list of relative subdirectory paths under root_dir, including nested.
+
+    Follows symlinks and Windows junctions (mklink /D and /J) so that linked
+    model folders on other drives are visible in the subfolder dropdown.
+    Tracks visited real paths to avoid infinite loops from circular links.
+    """
     rel_dirs = set()
+    visited_real = set()
     root_dir = os.path.abspath(root_dir)
     count = 0
-    for current, dirs, _files in os.walk(root_dir):
-        # Avoid following symlinks to reduce risk
+    for current, dirs, _files in os.walk(root_dir, followlinks=True):
         abs_current = os.path.abspath(current)
+        try:
+            real = os.path.realpath(abs_current)
+        except Exception:
+            real = abs_current
+        if real in visited_real:
+            # Skip already-visited real paths to avoid symlink loops
+            dirs[:] = []
+            continue
+        visited_real.add(real)
+
         try:
             rel = os.path.relpath(abs_current, root_dir)
         except Exception:

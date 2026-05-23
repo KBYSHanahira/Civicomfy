@@ -40,6 +40,7 @@ async def route_download_model(request):
         req_file_name_contains = data.get("file_name_contains", "").strip()
         num_connections = max(1, min(16, int(data.get("num_connections") or 1)))
         force_redownload = bool(data.get("force_redownload", False))
+        deep_subfolder_check = bool(data.get("deep_subfolder_check", False))
         api_key = data.get("api_key", "") # Get API key from frontend settings
 
         if not model_url_or_id:
@@ -285,6 +286,56 @@ async def route_download_model(request):
         file_exists = os.path.exists(output_path)
         metadata_exists = os.path.exists(meta_path)
         preview_exists = os.path.exists(preview_path)
+
+        # --- Scan subfolders of the base_output_dir for the same filename ---
+        # This catches duplicates the user already downloaded into a different subfolder.
+        # Only runs when the user has enabled the "deep subfolder check" setting.
+        existing_in_subfolder = None
+        if deep_subfolder_check and not file_exists and not force_redownload:
+            try:
+                visited_real = set()
+                for root, dirs, fnames in os.walk(base_output_dir, followlinks=True):
+                    real = os.path.realpath(root)
+                    if real in visited_real:
+                        dirs[:] = []
+                        continue
+                    visited_real.add(real)
+                    # Skip the exact target directory; it's already checked via output_path
+                    if os.path.abspath(root) == os.path.abspath(output_dir):
+                        continue
+                    if final_filename in fnames:
+                        existing_in_subfolder = os.path.join(root, final_filename)
+                        break
+            except Exception as scan_e:
+                print(f"[Server Download] Warning: Failed scanning subfolders for existing file: {scan_e}")
+
+        if existing_in_subfolder and not force_redownload:
+            try:
+                local_size = os.path.getsize(existing_in_subfolder)
+            except OSError:
+                local_size = 0
+            size_matches = api_size_bytes > 0 and abs(api_size_bytes - local_size) <= 1024
+            rel_path = os.path.relpath(existing_in_subfolder, base_output_dir)
+            print(f"[Server Download] File already exists in subfolder: {existing_in_subfolder} (size_matches={size_matches})")
+            if size_matches or api_size_bytes == 0:
+                return web.json_response({
+                    "status": "exists_in_subfolder",
+                    "message": f"File already exists in another subfolder: '{rel_path}'. Use 'Force Re-download' to download anyway.",
+                    "path": existing_in_subfolder,
+                    "filename": final_filename,
+                    "existing_subdir": os.path.dirname(rel_path),
+                })
+            else:
+                exist_reason = f"size differs (Local: {local_size} bytes, API: {api_size_bytes} bytes)"
+                return web.json_response({
+                    "status": "exists_in_subfolder_size_mismatch",
+                    "message": f"File with the same name found in subfolder '{rel_path}' but {exist_reason}. Use 'Force Re-download' to download anyway.",
+                    "path": existing_in_subfolder,
+                    "filename": final_filename,
+                    "existing_subdir": os.path.dirname(rel_path),
+                    "local_size": local_size,
+                    "api_size_kb": api_size_kb,
+                })
 
         if file_exists and not force_redownload:
              local_size = os.path.getsize(output_path)

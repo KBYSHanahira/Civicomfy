@@ -9,6 +9,7 @@ export function getDefaultSettings() {
         numConnections: 1,
         defaultModelType: 'checkpoint',
         autoOpenStatusTab: true,
+        deepSubfolderCheck: false,
         hideMatureInSearch: true,
         nsfwBlurMinLevel: 4, // Blur thumbnails with nsfwLevel >= this value
     };
@@ -62,6 +63,9 @@ export function applySettings(ui) {
     if (ui.settingsAutoOpenCheckbox) {
         ui.settingsAutoOpenCheckbox.checked = ui.settings.autoOpenStatusTab === true;
     }
+    if (ui.settingsDeepSubfolderCheck) {
+        ui.settingsDeepSubfolderCheck.checked = ui.settings.deepSubfolderCheck === true;
+    }
     if (ui.settingsHideMatureCheckbox) {
         ui.settingsHideMatureCheckbox.checked = ui.settings.hideMatureInSearch === true;
     }
@@ -83,6 +87,7 @@ export function handleSettingsSave(ui) {
     const numConnections = parseInt(ui.settingsConnectionsInput.value, 10);
     const defaultModelType = ui.settingsDefaultTypeSelect.value;
     const autoOpenStatusTab = ui.settingsAutoOpenCheckbox.checked;
+    const deepSubfolderCheck = ui.settingsDeepSubfolderCheck ? ui.settingsDeepSubfolderCheck.checked : false;
     const hideMatureInSearch = ui.settingsHideMatureCheckbox.checked;
     const nsfwBlurMinLevel = Number(ui.settingsNsfwThresholdInput.value);
 
@@ -100,6 +105,7 @@ export function handleSettingsSave(ui) {
     ui.settings.numConnections = numConnections;
     ui.settings.defaultModelType = defaultModelType;
     ui.settings.autoOpenStatusTab = autoOpenStatusTab;
+    ui.settings.deepSubfolderCheck = deepSubfolderCheck;
     ui.settings.hideMatureInSearch = hideMatureInSearch;
     ui.settings.nsfwBlurMinLevel = (Number.isFinite(nsfwBlurMinLevel) && nsfwBlurMinLevel >= 0) ? Math.min(128, Math.round(nsfwBlurMinLevel)) : 4;
 

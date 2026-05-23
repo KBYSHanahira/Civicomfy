@@ -29,6 +29,7 @@ async def route_download_model_hf(request):
         selected_subdir = (data.get("subdir") or "").strip()
         num_connections = max(1, min(16, int(data.get("num_connections") or 1)))
         force_redownload = bool(data.get("force_redownload", False))
+        deep_subfolder_check = bool(data.get("deep_subfolder_check", False))
         hf_token = (data.get("hf_token") or "").strip()
 
         if not hf_url:
@@ -117,6 +118,49 @@ async def route_download_model_hf(request):
                     ),
                     "details": {"filename": final_filename, "output_path": output_path},
                 })
+
+        # --- Scan other subfolders of base_output_dir for the same filename ---
+        # Only runs when the user has enabled the "deep subfolder check" setting.
+        if deep_subfolder_check and not force_redownload and not os.path.exists(output_path):
+            existing_in_subfolder = None
+            try:
+                visited_real = set()
+                for root, dirs, fnames in os.walk(base_output_dir, followlinks=True):
+                    real = os.path.realpath(root)
+                    if real in visited_real:
+                        dirs[:] = []
+                        continue
+                    visited_real.add(real)
+                    if os.path.abspath(root) == os.path.abspath(output_dir):
+                        continue
+                    if final_filename in fnames:
+                        existing_in_subfolder = os.path.join(root, final_filename)
+                        break
+            except Exception as scan_e:
+                print(f"[Server Download HF] Warning: Failed scanning subfolders: {scan_e}")
+
+            if existing_in_subfolder:
+                try:
+                    existing_size = os.path.getsize(existing_in_subfolder)
+                except OSError:
+                    existing_size = 0
+                rel_path = os.path.relpath(existing_in_subfolder, base_output_dir)
+                size_matches = known_size and existing_size == known_size
+                if size_matches or not known_size:
+                    return web.json_response({
+                        "status": "exists_in_subfolder",
+                        "message": f"File already exists in another subfolder: '{rel_path}'. Use 'Force Re-download' to download anyway.",
+                        "details": {"filename": final_filename, "output_path": existing_in_subfolder, "existing_subdir": os.path.dirname(rel_path)},
+                    })
+                else:
+                    return web.json_response({
+                        "status": "exists_in_subfolder_size_mismatch",
+                        "message": (
+                            f"File with same name found in subfolder '{rel_path}' but size differs "
+                            f"({existing_size} vs {known_size} bytes). Use 'Force Re-download' to download anyway."
+                        ),
+                        "details": {"filename": final_filename, "output_path": existing_in_subfolder, "existing_subdir": os.path.dirname(rel_path)},
+                    })
 
         # --- Build the download info dict ---
         # Keep the same shape as Civitai downloads for manager compatibility.

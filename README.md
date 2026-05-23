@@ -1,176 +1,181 @@
-# Civicomfy — Civitai Model Downloader for ComfyUI
+# Civicomfy
 
-Civicomfy integrates Civitai's model library directly into ComfyUI. Browse, search, download, and manage AI models without leaving your workflow.
+**A Civitai & HuggingFace model downloader, built into ComfyUI.**
+
+Browse, search, and download models — and manage the ones you already have — without leaving ComfyUI. One button in the toolbar opens everything.
+
+---
+
+## What it does
+
+- 🔍 **Browse & search** Civitai's catalogue (powered by Meilisearch)
+- ⬇️ **Download** from Civitai *or* HuggingFace by URL/ID
+- 📂 **Auto-saves** to the right ComfyUI folder (checkpoints, loras, vae, etc.)
+- 🗂️ **My Models** — see, sort, and delete locally installed models
+- 🖼️ **Gallery** — view preview images saved with your models
+- 📊 **Status** — watch active downloads, queue, and history in real time
 
 ---
 
-## Screenshot
+## Screenshots
 
-<img width="920" height="713" alt="image" src="https://github.com/user-attachments/assets/80cece16-c999-4766-848c-39d08ea4cde5" />
+<img width="920" alt="Download tab" src="https://github.com/user-attachments/assets/80cece16-c999-4766-848c-39d08ea4cde5" />
+<img width="923" alt="Browse tab" src="https://github.com/user-attachments/assets/7de727ff-33b5-4a75-aaf3-a2d8d8aa31b9" />
+<img width="914" alt="My Models" src="https://github.com/user-attachments/assets/8cb9ec25-70d8-4b37-a93b-7be3b4034742" />
+<img width="919" alt="Status" src="https://github.com/user-attachments/assets/c0d7b47f-4949-461c-8e9f-40b42a5285da" />
+<img width="920" alt="Settings" src="https://github.com/user-attachments/assets/a2e24eec-f5b0-45ab-ae24-1f910275c098" />
 
-<img width="923" height="719" alt="image" src="https://github.com/user-attachments/assets/7de727ff-33b5-4a75-aaf3-a2d8d8aa31b9" />
+**Newer screens:**
 
-<img width="914" height="719" alt="image" src="https://github.com/user-attachments/assets/8cb9ec25-70d8-4b37-a93b-7be3b4034742" />
-
-<img width="919" height="719" alt="image" src="https://github.com/user-attachments/assets/c0d7b47f-4949-461c-8e9f-40b42a5285da" />
-
-<img width="920" height="717" alt="image" src="https://github.com/user-attachments/assets/a2e24eec-f5b0-45ab-ae24-1f910275c098" />
+<img width="824" src="https://github.com/user-attachments/assets/b9f7c0aa-b75c-4f39-82e7-3feca17cba0e" />
+<img width="1180" src="https://github.com/user-attachments/assets/dbb9c1cc-839e-4260-9ac8-da2c5f81c0e9" />
+<img width="921" src="https://github.com/user-attachments/assets/1cb18beb-4e22-4293-a637-998d0c02a6d8" />
 
 ---
-## Screenshot (New!!!)
 
-<img width="824" height="840" alt="image" src="https://github.com/user-attachments/assets/b9f7c0aa-b75c-4f39-82e7-3feca17cba0e" />
-
-<img width="1180" height="610" alt="image" src="https://github.com/user-attachments/assets/dbb9c1cc-839e-4260-9ac8-da2c5f81c0e9" />
-
-<img width="921" height="718" alt="image" src="https://github.com/user-attachments/assets/1cb18beb-4e22-4293-a637-998d0c02a6d8" />
-
-
-## Installation
+## Install
 
 ```bash
 cd ComfyUI/custom_nodes
 git clone https://github.com/KBYSHanahira/Civicomfy.git
 ```
 
-Restart ComfyUI. The **Civicomfy** button will appear in the top-right toolbar.
+Restart ComfyUI. A **Civicomfy** button appears in the top-right toolbar.
 
 ---
 
-## Quick Start
+## Get started in 30 seconds
 
-1. Open Civicomfy from the toolbar button
-2. Go to **Settings** and enter your [Civitai API Key](https://civitai.com/user/account)
-3. Use **Browse** to explore models, or **Download** to grab a model by URL or ID
-4. Monitor progress in the **Status** tab
-5. View installed models in **My Models**
+1. Click **Civicomfy** in the toolbar
+2. Open **Settings** → paste your [Civitai API Key](https://civitai.com/user/account)
+3. Paste a Civitai or HuggingFace link into the **Download** tab
+4. Click **Start Download** — watch progress in **Status**
+
+> 💡 No API key? You can still browse and download HuggingFace files. Civitai downloads need a free API key.
 
 ---
 
-## Tabs
+## The tabs
 
-### Download Tab
+### 📥 Download
 
-Queue a download by pasting a Civitai model URL, numeric model ID, or a HuggingFace `/resolve/` or `/blob/` URL.
+Paste any of these and Civicomfy handles the rest:
 
-**Civitai downloads:**
-- **Live preview** — fetches model details and renders a preview card (name, images, file list) with a 500 ms debounce
-- **Auto model-type detection** — selects the correct ComfyUI folder based on the model's Civitai type
-- **File selector** — choose a specific file variant when a model has multiple files
-- **Model type & subdirectory selectors** — populated from your actual `models/` folder structure
-- **Create subdirectory** — create a new folder directly from the UI
-- **Custom filename** — override the saved filename
-- **Parallel connections** — set 1–16 connections (see [Download Engine](#download-engine))
-- **Force re-download** — bypass the duplicate-file check
-- **Duplicate detection** — server checks for an existing file with a matching size and warns before queuing; returns `exists` or `exists_size_mismatch`
-- **API key required** — a Civitai API key must be set in Settings before a download can be queued
+- Civitai model URL: `civitai.com/models/12345`
+- Civitai model ID: `12345`
+- Civitai version URL: `…?modelVersionId=67890`
+- HuggingFace file URL: `huggingface.co/.../resolve/main/model.safetensors`
 
-**HuggingFace downloads:**
-- Detected automatically when the URL contains `/resolve/` or `/blob/`
-- Optional HuggingFace token for gated models
-- No API key required
+**What you get:**
+- A live preview of the model (images, file variants, version info)
+- Auto-selected save folder based on model type
+- Optional: pick a specific file variant (fp16 vs fp8, pruned vs full, etc.)
+- Optional: choose a subfolder, or create a new one inline
+- Optional: rename the file
+- **Duplicate detection** — won't re-download a file that already exists (toggle a deeper check in Settings — scans every subfolder including MKLink/junction-mounted ones)
+- **Force Re-download** — overrides duplicate detection when you actually want to overwrite
 
 **Supported Civitai domains:** `civitai.com`, `civit.com`, `civit.red`, `civitai.red`
 
 ---
 
-### Browse Tab
+### 🔎 Browse
 
-Browse Civitai's model catalogue using the Meilisearch API.
+Search and discover models from Civitai.
 
-- **Type tabs** — filter by model type; tab list is generated from your installed `models/` subfolders
-- **Sort options** — Relevancy, Most Downloaded, Highest Rated, Most Liked, Most Discussed, Most Collected, Most Buzz, Newest
-- **Base model filter** — multi-select picker with 43 options including Flux.1 D/S, SDXL, SD 1.5, Pony, Illustrious, Wan Video, Hunyuan Video, and more; live text search inside the picker
-- **Results per page** — 25, 50, 75, or 100 models
-- **NSFW blur** — thumbnails at or above the configured `nsfwLevel` threshold are blurred; click to reveal/hide
-- **Pagination** — numbered pages
-- **Per-model download button** — pre-fills the Download tab with the model ID, version ID, and model type
-- **Persistent settings** — sort, active type tab, selected base models, search query, and page limit are saved in a browser cookie
+- Filter by **type**, **base model** (SDXL, SD 1.5, Flux, Pony, Illustrious, Wan, Hunyuan, +35 more), **sort order**, **page size**
+- Click a model card → pre-fills the Download tab
+- NSFW thumbnails are blurred above your chosen threshold (click to reveal)
+- Your filters and search are remembered between sessions
 
-> **Note:** Browse requires at least one of: a search query, a type filter, or a base model filter to be active.
+> Browse needs at least one filter active (search text, type, or base model).
 
 ---
 
-### Status Tab
+### 📊 Status
 
-Real-time download monitor, polling every 3 seconds while the modal is open.
+A live dashboard for everything that's downloading.
 
-- **Active downloads** — filename, progress bar, percentage, speed, connection mode (Multi / Single), start time
-- **Queue** — jobs waiting to start (up to 3 run concurrently)
-- **History** — completed, failed, and cancelled entries with outcome, file size, and duration; capped at 100 entries
-- **Cancel** — cancel any active or queued download
-- **Retry** — re-queue any failed or cancelled download with the original parameters
-- **Open folder** — open the file's containing directory in your OS file explorer (Windows Explorer / Finder / Nautilus); only available for completed downloads
-- **Clear history** — wipe the history list with a confirmation dialog
+- **Active** — current downloads with speed, progress %, time elapsed
+- **Queued** — waiting jobs (up to 3 run at once)
+- **History** — last 100 finished/failed/cancelled downloads, persisted across restarts
+- **Cancel**, **retry**, **open folder**, **clear history**
 
----
-
-### My Models Tab
-
-Browse and manage models installed locally.
-
-- **Local scan** — reads model files recursively from every ComfyUI model directory
-- **Preview images** — shows `.preview.jpeg` sidecar thumbnails (Civitai downloads only)
-- **Type filter** — dropdown to filter by model type
-- **Name/path search** — real-time text filter across filenames and relative paths
-- **Sort** — name A→Z / Z→A, file size large→small / small→large, date modified newest first / oldest first
-- **Model count** — filtered vs. total
-- **Card actions** (on hover):
-  - **Open on Civitai** — opens the model page in your browser (requires `.cminfo.json`)
-  - **View Detail** — shows filename, path, size, type, base model, version, trigger words (click to copy), description, and a Civitai link
-  - **Delete** — permanently removes the model file after confirmation; supports `.safetensors`, `.ckpt`, `.pt`, `.pth`, `.bin`, `.gguf`, `.sft`
-- **Persistent settings** — sort and type filter saved in a browser cookie
+Polls every 3 seconds while the modal is open.
 
 ---
 
-### Settings Tab
+### 🗂️ My Models
 
-All settings are stored in a browser cookie (`civitaiDownloaderSettings`, 365-day expiry). There is no server-side settings storage; the API key and HF token are sent from the browser with each request.
+Manage models already on disk.
 
-| Setting | Default | Description |
-|---|---|---|
-| **Civitai API Key** | _(empty)_ | Required to queue Civitai downloads |
-| **HuggingFace Token** | _(empty)_ | Optional; required for gated HF models |
-| **Default connections** | `1` | Number of parallel download connections (1–16) |
-| **Default model type** | `checkpoint` | Pre-selected folder in the Download tab |
-| **Auto-open Status tab** | `true` | Switch to Status automatically after queuing |
-| **Hide mature content** | `true` | Filters NSFW results in Browse |
-| **NSFW blur threshold** | `4` | Blur thumbnails with `nsfwLevel` ≥ this value (0–128) |
+- Recursive scan of every ComfyUI model folder
+- Preview thumbnails from Civitai sidecar files (`.preview.jpeg`)
+- Filter by type, search by name/path, sort by name/size/date
+- **Open on Civitai** • **View Detail** (description, trigger words — click to copy) • **Delete** (with confirmation)
+- Supports `.safetensors`, `.ckpt`, `.pt`, `.pth`, `.bin`, `.gguf`, `.sft`
 
 ---
 
-## Download Engine
+### 🖼️ Gallery
 
-### Chunk Downloader
+A grid view of every preview image stored next to your models. Filter by subfolder, sort, lightbox view, multi-select for batch delete.
 
-1. Sends a `HEAD` request (25 s timeout) to resolve the final URL and check range-request support
-2. If the file is **> 100 MB** and the server supports ranges and `num_connections > 1`, splits the download into N equal segments downloaded in parallel threads
-3. Otherwise falls back to a single streaming connection
-4. Each segment retries up to **3 times** with exponential backoff (1 s, 2 s, up to 10 s)
-5. Progress (bytes/s and %) is reported every 0.5 seconds
-6. On cancellation or failure, temp part files and the incomplete output file are deleted
+---
 
-> **Known issue:** Multi-connection (parallel chunk) downloads have an unresolved bug. Single-connection downloads work correctly. Setting connections > 1 may not improve speed.
+### ⚙️ Settings
 
-### Sidecar Files (Civitai only)
-
-| File | Content |
+| Setting | What it does |
 |---|---|
-| `<modelname>.cminfo.json` | Civitai model/version metadata — ID, base model, trigger words, description, up to 5 example prompts |
-| `<modelname>.preview.jpeg` | Thumbnail image (450 px wide) from Civitai |
+| **Civitai API Key** | Required to download from Civitai |
+| **HuggingFace Token** | Needed for gated/private HF models |
+| **Default model type** | What's pre-selected in the Download tab |
+| **Auto-open Status tab** | Jumps to Status after queuing a download |
+| **Deep subfolder check** | When checking for duplicates, scans every subfolder (and MKLink/junction-mounted drives) instead of just the target folder |
+| **Hide mature content** | Filter NSFW out of Browse results |
+| **NSFW blur threshold** | Blur thumbnails at this `nsfwLevel` and above (0–128) |
+| **Model Maintenance** | Bulk-refresh metadata or thumbnails for any category |
 
-HuggingFace downloads do **not** produce sidecar files.
+Settings live in a browser cookie (365 days). API keys never touch the server's filesystem — they're sent per-request from your browser.
 
-### Queue & History Limits
+---
 
-| Limit | Value |
+## How downloads work
+
+1. **HEAD request** to resolve the final URL and check if the server supports byte-range requests
+2. **Big files (>100 MB) with range support** → split into N parallel chunks
+3. **Otherwise** → single streaming connection
+4. Each chunk retries up to **3 times** with exponential backoff
+5. Progress updates every 0.5 s
+6. Cancel cleanly removes partial files
+
+> ⚠️ **Known issue:** Multi-connection downloads currently have a bug. Use 1 connection for reliability.
+
+### Sidecar files (Civitai only)
+
+| File | What's inside |
 |---|---|
-| Max concurrent downloads | 3 |
-| History entries cap | 100 |
-| History persistence | `download_history.json` (survives restarts) |
+| `<name>.cminfo.json` | Model metadata, base model, trigger words, description, sample prompts |
+| `<name>.preview.jpeg` | 450 px thumbnail from Civitai |
+
+HuggingFace downloads don't create sidecars.
+
+### Limits
+
+| | |
+|---|---|
+| Concurrent downloads | 3 |
+| History entries | 100 |
+| History storage | `download_history.json` |
+
+---
+
+## MKLink / symlink / junction support
+
+If you store models on an external drive and link them in with `mklink /D` or `mklink /J`, Civicomfy follows the links — both the subfolder dropdown and the duplicate-file scanner walk into them. Circular links are detected and skipped.
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please submit a Pull Request.
+PRs welcome.

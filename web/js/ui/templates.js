@@ -276,8 +276,12 @@ export function modalTemplate(settings = {}) {
               <div class="civitai-settings-section">
                 <h4><i class="fas fa-sliders-h"></i> Interface & Search</h4>
                 <div class="civitai-form-group inline">
-                  <input type="checkbox" id="civitai-settings-auto-open-status" class="civitai-checkbox">
+                  <input type="checkbox" id="civitai-settings-auto-open-status" class="civitai-checkbox" ${settings.autoOpenStatusTab ? 'checked' : ''}>
                   <label for="civitai-settings-auto-open-status">Switch to Status tab after starting download</label>
+                </div>
+                <div class="civitai-form-group inline">
+                  <input type="checkbox" id="civitai-settings-deep-subfolder-check" class="civitai-checkbox" ${settings.deepSubfolderCheck ? 'checked' : ''}>
+                  <label for="civitai-settings-deep-subfolder-check">Check all subfolders recursively for existing file before download</label>
                 </div>
                 <div class="civitai-form-group inline">
                   <input type="checkbox" id="civitai-settings-hide-mature" class="civitai-checkbox" ${settings.hideMatureInSearch ? 'checked' : ''}>

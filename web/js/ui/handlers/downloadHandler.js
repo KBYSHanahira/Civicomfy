@@ -134,6 +134,7 @@ export async function handleDownloadSubmit(ui) {
         subdir: selectedSubdir,
         num_connections: Math.max(1, Math.min(16, parseInt(ui.downloadConnectionsInput.value, 10) || 1)),
         force_redownload: ui.forceRedownloadCheckbox.checked,
+        deep_subfolder_check: ui.settings.deepSubfolderCheck === true,
         api_key: ui.settings.apiKey
     };
 
@@ -153,8 +154,10 @@ export async function handleDownloadSubmit(ui) {
             } else {
                 ui.updateStatus();
             }
-        } else if (result.status === 'exists' || result.status === 'exists_size_mismatch') {
-            ui.showToast(`${result.message}`, 'info', 4000);
+        } else if (result.status === 'exists' || result.status === 'exists_size_mismatch'
+                || result.status === 'exists_in_subfolder' || result.status === 'exists_in_subfolder_size_mismatch') {
+            const toastType = result.status === 'exists' ? 'info' : 'warning';
+            ui.showToast(`${result.message}`, toastType, 6000);
         } else {
             console.warn("Unexpected success response from /civitai/download:", result);
             ui.showToast(`Unexpected status: ${result.status} - ${result.message || ''}`, 'info');
@@ -183,6 +186,7 @@ async function _handleHFDownloadSubmit(ui, hfUrl) {
         subdir: selectedSubdir,
         num_connections: Math.max(1, Math.min(16, parseInt(ui.downloadConnectionsInput.value, 10) || 1)),
         force_redownload: ui.forceRedownloadCheckbox.checked,
+        deep_subfolder_check: ui.settings.deepSubfolderCheck === true,
         hf_token: ui.settings.hfToken || '',
     };
 
@@ -196,8 +200,10 @@ async function _handleHFDownloadSubmit(ui, hfUrl) {
             } else {
                 ui.updateStatus();
             }
-        } else if (result.status === 'exists' || result.status === 'exists_size_mismatch') {
-            ui.showToast(result.message, 'info', 4000);
+        } else if (result.status === 'exists' || result.status === 'exists_size_mismatch'
+                || result.status === 'exists_in_subfolder' || result.status === 'exists_in_subfolder_size_mismatch') {
+            const toastType = result.status === 'exists' ? 'info' : 'warning';
+            ui.showToast(result.message, toastType, 6000);
         } else {
             console.warn("Unexpected HF download response:", result);
             ui.showToast(`Unexpected status: ${result.status} - ${result.message || ''}`, 'info');
