@@ -2,6 +2,8 @@ import { setCookie, getCookie } from "../../utils/cookies.js";
 
 const SETTINGS_COOKIE_NAME = 'civitaiDownloaderSettings';
 
+const ALLOWED_CIVITAI_DOMAINS = ['civitai.com', 'civitai.red'];
+
 export function getDefaultSettings() {
     return {
         apiKey: '',
@@ -12,7 +14,26 @@ export function getDefaultSettings() {
         deepSubfolderCheck: false,
         hideMatureInSearch: true,
         nsfwBlurMinLevel: 4, // Blur thumbnails with nsfwLevel >= this value
+        civitaiDomain: 'civitai.com',
     };
+}
+
+export function getCivitaiDomain() {
+    try {
+        const cookieValue = getCookie(SETTINGS_COOKIE_NAME);
+        if (cookieValue) {
+            const loaded = JSON.parse(cookieValue);
+            if (loaded && ALLOWED_CIVITAI_DOMAINS.includes(loaded.civitaiDomain)) {
+                return loaded.civitaiDomain;
+            }
+        }
+    } catch (e) { /* ignore */ }
+    return 'civitai.com';
+}
+
+export function buildCivitaiModelUrl(modelId, versionId) {
+    const domain = getCivitaiDomain();
+    return `https://${domain}/models/${modelId}${versionId ? '?modelVersionId=' + versionId : ''}`;
 }
 
 export function loadAndApplySettings(ui) {
@@ -73,6 +94,10 @@ export function applySettings(ui) {
         const val = Number(ui.settings.nsfwBlurMinLevel);
         ui.settingsNsfwThresholdInput.value = Number.isFinite(val) ? val : 4;
     }
+    if (ui.settingsCivitaiDomainSelect) {
+        const dom = ALLOWED_CIVITAI_DOMAINS.includes(ui.settings.civitaiDomain) ? ui.settings.civitaiDomain : 'civitai.com';
+        ui.settingsCivitaiDomainSelect.value = dom;
+    }
     if (ui.downloadConnectionsInput) {
         ui.downloadConnectionsInput.value = Math.max(1, Math.min(16, ui.settings.numConnections || 1));
     }
@@ -90,6 +115,9 @@ export function handleSettingsSave(ui) {
     const deepSubfolderCheck = ui.settingsDeepSubfolderCheck ? ui.settingsDeepSubfolderCheck.checked : false;
     const hideMatureInSearch = ui.settingsHideMatureCheckbox.checked;
     const nsfwBlurMinLevel = Number(ui.settingsNsfwThresholdInput.value);
+    const civitaiDomain = ui.settingsCivitaiDomainSelect && ALLOWED_CIVITAI_DOMAINS.includes(ui.settingsCivitaiDomainSelect.value)
+        ? ui.settingsCivitaiDomainSelect.value
+        : 'civitai.com';
 
     if (isNaN(numConnections) || numConnections < 1 || numConnections > 16) {
         ui.showToast("Invalid Default Connections (must be 1-16).", "error");
@@ -108,6 +136,7 @@ export function handleSettingsSave(ui) {
     ui.settings.deepSubfolderCheck = deepSubfolderCheck;
     ui.settings.hideMatureInSearch = hideMatureInSearch;
     ui.settings.nsfwBlurMinLevel = (Number.isFinite(nsfwBlurMinLevel) && nsfwBlurMinLevel >= 0) ? Math.min(128, Math.round(nsfwBlurMinLevel)) : 4;
+    ui.settings.civitaiDomain = civitaiDomain;
 
     ui.saveSettingsToCookie();
     ui.applySettings();

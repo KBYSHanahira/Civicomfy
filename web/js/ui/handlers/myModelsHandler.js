@@ -1,8 +1,9 @@
 ﻿import { CivitaiDownloaderAPI } from "../../api/civitai.js";
 import { app } from "../../../../../scripts/app.js";
 import { attachLightboxZoom } from "../../utils/dom.js";
+import { getCivitaiDomain, buildCivitaiModelUrl } from "./settingsHandler.js";
 
-const CIVITAI_BASE = 'https://civitai.com/models/';
+const civitaiBase = () => `https://${getCivitaiDomain()}/models/`;
 
 // Track the CiviComfyModelInfo node added to workflow so it can be updated
 let _workflowNodeId = null;
@@ -282,7 +283,7 @@ function _buildModelRow(model) {
  */
 export function handleMyModelOpenOnCivit(modelId) {
     if (!modelId) return;
-    window.open(`${CIVITAI_BASE}${modelId}`, '_blank', 'noopener,noreferrer');
+    window.open(`${civitaiBase()}${modelId}`, '_blank', 'noopener,noreferrer');
 }
 
 /**
@@ -372,7 +373,7 @@ function _showDetailModal(ui, model) {
 
     if (model.civitai_model_id) {
         const civitLink = document.createElement('a');
-        civitLink.href = `${CIVITAI_BASE}${model.civitai_model_id}`;
+        civitLink.href = `${civitaiBase()}${model.civitai_model_id}`;
         civitLink.target = '_blank';
         civitLink.rel = 'noopener noreferrer';
         civitLink.className = 'civitai-button secondary small';
@@ -645,7 +646,7 @@ function _showDetailModal(ui, model) {
                 ? `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`
                 : '';
             const civitaiUrl = model.civitai_model_id
-                ? `https://civitai.com/models/${model.civitai_model_id}${model.civitai_version_id ? '?modelVersionId=' + model.civitai_version_id : ''}`
+                ? buildCivitaiModelUrl(model.civitai_model_id, model.civitai_version_id)
                 : '';
             const nodeProps = {
                 modelName:      model.model_name || model.name || '',
@@ -703,7 +704,7 @@ function _showDetailModal(ui, model) {
 
     if (model.civitai_model_id) {
         const civitBtn = document.createElement('a');
-        civitBtn.href = `${CIVITAI_BASE}${model.civitai_model_id}`;
+        civitBtn.href = `${civitaiBase()}${model.civitai_model_id}`;
         civitBtn.target = '_blank';
         civitBtn.rel = 'noopener noreferrer';
         civitBtn.className = 'civitai-button primary small';

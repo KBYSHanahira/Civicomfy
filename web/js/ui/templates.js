@@ -288,6 +288,14 @@ export function modalTemplate(settings = {}) {
                   <label for="civitai-settings-hide-mature">Hide R-rated (Mature) images in search (click to reveal)</label>
                 </div>
                 <div class="civitai-form-group">
+                  <label for="civitai-settings-civitai-domain">Civitai Link Domain</label>
+                  <select id="civitai-settings-civitai-domain" class="civitai-select">
+                    <option value="civitai.com" ${(settings.civitaiDomain || 'civitai.com') === 'civitai.com' ? 'selected' : ''}>civitai.com</option>
+                    <option value="civitai.red" ${settings.civitaiDomain === 'civitai.red' ? 'selected' : ''}>civitai.red</option>
+                  </select>
+                  <p class="civitai-field-hint">Domain used when opening model links from Civicomfy (View, Open on Civitai, etc.).</p>
+                </div>
+                <div class="civitai-form-group">
                   <label for="civitai-settings-nsfw-threshold">NSFW Blur Threshold (nsfwLevel)</label>
                   <input type="number" id="civitai-settings-nsfw-threshold" class="civitai-input" value="${Number.isFinite(settings.nsfwBlurMinLevel) ? settings.nsfwBlurMinLevel : 4}" min="0" max="128" step="1">
                   <p class="civitai-field-hint">

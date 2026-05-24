@@ -115,6 +115,7 @@ export class CivitaiDownloaderUI {
         this.settingsDeepSubfolderCheck = this.modal.querySelector('#civitai-settings-deep-subfolder-check');
         this.settingsHideMatureCheckbox = this.modal.querySelector('#civitai-settings-hide-mature');
         this.settingsNsfwThresholdInput = this.modal.querySelector('#civitai-settings-nsfw-threshold');
+        this.settingsCivitaiDomainSelect = this.modal.querySelector('#civitai-settings-civitai-domain');
         this.settingsSaveButton = this.modal.querySelector('#civitai-settings-save');
 
         // Settings – Model Maintenance
@@ -492,12 +493,17 @@ export class CivitaiDownloaderUI {
     switchTab(tabId) {
         if (this.activeTab === tabId || !this.tabs[tabId] || !this.tabContents[tabId]) return;
 
+        this._tabScrollPositions = this._tabScrollPositions || {};
+        if (this.tabContents[this.activeTab]) {
+            this._tabScrollPositions[this.activeTab] = this.tabContents[this.activeTab].scrollTop;
+        }
+
         this.tabs[this.activeTab]?.classList.remove('active');
         this.tabContents[this.activeTab]?.classList.remove('active');
 
         this.tabs[tabId].classList.add('active');
         this.tabContents[tabId].classList.add('active');
-        this.tabContents[tabId].scrollTop = 0;
+        this.tabContents[tabId].scrollTop = this._tabScrollPositions[tabId] || 0;
         this.activeTab = tabId;
 
         if (tabId === 'status') { this._statusNeedsRender = true; this.updateStatus(); }

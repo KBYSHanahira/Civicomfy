@@ -5,6 +5,7 @@
 
 import { app } from "../../../../scripts/app.js";
 import { attachLightboxZoom } from "../utils/dom.js";
+import { buildCivitaiModelUrl } from "./handlers/settingsHandler.js";
 
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 
@@ -226,7 +227,7 @@ export function renderBrowseCards(ui, items) {
         }
 
         const viewBtn = document.createElement('a');
-        viewBtn.href = `https://civitai.com/models/${modelId}${primaryVersionId ? '?modelVersionId=' + primaryVersionId : ''}`;
+        viewBtn.href = buildCivitaiModelUrl(modelId, primaryVersionId);
         viewBtn.target = '_blank';
         viewBtn.rel = 'noopener noreferrer';
         viewBtn.className = 'civitai-button small';
@@ -419,7 +420,7 @@ function _renderBrowseInfoModal(ui, hit) {
     headerRight.className = 'civitai-browse-info-header-right';
 
     const civitaiLink = document.createElement('a');
-    civitaiLink.href = `https://civitai.com/models/${modelId}${primaryVersionId ? '?modelVersionId=' + primaryVersionId : ''}`;
+    civitaiLink.href = buildCivitaiModelUrl(modelId, primaryVersionId);
     civitaiLink.target = '_blank';
     civitaiLink.rel = 'noopener noreferrer';
     civitaiLink.className = 'civitai-button small';
@@ -1067,7 +1068,7 @@ export function renderSearchResults(ui, items) {
         ` : ''}
       </div>
       <div class="civitai-search-actions">
-        <a href="https://civitai.com/models/${modelId}${primaryVersionId ? '?modelVersionId='+primaryVersionId : ''}" 
+        <a href="${buildCivitaiModelUrl(modelId, primaryVersionId)}"
            target="_blank" rel="noopener noreferrer" class="civitai-button small" 
            title="Open on Civitai website">
           View <i class="fas fa-external-link-alt"></i>

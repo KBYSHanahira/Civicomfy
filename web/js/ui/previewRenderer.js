@@ -1,6 +1,7 @@
 // Renders the download preview panel
 
 import { attachLightboxZoom } from "../utils/dom.js";
+import { buildCivitaiModelUrl } from "./handlers/settingsHandler.js";
 
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 
@@ -25,7 +26,7 @@ export function renderDownloadPreview(ui, data) {
   const nsfwLevel    = Number(data.nsfw_level ?? 0);
   const blurMinLevel = Number(ui.settings?.nsfwBlurMinLevel ?? 4);
   const shouldBlur   = ui.settings?.hideMatureInSearch === true && nsfwLevel >= blurMinLevel;
-  const civitaiLink  = `https://civitai.com/models/${modelId}${data.version_id ? '?modelVersionId=' + data.version_id : ''}`;
+  const civitaiLink  = buildCivitaiModelUrl(modelId, data.version_id);
   const onError      = `this.onerror=null; this.src='${PLACEHOLDER_IMAGE_URL}';`;
   const thumbnail    = data.thumbnail_url || PLACEHOLDER_IMAGE_URL;
 
