@@ -2,7 +2,7 @@ import { Feedback } from "./feedback.js";
 import { setupEventListeners } from "./handlers/eventListeners.js";
 import { handleDownloadSubmit, fetchAndDisplayDownloadPreview, debounceFetchDownloadPreview } from "./handlers/downloadHandler.js";
 import { handleBrowseLoad } from "./handlers/browseHandler.js";
-import { handleSettingsSave, loadAndApplySettings, loadSettingsFromCookie, saveSettingsToCookie, applySettings, getDefaultSettings, saveBrowseSettings, loadBrowseSettings, saveMyModelsSettings, loadMyModelsSettings } from "./handlers/settingsHandler.js";
+import { handleSettingsSave, loadAndApplySettings, loadSettingsFromCookie, saveSettingsToCookie, applySettings, getDefaultSettings, saveBrowseSettings, loadBrowseSettings, saveMyModelsSettings, loadMyModelsSettings, loadDirectorySettings, saveDirectorySettings } from "./handlers/settingsHandler.js";
 import { startStatusUpdates, stopStatusUpdates, updateStatus, handleCancelDownload, handleRetryDownload, handleOpenPath, handleClearHistory } from "./handlers/statusHandler.js";
 import { handleMyModelsLoad, renderMyModels, handleMyModelOpenOnCivit, handleMyModelViewDetail, handleMyModelDelete } from "./handlers/myModelsHandler.js";
 import { handleGalleryLoad, renderGalleryGrid, openGalleryLightbox, closeGalleryLightbox, lightboxPrev, lightboxNext, toggleGallerySelect, updateGallerySelectionBar, deleteSelectedGallery, downloadSelectedGallery, deleteGalleryImage } from "./handlers/galleryHandler.js";
@@ -117,6 +117,11 @@ export class CivitaiDownloaderUI {
         this.settingsNsfwThresholdInput = this.modal.querySelector('#civitai-settings-nsfw-threshold');
         this.settingsCivitaiDomainSelect = this.modal.querySelector('#civitai-settings-civitai-domain');
         this.settingsSaveButton = this.modal.querySelector('#civitai-settings-save');
+
+        // Settings – Directory Settings (per-model-type save folders)
+        this.dirSettingsList = this.modal.querySelector('#civitai-dir-settings-list');
+        this.dirSaveBtn = this.modal.querySelector('#civitai-dir-save-btn');
+        this.dirRefreshBtn = this.modal.querySelector('#civitai-dir-refresh-btn');
 
         // Settings – Model Maintenance
         this.maintenanceTypePicker = this.modal.querySelector('#civitai-maintenance-type-picker');
@@ -527,7 +532,7 @@ export class CivitaiDownloaderUI {
                 this.handleGalleryLoad();
             }
         }
-        else if (tabId === 'settings') this.applySettings();
+        else if (tabId === 'settings') { this.applySettings(); this.loadDirectorySettings(); }
         else if(tabId === 'download') {
             this.downloadConnectionsInput.value = this.settings.numConnections;
             if (Object.keys(this.modelTypes).length > 0) {
@@ -570,8 +575,12 @@ export class CivitaiDownloaderUI {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
         const dm = decimals < 0 ? 0 : decimals;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+        // Clamp the unit index so values outside the table range (sub-byte
+        // speeds or petabyte+ sizes) never index past the array and render
+        // "undefined".
+        const rawIndex = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
+        const i = Math.min(sizes.length - 1, Math.max(0, rawIndex));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     }
 
@@ -752,6 +761,8 @@ export class CivitaiDownloaderUI {
     saveSettingsToCookie = () => saveSettingsToCookie(this);
     applySettings = () => applySettings(this);
     handleSettingsSave = () => handleSettingsSave(this);
+    loadDirectorySettings = (force) => loadDirectorySettings(this, force);
+    saveDirectorySettings = () => saveDirectorySettings(this);
     saveBrowseSettings = () => saveBrowseSettings(this);
     loadBrowseSettings = () => loadBrowseSettings(this);
     saveMyModelsSettings = () => saveMyModelsSettings(this);

@@ -328,6 +328,12 @@ export function renderGalleryGrid(ui, images) {
     grid.innerHTML = '';
     const observer = _ensureLazyObserver(ui);
 
+    // Bump a render token so any in-flight chunk chain from a previous render
+    // (e.g. user changed page/sort/subfolder quickly) aborts instead of
+    // appending stale cards into the freshly-cleared grid.
+    const renderToken = (ui._galleryRenderToken || 0) + 1;
+    ui._galleryRenderToken = renderToken;
+
     // Render first chunk immediately so UI feels instant
     const firstChunk = images.slice(0, GALLERY_CHUNK_SIZE);
     const frag = document.createDocumentFragment();
@@ -343,6 +349,8 @@ export function renderGalleryGrid(ui, images) {
     if (images.length > GALLERY_CHUNK_SIZE) {
         let offset = GALLERY_CHUNK_SIZE;
         function renderNextChunk() {
+            // Abort if a newer render has started.
+            if (ui._galleryRenderToken !== renderToken) return;
             if (offset >= images.length) return;
             const chunk = images.slice(offset, offset + GALLERY_CHUNK_SIZE);
             const f = document.createDocumentFragment();

@@ -85,6 +85,18 @@ export class CivitaiDownloaderAPI {
     return await this._request("/civitai/model_types");
   }
 
+  static async getDirectorySettings() {
+    return await this._request("/civitai/dir_settings");
+  }
+
+  static async saveDirectorySettings(overrides) {
+    return await this._request("/civitai/dir_settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ overrides }),
+    });
+  }
+
   static async getModelDirs(modelType) {
     const q = encodeURIComponent(modelType || 'checkpoint');
     return await this._request(`/civitai/model_dirs?type=${q}`);

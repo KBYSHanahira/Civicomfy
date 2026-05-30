@@ -426,6 +426,14 @@ export function setupEventListeners(ui) {
         });
     }
 
+    // --- Settings: Directory Settings ---
+    if (ui.dirSaveBtn) {
+        ui.dirSaveBtn.addEventListener('click', () => ui.saveDirectorySettings());
+    }
+    if (ui.dirRefreshBtn) {
+        ui.dirRefreshBtn.addEventListener('click', () => ui.loadDirectorySettings(true));
+    }
+
     // --- Settings: Model Maintenance ---
     if (ui.refreshModelInfoBtn) {
         ui.refreshModelInfoBtn.addEventListener('click', () => ui.handleRefreshModelInfo());

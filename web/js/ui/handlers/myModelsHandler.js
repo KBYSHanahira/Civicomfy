@@ -1,6 +1,7 @@
 ﻿import { CivitaiDownloaderAPI } from "../../api/civitai.js";
 import { app } from "../../../../../scripts/app.js";
 import { attachLightboxZoom } from "../../utils/dom.js";
+import { sanitizeHtml } from "../../utils/sanitize.js";
 import { getCivitaiDomain, buildCivitaiModelUrl } from "./settingsHandler.js";
 
 const civitaiBase = () => `https://${getCivitaiDomain()}/models/`;
@@ -584,7 +585,7 @@ function _showDetailModal(ui, model) {
         const descSec = _mmSection('Description', 'fa-align-left');
         const desc = document.createElement('div');
         desc.className = 'civitai-mymodel-detail-desc';
-        desc.innerHTML = model.description;
+        desc.innerHTML = sanitizeHtml(model.description);
         descSec.appendChild(desc);
         right.appendChild(descSec);
     }

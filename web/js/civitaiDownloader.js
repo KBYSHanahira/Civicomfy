@@ -9,6 +9,222 @@ const EXTENSION_NAME = "Civicomfy";
 const CSS_URL = `../civitaiDownloader.css`;
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 
+// ─── Detailed model-info popup for the CiviComfyModelInfo workflow node ────────
+// Self-contained (built from the node's own properties): no dependency on the
+// main Civicomfy modal being open or on a server round-trip. Reuses the
+// `.civitai-mymodel-detail-*` styles, which are global and inherit :root vars.
+function showCivicomfyNodeInfo(props = {}) {
+    document.getElementById("civitai-node-info-modal")?.remove();
+
+    const p = props || {};
+    const name        = p.modelName || p.fileName || "Untitled Model";
+    const modelType   = p.modelType || "";
+    const baseModel   = p.baseModel || "";
+    const creator     = p.creator || "";
+    const versionName = p.versionName || "";
+    const fileName    = p.fileName || (p.filePath ? String(p.filePath).split(/[\/\\]/).pop() : "");
+    const modelId     = p.modelId ? String(p.modelId) : "";
+    const civitaiUrl  = p.civitaiUrl || "";
+    const imageUrl    = p.imageUrl || "";
+    const triggerWords  = Array.isArray(p.triggerWords)   ? p.triggerWords.filter(Boolean)   : [];
+    const examplePrompts = Array.isArray(p.examplePrompts) ? p.examplePrompts.filter(Boolean) : [];
+
+    // Transient copy feedback on a button (no toast system available here).
+    const flashCopied = (btn, original) => {
+        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        setTimeout(() => { btn.innerHTML = original; }, 1300);
+    };
+
+    const overlay = document.createElement("div");
+    overlay.id = "civitai-node-info-modal";
+    overlay.className = "civitai-mymodel-detail-overlay";
+    // Body-level popup: cover the viewport and sit above the canvas.
+    overlay.style.position = "fixed";
+    overlay.style.zIndex = "10000";
+
+    const panel = document.createElement("div");
+    panel.className = "civitai-mymodel-detail-panel";
+
+    // ── Header ──
+    const header = document.createElement("div");
+    header.className = "civitai-mymodel-detail-header";
+    const titleWrap = document.createElement("div");
+    titleWrap.className = "civitai-mymodel-detail-title-wrap";
+    if (modelType) {
+        const chip = document.createElement("span");
+        chip.className = "civitai-mymodel-detail-type-chip";
+        chip.textContent = modelType;
+        titleWrap.appendChild(chip);
+    }
+    const titleEl = document.createElement("h3");
+    titleEl.className = "civitai-mymodel-detail-title";
+    titleEl.textContent = name;
+    titleEl.title = name;
+    titleWrap.appendChild(titleEl);
+
+    const headerRight = document.createElement("div");
+    headerRight.className = "civitai-mymodel-detail-header-right";
+    if (civitaiUrl) {
+        const link = document.createElement("a");
+        link.href = civitaiUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.className = "civitai-button secondary small";
+        link.innerHTML = '<i class="fas fa-external-link-alt"></i> Civitai';
+        headerRight.appendChild(link);
+    }
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "civitai-close-button";
+    closeBtn.innerHTML = "&times;";
+    closeBtn.title = "Close (Esc)";
+    headerRight.appendChild(closeBtn);
+    header.append(titleWrap, headerRight);
+
+    // ── Meta bar ──
+    const metaBar = document.createElement("div");
+    metaBar.className = "civitai-mymodel-detail-meta-bar";
+    [
+        versionName ? { icon: "fa-code-branch", text: versionName } : null,
+        baseModel   ? { icon: "fa-layer-group", text: baseModel }   : null,
+        creator     ? { icon: "fa-user",        text: creator }     : null,
+    ].filter(Boolean).forEach(({ icon, text }) => {
+        const item = document.createElement("span");
+        item.className = "civitai-mymodel-detail-meta-item";
+        const ic = document.createElement("i");
+        ic.className = `fas ${icon}`;
+        item.append(ic, document.createTextNode(" " + text));
+        metaBar.appendChild(item);
+    });
+
+    // ── Body ──
+    const body = document.createElement("div");
+    body.className = "civitai-mymodel-detail-body";
+
+    const left = document.createElement("div");
+    left.className = "civitai-mymodel-detail-left";
+    const previewWrap = document.createElement("div");
+    previewWrap.className = "civitai-mymodel-detail-preview-wrap";
+    if (imageUrl) {
+        const img = document.createElement("img");
+        img.src = imageUrl;
+        img.alt = name;
+        img.className = "civitai-mymodel-detail-preview";
+        img.onerror = () => {
+            previewWrap.classList.add("no-preview");
+            img.remove();
+            previewWrap.innerHTML = '<i class="fas fa-image"></i>';
+        };
+        previewWrap.appendChild(img);
+    } else {
+        previewWrap.classList.add("no-preview");
+        previewWrap.innerHTML = '<i class="fas fa-image"></i>';
+    }
+    left.appendChild(previewWrap);
+
+    const right = document.createElement("div");
+    right.className = "civitai-mymodel-detail-right";
+
+    const _section = (label, iconClass) => {
+        const sec = document.createElement("div");
+        sec.className = "civitai-mymodel-detail-section";
+        const lbl = document.createElement("div");
+        lbl.className = "civitai-mymodel-detail-section-label";
+        const ic = document.createElement("i");
+        ic.className = `fas ${iconClass}`;
+        lbl.append(ic, document.createTextNode(" " + label));
+        sec.appendChild(lbl);
+        return sec;
+    };
+
+    // File Info
+    const infoSec = _section("File Info", "fa-file-alt");
+    const kvGrid = document.createElement("div");
+    kvGrid.className = "civitai-mymodel-detail-kv-grid";
+    [
+        ["Filename",   fileName],
+        ["Model Name", (name && name !== fileName) ? name : ""],
+        ["Version",    versionName],
+        ["Type",       modelType],
+        ["Base Model", baseModel],
+        ["Creator",    creator],
+        ["Model ID",   modelId],
+    ].forEach(([key, val]) => {
+        if (!val) return;
+        const kEl = document.createElement("div");
+        kEl.className = "civitai-mymodel-detail-kv-key";
+        kEl.textContent = key;
+        const vEl = document.createElement("div");
+        vEl.className = "civitai-mymodel-detail-kv-val";
+        vEl.textContent = String(val);
+        kvGrid.append(kEl, vEl);
+    });
+    infoSec.appendChild(kvGrid);
+    right.appendChild(infoSec);
+
+    // Trigger Words
+    if (triggerWords.length > 0) {
+        const twSec = _section("Trigger Words", "fa-tags");
+        const twWrap = document.createElement("div");
+        twWrap.className = "civitai-mymodel-detail-trigger-words";
+        triggerWords.forEach(w => {
+            const tag = document.createElement("span");
+            tag.className = "civitai-mymodel-detail-trigger-word";
+            tag.textContent = w;
+            tag.title = "Click to copy";
+            tag.addEventListener("click", () => navigator.clipboard?.writeText(w).catch(() => {}));
+            twWrap.appendChild(tag);
+        });
+        twSec.appendChild(twWrap);
+        right.appendChild(twSec);
+    }
+
+    // Example Prompts
+    if (examplePrompts.length > 0) {
+        const epSec = _section("Example Prompts", "fa-lightbulb");
+        const promptsWrap = document.createElement("div");
+        promptsWrap.className = "civitai-mymodel-detail-prompts";
+        examplePrompts.forEach((prompt, i) => {
+            const card = document.createElement("div");
+            card.className = "civitai-mymodel-detail-prompt-card";
+            const cardHeader = document.createElement("div");
+            cardHeader.className = "civitai-mymodel-detail-prompt-header";
+            const num = document.createElement("span");
+            num.className = "civitai-mymodel-detail-prompt-num";
+            num.textContent = `Prompt ${i + 1}`;
+            const copyBtn = document.createElement("button");
+            copyBtn.className = "civitai-button small";
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+            copyBtn.addEventListener("click", () => {
+                navigator.clipboard?.writeText(String(prompt)).catch(() => {});
+                flashCopied(copyBtn, '<i class="fas fa-copy"></i> Copy');
+            });
+            cardHeader.append(num, copyBtn);
+            const text = document.createElement("div");
+            text.className = "civitai-mymodel-detail-prompt-text";
+            text.textContent = String(prompt);
+            card.append(cardHeader, text);
+            promptsWrap.appendChild(card);
+        });
+        epSec.appendChild(promptsWrap);
+        right.appendChild(epSec);
+    }
+
+    body.append(left, right);
+    panel.append(header, metaBar, body);
+    overlay.appendChild(panel);
+
+    // Close on Esc / backdrop / close button
+    const onEsc = (e) => {
+        if (e.key === "Escape") { overlay.remove(); document.removeEventListener("keydown", onEsc); }
+    };
+    document.addEventListener("keydown", onEsc);
+    const _close = () => { overlay.remove(); document.removeEventListener("keydown", onEsc); };
+    closeBtn.addEventListener("click", _close);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) _close(); });
+
+    document.body.appendChild(overlay);
+}
+
 // Add Menu Button to ComfyUI
 function addMenuButton() {
     const buttonGroup = document.querySelector(".comfyui-button-group");
@@ -153,15 +369,25 @@ app.registerExtension({
             }
 
             _wrap(ctx, text, maxW) {
-                const words = String(text).split(" ");
+                // Character-accumulating wrap that prefers breaking at spaces or
+                // commas, but hard-breaks any run that has none (e.g. long
+                // "<lora:...>" / comma-joined prompt strings). Every returned
+                // line is guaranteed to be <= maxW, so it never overflows.
+                const s = String(text);
                 const lines = [];
                 let cur = "";
-                for (const word of words) {
-                    const t = cur ? `${cur} ${word}` : word;
-                    if (cur && ctx.measureText(t).width > maxW) { lines.push(cur); cur = word; }
-                    else cur = t;
+                let lastBreak = -1; // length of cur right after a space/comma
+                for (let i = 0; i < s.length; i++) {
+                    cur += s[i];
+                    if (s[i] === " " || s[i] === ",") lastBreak = cur.length;
+                    if (ctx.measureText(cur).width > maxW && cur.length > 1) {
+                        const cut = (lastBreak > 0 && lastBreak < cur.length) ? lastBreak : cur.length - 1;
+                        lines.push(cur.slice(0, cut).replace(/\s+$/, ""));
+                        cur = cur.slice(cut).replace(/^\s+/, "");
+                        lastBreak = -1;
+                    }
                 }
-                if (cur) lines.push(cur);
+                if (cur.trim()) lines.push(cur.replace(/\s+$/, ""));
                 return lines;
             }
 
@@ -273,6 +499,13 @@ app.registerExtension({
                 ctx.lineWidth = 1;
                 ctx.strokeRect(0.5, 0.5, W - 1, H - 1);
 
+                // Clip all node content to its own bounds so nothing (long
+                // prompts, names, chips) can ever draw outside the node.
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(0, 0, W, H);
+                ctx.clip();
+
                 // ── Image column ─────────────────────────────────
                 const imgW = Math.min(160, Math.floor(W * 0.28));
                 const imgColH = H - pad * 2;
@@ -321,11 +554,25 @@ app.registerExtension({
                 let ty = pad + 14;
                 const p = this.properties;
 
+                // ── Info button (top-right) ───────────────────────
+                // Opens a detailed, self-contained model-info popup.
+                const infoLeftX = this._drawCopyChip(
+                    ctx, "ⓘ Info",
+                    () => showCivicomfyNodeInfo(this.properties),
+                    tx + tw, pad + 7,
+                    "#10233f", "#2a5cab", "#9ec5ff"
+                );
+
                 // ── Model Name ────────────────────────────────────
                 ctx.font = "bold 13px Arial";
                 ctx.fillStyle = "#e0eaff";
                 const nameLines = this._wrap(ctx, p.modelName || "–", tw);
-                nameLines.slice(0, 2).forEach(l => { ctx.fillText(l, tx, ty, tw); ty += 17; });
+                nameLines.slice(0, 2).forEach((l, idx) => {
+                    // Keep the first line clear of the Info chip.
+                    const lineMaxW = idx === 0 ? Math.max(40, infoLeftX - tx - 8) : tw;
+                    ctx.fillText(l, tx, ty, lineMaxW);
+                    ty += 17;
+                });
                 ty += 2;
 
                 // ── Meta pills row ────────────────────────────────
@@ -464,12 +711,18 @@ app.registerExtension({
 
                         ctx.font = "9.5px Arial";
                         ctx.fillStyle = "#78a898";
+                        // Wrap narrow enough that the first line clears the copy
+                        // chip; all lines then fit comfortably inside the node.
                         const pLines = this._wrap(ctx, pStr, tw - 60);
-                        pLines.slice(0, 2).forEach(l => {
-                            if (ty + 2 >= H - 24) return;
-                            ctx.fillText(l, tx, ty + 12, tw - 65);
+                        const MAX_LINES = 3;
+                        const shown = Math.min(MAX_LINES, pLines.length);
+                        for (let li = 0; li < shown; li++) {
+                            if (ty + 14 >= H - 6) break;
+                            let line = pLines[li];
+                            if (li === shown - 1 && pLines.length > shown) line += "…";
+                            ctx.fillText(line, tx, ty + 12, tw - 8);
                             ty += 13;
-                        });
+                        }
                         ty += 4;
                     });
                 }
@@ -480,6 +733,8 @@ app.registerExtension({
                     ctx.fillStyle = "#3a6acc";
                     ctx.fillText(p.civitaiUrl.replace("https://", ""), tx, H - 6, tw);
                 }
+
+                ctx.restore(); // end node-bounds clip
             }
 
             onConfigure(info) {

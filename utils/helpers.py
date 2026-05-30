@@ -2,21 +2,84 @@
 # File: utils/helpers.py
 # ================================================
 import os
+import json
 import urllib.parse
-import re 
+import re
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
-import folder_paths 
+import folder_paths
 
 # Import config values needed here
 from ..config import PLUGIN_ROOT, MODEL_TYPE_DIRS
 
+# --- User directory overrides ---
+# Persisted map of model-type (folder name, lowercased) -> absolute directory.
+# When set, downloads of that type save into the custom directory instead of the
+# ComfyUI default. An empty/missing entry falls back to the system default.
+DIR_OVERRIDES_FILE = os.path.join(PLUGIN_ROOT, "directory_overrides.json")
+
+def load_dir_overrides() -> Dict[str, str]:
+    """Load the {model_type: absolute_path} override map (always returns a dict)."""
+    try:
+        if os.path.exists(DIR_OVERRIDES_FILE):
+            with open(DIR_OVERRIDES_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                return {
+                    str(k).strip().lower(): str(v).strip()
+                    for k, v in data.items()
+                    if isinstance(v, str) and v.strip()
+                }
+    except Exception as e:
+        print(f"[Civicomfy] Warning: Failed to load directory overrides: {e}")
+    return {}
+
+def save_dir_overrides(data: Dict[str, str]) -> bool:
+    """Persist the override map. Returns True on success."""
+    try:
+        clean = {
+            str(k).strip().lower(): str(v).strip()
+            for k, v in (data or {}).items()
+            if isinstance(v, str) and v.strip()
+        }
+        with open(DIR_OVERRIDES_FILE, "w", encoding="utf-8") as f:
+            json.dump(clean, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"[Civicomfy] Error writing directory overrides file: {e}")
+        return False
+
 def get_model_dir(model_type: str) -> str:
     """
-    Resolve the absolute directory path for a model type using ComfyUI's
-    folder_paths manager. Respects extra_model_paths.yaml and symlinks.
-    Ensures the directory exists.
+    Resolve the absolute directory path for a model type.
+
+    A user-configured override (see Directory Settings) takes precedence; if
+    none is set (or it can't be created) this falls back to the ComfyUI default
+    via :func:`get_default_model_dir`.
+    """
+    model_type_key = (model_type or "").strip().lower()
+
+    # 1) Honor a user-configured directory override for this type.
+    override = load_dir_overrides().get(model_type_key)
+    if override:
+        try:
+            os.makedirs(override, exist_ok=True)
+            return override
+        except Exception as e:
+            print(
+                f"[Civicomfy] Warning: Custom directory for '{model_type_key}' "
+                f"is unusable ({override!r}): {e}. Falling back to default."
+            )
+
+    # 2) Fall back to the ComfyUI-resolved default.
+    return get_default_model_dir(model_type)
+
+def get_default_model_dir(model_type: str, ensure: bool = True) -> str:
+    """
+    Resolve the default absolute directory for a model type using ComfyUI's
+    folder_paths manager (ignoring any user override). Respects
+    extra_model_paths.yaml and symlinks. Creates the directory when ``ensure``.
     """
     model_type_raw = (model_type or "").strip()
     model_type_key = model_type_raw.lower()
@@ -62,14 +125,16 @@ def get_model_dir(model_type: str) -> str:
         # Use the raw (case-preserving) folder name
         full_path = os.path.join(models_dir, model_type_raw)
 
-    # Ensure the directory exists
-    try:
-        # Ensure full_path is a string path
-        if not isinstance(full_path, (str, bytes, os.PathLike)):
-            raise TypeError(f"Resolved directory for '{model_type_key}' is invalid: {full_path!r}")
-        os.makedirs(full_path, exist_ok=True)
-    except Exception as e:
-        print(f"Error: Could not create directory '{full_path}': {e}")
+    # Ensure full_path is a string path
+    if not isinstance(full_path, (str, bytes, os.PathLike)):
+        raise TypeError(f"Resolved directory for '{model_type_key}' is invalid: {full_path!r}")
+
+    # Ensure the directory exists (skip when only resolving for display)
+    if ensure:
+        try:
+            os.makedirs(full_path, exist_ok=True)
+        except Exception as e:
+            print(f"Error: Could not create directory '{full_path}': {e}")
 
     return full_path
 

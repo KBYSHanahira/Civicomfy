@@ -17,6 +17,7 @@ from . import UpdateThumbnail
 from . import GetModelDetails
 from . import GetModelTypes
 from . import GetModelDirs
+from . import DirectorySettings
 from . import GetStatus
 from . import OpenPath
 from . import RetryDownload

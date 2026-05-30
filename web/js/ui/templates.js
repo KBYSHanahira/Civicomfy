@@ -296,10 +296,17 @@ export function modalTemplate(settings = {}) {
                   <p class="civitai-field-hint">Domain used when opening model links from Civicomfy (View, Open on Civitai, etc.).</p>
                 </div>
                 <div class="civitai-form-group">
-                  <label for="civitai-settings-nsfw-threshold">NSFW Blur Threshold (nsfwLevel)</label>
-                  <input type="number" id="civitai-settings-nsfw-threshold" class="civitai-input" value="${Number.isFinite(settings.nsfwBlurMinLevel) ? settings.nsfwBlurMinLevel : 4}" min="0" max="128" step="1">
+                  <label for="civitai-settings-nsfw-threshold">NSFW Blur Threshold</label>
+                  <select id="civitai-settings-nsfw-threshold" class="civitai-select">
+                    <option value="1">Soft &amp; above (most strict)</option>
+                    <option value="2">PG-13 &amp; above</option>
+                    <option value="4">R &amp; above (recommended)</option>
+                    <option value="8">X &amp; above</option>
+                    <option value="16">XXX / Explicit only</option>
+                    <option value="32">Blocked only (least strict)</option>
+                  </select>
                   <p class="civitai-field-hint">
-                    Blur thumbnails when nsfwLevel &ge; this value. Safe: 1 &bull; PG-13: 2 &bull; R: 4 &bull; X: 5 &bull; Explicit: 16/32+
+                    Blur thumbnails when a model's nsfwLevel is at or above the selected rating.
                   </p>
                 </div>
               </div>
@@ -351,6 +358,27 @@ export function modalTemplate(settings = {}) {
 
                 <!-- Progress / result area -->
                 <div id="civitai-maintenance-result" class="civitai-maintenance-result" style="display:none;"></div>
+              </div>
+
+              <!-- ── Directory Settings ─────────────────── -->
+              <div class="civitai-settings-section">
+                <div class="civitai-dir-settings-header">
+                  <h4><i class="fas fa-folder-tree"></i> Directory Settings</h4>
+                  <button type="button" id="civitai-dir-refresh-btn" class="civitai-button small secondary" title="Reload directory list">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                  </button>
+                </div>
+                <p class="civitai-field-hint" style="margin-bottom:10px;">
+                  Set a custom save folder for each model type. Leave blank to use the system default shown as the placeholder.
+                </p>
+                <div id="civitai-dir-settings-list" class="civitai-dir-settings-list">
+                  <p class="civitai-field-hint"><i class="fas fa-spinner fa-spin"></i> Loading directories...</p>
+                </div>
+                <div class="civitai-maintenance-actions" style="margin-top:10px;">
+                  <button type="button" id="civitai-dir-save-btn" class="civitai-button primary">
+                    <i class="fas fa-save"></i> Save Directories
+                  </button>
+                </div>
               </div>
             </div>
             <div class="civitai-form-actions">

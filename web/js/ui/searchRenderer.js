@@ -9,6 +9,17 @@ import { buildCivitaiModelUrl } from "./handlers/settingsHandler.js";
 
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 
+// Escape a value for safe interpolation into HTML text or a double-quoted
+// attribute. Civitai image-meta values (sampler, prompts, etc.) are untrusted.
+function esc(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Module-level cache so info modal can access full hit data
 const _browseHitData = new Map();
 
@@ -523,11 +534,11 @@ function _renderBrowseInfoModal(ui, hit) {
     function _updateImgMeta(img) {
         const m = img?.meta || {};
         const parts = [];
-        if (m.sampler)                       parts.push(`<span title="Sampler"><i class="fas fa-random"></i> ${m.sampler}</span>`);
-        if (m.steps)                         parts.push(`<span title="Steps"><i class="fas fa-layer-group"></i> ${m.steps} steps</span>`);
-        if (m.cfgScale != null || m.cfg_scale != null) parts.push(`<span title="CFG Scale"><i class="fas fa-sliders-h"></i> CFG ${m.cfgScale ?? m.cfg_scale}</span>`);
-        if (m.seed != null)                  parts.push(`<span title="Seed"><i class="fas fa-seedling"></i> ${m.seed}</span>`);
-        if (m.size)                          parts.push(`<span title="Size"><i class="fas fa-expand-alt"></i> ${m.size}</span>`);
+        if (m.sampler)                       parts.push(`<span title="Sampler"><i class="fas fa-random"></i> ${esc(m.sampler)}</span>`);
+        if (m.steps)                         parts.push(`<span title="Steps"><i class="fas fa-layer-group"></i> ${esc(m.steps)} steps</span>`);
+        if (m.cfgScale != null || m.cfg_scale != null) parts.push(`<span title="CFG Scale"><i class="fas fa-sliders-h"></i> CFG ${esc(m.cfgScale ?? m.cfg_scale)}</span>`);
+        if (m.seed != null)                  parts.push(`<span title="Seed"><i class="fas fa-seedling"></i> ${esc(m.seed)}</span>`);
+        if (m.size)                          parts.push(`<span title="Size"><i class="fas fa-expand-alt"></i> ${esc(m.size)}</span>`);
         imgMetaEl.innerHTML = parts.join('');
         imgMetaEl.style.display = parts.length > 0 ? 'flex' : 'none';
     }
@@ -788,10 +799,10 @@ function _renderBrowseInfoModal(ui, hit) {
             card.className = 'civitai-browse-info-prompt-card';
 
             const metaParts = [];
-            if (meta.sampler) metaParts.push(`<span title="Sampler"><i class="fas fa-random"></i> ${meta.sampler}</span>`);
-            if (meta.steps)   metaParts.push(`<span title="Steps"><i class="fas fa-layer-group"></i> ${meta.steps}</span>`);
-            if (meta.cfgScale != null || meta.cfg_scale != null) metaParts.push(`<span title="CFG"><i class="fas fa-sliders-h"></i> CFG ${meta.cfgScale ?? meta.cfg_scale}</span>`);
-            if (meta.size)    metaParts.push(`<span title="Resolution"><i class="fas fa-expand-alt"></i> ${meta.size}</span>`);
+            if (meta.sampler) metaParts.push(`<span title="Sampler"><i class="fas fa-random"></i> ${esc(meta.sampler)}</span>`);
+            if (meta.steps)   metaParts.push(`<span title="Steps"><i class="fas fa-layer-group"></i> ${esc(meta.steps)}</span>`);
+            if (meta.cfgScale != null || meta.cfg_scale != null) metaParts.push(`<span title="CFG"><i class="fas fa-sliders-h"></i> CFG ${esc(meta.cfgScale ?? meta.cfg_scale)}</span>`);
+            if (meta.size)    metaParts.push(`<span title="Resolution"><i class="fas fa-expand-alt"></i> ${esc(meta.size)}</span>`);
 
             const promptHeader = document.createElement('div');
             promptHeader.className = 'civitai-browse-info-prompt-header';
@@ -816,7 +827,7 @@ function _renderBrowseInfoModal(ui, hit) {
             if (meta.negativePrompt) {
                 const negEl = document.createElement('div');
                 negEl.className = 'civitai-browse-info-prompt-neg';
-                negEl.innerHTML = `<span class="civitai-browse-info-prompt-neg-label"><i class="fas fa-minus-circle"></i> Negative</span> ${meta.negativePrompt}`;
+                negEl.innerHTML = `<span class="civitai-browse-info-prompt-neg-label"><i class="fas fa-minus-circle"></i> Negative</span> ${esc(meta.negativePrompt)}`;
                 card.appendChild(negEl);
             }
             epWrap.appendChild(card);
@@ -831,9 +842,11 @@ function _renderBrowseInfoModal(ui, hit) {
         const sec = _infoSection('Description', 'fas fa-align-left');
         const descEl = document.createElement('div');
         descEl.className = 'civitai-browse-info-desc';
-        const tmp = document.createElement('div');
-        tmp.innerHTML = rawDesc;
-        descEl.textContent = tmp.textContent || tmp.innerText || '';
+        // Parse with DOMParser (inert document) to strip HTML to plain text
+        // without triggering resource loads (e.g. <img onerror>) the way an
+        // innerHTML assignment on a detached element would.
+        const parsed = new DOMParser().parseFromString(rawDesc, 'text/html');
+        descEl.textContent = parsed.body.textContent || '';
         sec.appendChild(descEl);
         detailsWrap.appendChild(sec);
     }
@@ -928,7 +941,6 @@ export function renderSearchResults(ui, items) {
     const creator = hit.user?.username || 'Unknown Creator';
     const modelName = hit.name || 'Untitled Model';
     const modelTypeApi = hit.type || 'other';
-    console.log('Model type for badge:', modelTypeApi);
     const stats = hit.metrics || {};
     const tags = hit.tags?.map(t => t.name) || [];
 

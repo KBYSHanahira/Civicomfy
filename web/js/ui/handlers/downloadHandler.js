@@ -1,5 +1,15 @@
 import { CivitaiDownloaderAPI } from "../../api/civitai.js";
 
+// Escape a value for safe interpolation into HTML.
+function esc(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Returns true when the URL looks like a HuggingFace file link.
 function isHuggingFaceUrl(input) {
     return /huggingface\.co\/.+\/(resolve|blob)\//i.test(input.trim());
@@ -48,13 +58,13 @@ export async function fetchAndDisplayDownloadPreview(ui) {
                       <div>
                         <div style="font-weight:bold;font-size:1.05em;margin-bottom:4px;">
                           <i class="fas fa-cubes" style="margin-right:5px;color:#fbbf24;"></i>
-                          ${result.repo_id}
+                          ${esc(result.repo_id)}
                         </div>
                         <div style="color:#aaa;font-size:0.9em;margin-bottom:2px;">
-                          Revision: <code>${result.revision}</code>
+                          Revision: <code>${esc(result.revision)}</code>
                         </div>
                         <div style="color:#ccc;font-size:0.9em;margin-bottom:2px;">
-                          File: <code>${result.filepath}</code>
+                          File: <code>${esc(result.filepath)}</code>
                         </div>
                         <div style="color:#ccc;font-size:0.9em;">
                           Size: <strong>${formatBytes(result.size)}</strong>
@@ -63,12 +73,12 @@ export async function fetchAndDisplayDownloadPreview(ui) {
                     </div>`;
             } else {
                 const message = result?.error || 'Unknown error from server';
-                ui.downloadPreviewArea.innerHTML = `<p style="color:var(--error-text,#ff6b6b);">${message}</p>`;
+                ui.downloadPreviewArea.innerHTML = `<p style="color:var(--error-text,#ff6b6b);">${esc(message)}</p>`;
             }
         } catch (error) {
             const message = `Error fetching HuggingFace details: ${error.details || error.message || 'Unknown error'}`;
             console.error("HF Preview Fetch Error:", error);
-            ui.downloadPreviewArea.innerHTML = `<p style="color:var(--error-text,#ff6b6b);">${message}</p>`;
+            ui.downloadPreviewArea.innerHTML = `<p style="color:var(--error-text,#ff6b6b);">${esc(message)}</p>`;
         }
         return;
     }
@@ -147,6 +157,9 @@ export async function handleDownloadSubmit(ui) {
     try {
         const result = await CivitaiDownloaderAPI.downloadModel(params);
 
+        if (!result) {
+            throw new Error('Empty response from server');
+        }
         if (result.status === 'queued') {
             ui.showToast(`Download queued: ${result.details?.filename || 'Model'}`, 'success');
             if (ui.settings.autoOpenStatusTab) {
@@ -193,6 +206,9 @@ async function _handleHFDownloadSubmit(ui, hfUrl) {
     try {
         const result = await CivitaiDownloaderAPI.downloadModelHF(params);
 
+        if (!result) {
+            throw new Error('Empty response from server');
+        }
         if (result.status === 'queued') {
             ui.showToast(`HuggingFace download queued: ${result.details?.filename || 'Model'}`, 'success');
             if (ui.settings.autoOpenStatusTab) {

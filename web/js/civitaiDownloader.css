@@ -1114,6 +1114,12 @@
   overflow-y: auto;
 }
 .civitai-browse-card:hover .civitai-browse-card-overlay { opacity: 1; }
+/* On touch devices there is no hover, so reveal the action overlay on tap/focus
+   to keep the download / "View on Civitai" buttons reachable. */
+@media (hover: none) {
+  .civitai-browse-card .civitai-browse-card-overlay { opacity: 1; }
+}
+.civitai-browse-card:focus-within .civitai-browse-card-overlay { opacity: 1; }
 .civitai-browse-card-overlay .civitai-button {
   height: auto;
   padding: 5px 8px;
@@ -1470,6 +1476,25 @@
 }
 .civitai-browse-info-main-image:hover img,
 .civitai-browse-info-main-image:hover video { transform: scale(1.04); }
+
+/* When the modal/viewport is narrow, stack the gallery above the details so the
+   fixed-width gallery can't push the prompt/details column out of the frame. */
+@media (max-width: 680px) {
+  .civitai-browse-info-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .civitai-browse-info-gallery,
+  .civitai-browse-info-main-image {
+    width: 100%;
+  }
+  .civitai-browse-info-main-image {
+    height: 240px;
+  }
+  .civitai-browse-info-details {
+    overflow-y: visible;
+  }
+}
 .civitai-browse-info-img-counter {
   position: absolute;
   bottom: 7px; right: 7px;
@@ -1555,6 +1580,7 @@
 /* Section label */
 .civitai-browse-info-section {
   margin-bottom: 14px;
+  min-width: 0;
 }
 .civitai-browse-info-section-label {
   font-size: 0.74em;
@@ -1734,12 +1760,15 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 .civitai-browse-info-prompt-card {
   background: var(--cfy-surface);
   border: 1px solid var(--cfy-border);
   border-radius: var(--cfy-radius);
   overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
 }
 .civitai-browse-info-prompt-header {
   display: flex;
@@ -1773,8 +1802,12 @@
   color: var(--cfy-text);
   max-height: 90px;
   overflow-y: auto;
+  overflow-x: hidden;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  max-width: 100%;
 }
 .civitai-browse-info-prompt-neg {
   padding: 5px 10px;
@@ -1784,7 +1817,11 @@
   border-top: 1px dashed rgba(255,255,255,0.08);
   max-height: 60px;
   overflow-y: auto;
+  overflow-x: hidden;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  max-width: 100%;
 }
 .civitai-browse-info-prompt-neg-label {
   color: #ef9a9a;
@@ -2923,6 +2960,58 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+}
+
+/* Directory Settings */
+.civitai-dir-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.civitai-dir-settings-header h4 {
+  margin: 0;
+}
+.civitai-dir-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.civitai-dir-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.civitai-dir-row-label {
+  flex: 0 0 150px;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--cfy-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.civitai-dir-row-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.82em;
+}
+.civitai-dir-row-input::placeholder {
+  color: var(--cfy-text-dim);
+  opacity: 0.7;
+  font-style: italic;
+}
+.civitai-dir-row-reset {
+  flex: 0 0 auto;
+}
+@media (max-width: 680px) {
+  .civitai-dir-row {
+    flex-wrap: wrap;
+  }
+  .civitai-dir-row-label {
+    flex-basis: 100%;
+  }
 }
 
 /* Maintenance result box */

@@ -1,9 +1,22 @@
 // Renders the download preview panel
 
 import { attachLightboxZoom } from "../utils/dom.js";
+import { sanitizeHtml } from "../utils/sanitize.js";
 import { buildCivitaiModelUrl } from "./handlers/settingsHandler.js";
 
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
+
+// Escape a value for safe interpolation into HTML text or a double-quoted
+// attribute. Civitai-API fields (names, URLs, tags) can contain markup or
+// stray quotes that would otherwise break out of the surrounding context.
+function esc(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 export function renderDownloadPreview(ui, data) {
   if (!ui.downloadPreviewArea) return;
@@ -16,8 +29,8 @@ export function renderDownloadPreview(ui, data) {
   const versionName  = data.version_name || 'N/A';
   const baseModel    = data.base_model || 'N/A';
   const stats        = data.stats || {};
-  const descHtml     = data.description_html || '<p><em>No description.</em></p>';
-  const verDescHtml  = data.version_description_html || '<p><em>No description.</em></p>';
+  const descHtml     = data.description_html ? sanitizeHtml(data.description_html) : '<p><em>No description.</em></p>';
+  const verDescHtml  = data.version_description_html ? sanitizeHtml(data.version_description_html) : '<p><em>No description.</em></p>';
   const fileInfo     = data.file_info || {};
   const files        = Array.isArray(data.files) ? data.files : [];
   const tags         = Array.isArray(data.tags) ? data.tags.slice(0, 12) : [];
@@ -42,7 +55,7 @@ export function renderDownloadPreview(ui, data) {
   // Thumbnail strip
   const thumbsHtml = galleryImgs.map((img, i) => `
     <div class="cfy-prev-gallery-thumb${i === 0 ? ' active' : ''}" data-idx="${i}">
-      <img src="${img.url}" loading="lazy" onerror="${onError}" class="${isImgBlurred(img) ? 'blurred' : ''}">
+      <img src="${esc(img.url)}" loading="lazy" onerror="${onError}" class="${isImgBlurred(img) ? 'blurred' : ''}">
       ${isImgBlurred(img) ? '<span class="cfy-prev-nsfw-badge">R</span>' : ''}
     </div>`).join('');
 
@@ -60,7 +73,7 @@ export function renderDownloadPreview(ui, data) {
   // Split a trained-words string into individual word chips
   function wordChipsHtml(str) {
     return str.split(',').map(w => w.trim()).filter(Boolean)
-      .map(w => `<span class="cfy-prev-trained-word" data-word="${w.replace(/"/g,'&quot;')}" title="Click to copy">${w}</span>`)
+      .map(w => `<span class="cfy-prev-trained-word" data-word="${esc(w)}" title="Click to copy">${esc(w)}</span>`)
       .join('');
   }
 
@@ -118,7 +131,7 @@ export function renderDownloadPreview(ui, data) {
       <!-- LEFT: image gallery -->
       <div class="cfy-prev-gallery">
         <div class="cfy-prev-gallery-main" id="cfy-prev-main-wrap">
-          <img id="cfy-prev-hero" src="${hero0.url}" loading="lazy" onerror="${onError}"
+          <img id="cfy-prev-hero" src="${esc(hero0.url)}" loading="lazy" onerror="${onError}"
                class="${isImgBlurred(hero0) ? 'blurred' : ''}">
           ${isImgBlurred(hero0) ? '<span class="cfy-prev-nsfw-badge large">R</span>' : ''}
         </div>
@@ -129,12 +142,12 @@ export function renderDownloadPreview(ui, data) {
       <div class="cfy-prev-info">
 
         <div class="cfy-prev-header">
-          <span class="cfy-prev-type-badge">${modelType}</span>
-          <h3 class="cfy-prev-title">${modelName}</h3>
+          <span class="cfy-prev-type-badge">${esc(modelType)}</span>
+          <h3 class="cfy-prev-title">${esc(modelName)}</h3>
           <div class="cfy-prev-meta">
-            <span><i class="fas fa-user"></i> ${creator}</span>
-            <span><i class="fas fa-code-branch"></i> ${versionName}</span>
-            <span class="cfy-prev-base-badge">${baseModel}</span>
+            <span><i class="fas fa-user"></i> ${esc(creator)}</span>
+            <span><i class="fas fa-code-branch"></i> ${esc(versionName)}</span>
+            <span class="cfy-prev-base-badge">${esc(baseModel)}</span>
           </div>
         </div>
 
@@ -149,7 +162,7 @@ export function renderDownloadPreview(ui, data) {
           <div class="cfy-prev-box-header">
             <span class="cfy-prev-section-label"><i class="fas fa-file-archive"></i> Primary File</span>
           </div>
-          <div class="cfy-prev-file-name" title="${fileInfo.name || ''}">${fileInfo.name || 'N/A'}</div>
+          <div class="cfy-prev-file-name" title="${esc(fileInfo.name || '')}">${esc(fileInfo.name || 'N/A')}</div>
           <div class="cfy-prev-chips">
             ${chip(fileInfo.size_kb ? ui.formatBytes(fileInfo.size_kb * 1024) : '')}
             ${chip(fileInfo.format)}
@@ -171,7 +184,7 @@ export function renderDownloadPreview(ui, data) {
             </button>
           </div>
           <div class="cfy-prev-tags">
-            ${tags.map(t => `<span class="cfy-prev-tag" data-tag="${t.replace(/"/g,'&quot;')}" title="Click to copy">${t}</span>`).join('')}
+            ${tags.map(t => `<span class="cfy-prev-tag" data-tag="${esc(t)}" title="Click to copy">${esc(t)}</span>`).join('')}
           </div>
         </div>` : ''}
 

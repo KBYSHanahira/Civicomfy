@@ -2,6 +2,18 @@
 
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 
+// Escape a value for safe interpolation into HTML text or a double-quoted
+// attribute. Model/version/file names and error text can contain markup or
+// stray quotes that would otherwise break out of the surrounding context.
+function esc(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function renderDownloadList(ui, items, container, emptyMessage) {
   if (!items || items.length === 0) {
     container.innerHTML = `<p>${emptyMessage}</p>`;
@@ -47,26 +59,26 @@ export function renderDownloadList(ui, items, container, emptyMessage) {
     const startedTooltip = startTime ? `data-tooltip="Started: ${new Date(startTime).toLocaleString()}"` : '';
     const endedTooltip = endTime ? `data-tooltip="Ended: ${new Date(endTime).toLocaleString()}"` : '';
     const durationTooltip = startTime && endTime ? `data-tooltip="Duration: ${ui.formatDuration(startTime, endTime)}"` : '';
-    const filenameTooltip = filename !== 'N/A' ? `title="Filename: ${filename}"` : '';
-    const errorTooltip = errorMsg ? `title="Error Details: ${String(errorMsg).substring(0, 200)}${String(errorMsg).length > 200 ? '...' : ''}"` : '';
-    const connectionInfoHtml = connectionType !== "N/A" ? `<span style="font-size: 0.85em; color: #aaa; margin-left: 10px;">(Conn: ${connectionType})</span>` : '';
+    const filenameTooltip = filename !== 'N/A' ? `title="Filename: ${esc(filename)}"` : '';
+    const errorTooltip = errorMsg ? `title="Error Details: ${esc(String(errorMsg).substring(0, 200))}${String(errorMsg).length > 200 ? '...' : ''}"` : '';
+    const connectionInfoHtml = connectionType !== "N/A" ? `<span style="font-size: 0.85em; color: #aaa; margin-left: 10px;">(Conn: ${esc(connectionType)})</span>` : '';
 
     const overlayHtml = shouldBlur ? `<div class=\"civitai-nsfw-overlay\" title=\"R-rated: click to reveal\">R</div>` : '';
     const containerClasses = `civitai-thumbnail-container${shouldBlur ? ' blurred' : ''}`;
 
     let innerHTML = `
       <div class="${containerClasses}" data-nsfw-level="${Number.isFinite(nsfwLevel) ? nsfwLevel : ''}">
-        <img src="${thumbnail}" alt="thumbnail" class="civitai-download-thumbnail" loading="lazy" onerror="${onErrorScript}">
+        <img src="${esc(thumbnail)}" alt="thumbnail" class="civitai-download-thumbnail" loading="lazy" onerror="${onErrorScript}">
         ${overlayHtml}
       </div>
       <div class="civitai-download-info">
-        <strong>${modelName}</strong>
-        <p>Ver: ${versionName}</p>
-        <p class="filename" ${filenameTooltip}>${filename}</p>
+        <strong>${esc(modelName)}</strong>
+        <p>Ver: ${esc(versionName)}</p>
+        <p class="filename" ${filenameTooltip}>${esc(filename)}</p>
         ${size > 0 ? `<p>Size: ${ui.formatBytes(size)}</p>` : ''}
-        ${item.file_format ? `<p>Format: ${item.file_format}</p>` : ''}
-        ${item.file_precision || item.file_model_size ? `<p>${item.file_precision ? 'Precision: ' + String(item.file_precision).toUpperCase() : ''}${item.file_precision && item.file_model_size ? ' • ' : ''}${item.file_model_size ? 'Model Size: ' + item.file_model_size : ''}</p>` : ''}
-        ${errorMsg ? `<p class="error-message" ${errorTooltip}><i class="fas fa-exclamation-triangle"></i> ${String(errorMsg).substring(0, 100)}${String(errorMsg).length > 100 ? '...' : ''}</p>` : ''}
+        ${item.file_format ? `<p>Format: ${esc(item.file_format)}</p>` : ''}
+        ${item.file_precision || item.file_model_size ? `<p>${item.file_precision ? 'Precision: ' + esc(String(item.file_precision).toUpperCase()) : ''}${item.file_precision && item.file_model_size ? ' • ' : ''}${item.file_model_size ? 'Model Size: ' + esc(item.file_model_size) : ''}</p>` : ''}
+        ${errorMsg ? `<p class="error-message" ${errorTooltip}><i class="fas fa-exclamation-triangle"></i> ${esc(String(errorMsg).substring(0, 100))}${String(errorMsg).length > 100 ? '...' : ''}</p>` : ''}
     `;
 
     if (status === 'downloading' || status === 'starting' || status === 'completed') {

@@ -1,4 +1,5 @@
 import { setCookie, getCookie } from "../../utils/cookies.js";
+import { CivitaiDownloaderAPI } from "../../api/civitai.js";
 
 const SETTINGS_COOKIE_NAME = 'civitaiDownloaderSettings';
 
@@ -92,7 +93,15 @@ export function applySettings(ui) {
     }
     if (ui.settingsNsfwThresholdInput) {
         const val = Number(ui.settings.nsfwBlurMinLevel);
-        ui.settingsNsfwThresholdInput.value = Number.isFinite(val) ? val : 4;
+        const target = Number.isFinite(val) ? val : 4;
+        // Snap to the nearest available dropdown option so the control always
+        // reflects the saved value, even if it predates the dropdown's set.
+        const options = Array.from(ui.settingsNsfwThresholdInput.options).map(o => Number(o.value));
+        const snapped = options.reduce(
+            (best, cur) => (Math.abs(cur - target) < Math.abs(best - target) ? cur : best),
+            options[0] ?? 4
+        );
+        ui.settingsNsfwThresholdInput.value = String(snapped);
     }
     if (ui.settingsCivitaiDomainSelect) {
         const dom = ALLOWED_CIVITAI_DOMAINS.includes(ui.settings.civitaiDomain) ? ui.settings.civitaiDomain : 'civitai.com';
@@ -140,6 +149,109 @@ export function handleSettingsSave(ui) {
 
     ui.saveSettingsToCookie();
     ui.applySettings();
+}
+
+// --- Directory Settings (server-persisted per-model-type save folders) ---
+
+export async function loadDirectorySettings(ui, force = false) {
+    const listEl = ui.dirSettingsList;
+    if (!listEl) return;
+    if (ui._dirSettingsLoaded && !force) return;
+
+    listEl.innerHTML = '<p class="civitai-field-hint"><i class="fas fa-spinner fa-spin"></i> Loading directories...</p>';
+    try {
+        const result = await CivitaiDownloaderAPI.getDirectorySettings();
+        const items = (result && Array.isArray(result.items)) ? result.items : [];
+        renderDirectorySettings(ui, items);
+        ui._dirSettingsLoaded = true;
+    } catch (e) {
+        console.error('[Civicomfy] Failed to load directory settings:', e);
+        listEl.innerHTML = '';
+        const err = document.createElement('p');
+        err.className = 'civitai-field-hint';
+        err.style.color = 'var(--error-text, #ff6b6b)';
+        err.textContent = `Failed to load directories: ${e.details || e.message || 'Unknown error'}`;
+        listEl.appendChild(err);
+    }
+}
+
+function renderDirectorySettings(ui, items) {
+    const listEl = ui.dirSettingsList;
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    if (!items.length) {
+        const empty = document.createElement('p');
+        empty.className = 'civitai-field-hint';
+        empty.textContent = 'No model directories found.';
+        listEl.appendChild(empty);
+        return;
+    }
+
+    items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'civitai-dir-row';
+
+        const label = document.createElement('label');
+        label.className = 'civitai-dir-row-label';
+        label.textContent = item.display || item.key;
+        label.title = `Folder key: ${item.key}`;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'civitai-input civitai-dir-row-input';
+        input.dataset.key = item.key;
+        input.value = item.override || '';
+        input.placeholder = item.default_dir || '(default)';
+        input.spellcheck = false;
+        input.autocomplete = 'off';
+
+        const reset = document.createElement('button');
+        reset.type = 'button';
+        reset.className = 'civitai-button small secondary civitai-dir-row-reset';
+        reset.title = 'Clear (use default)';
+        reset.innerHTML = '<i class="fas fa-rotate-left"></i>';
+        reset.addEventListener('click', () => { input.value = ''; });
+
+        row.append(label, input, reset);
+        listEl.appendChild(row);
+    });
+}
+
+export async function saveDirectorySettings(ui) {
+    const listEl = ui.dirSettingsList;
+    if (!listEl) return;
+
+    const overrides = {};
+    listEl.querySelectorAll('input.civitai-dir-row-input').forEach(input => {
+        const key = input.dataset.key;
+        if (key) overrides[key] = input.value.trim();
+    });
+
+    const btn = ui.dirSaveBtn;
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; }
+
+    try {
+        const result = await CivitaiDownloaderAPI.saveDirectorySettings(overrides);
+        if (result && result.success) {
+            const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+            if (warnings.length) {
+                ui.showToast(`Saved with warnings: ${warnings.join('; ')}`, 'warning', 7000);
+            } else {
+                ui.showToast('Directory settings saved!', 'success');
+            }
+            // Re-fetch so inputs reflect the normalized (absolute) saved paths.
+            await loadDirectorySettings(ui, true);
+        } else {
+            ui.showToast(`Failed to save directories: ${result?.error || 'Unknown error'}`, 'error', 6000);
+        }
+    } catch (e) {
+        console.error('[Civicomfy] Failed to save directory settings:', e);
+        ui.showToast(`Failed to save directories: ${e.details || e.message || 'Unknown error'}`, 'error', 6000);
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+    }
 }
 
 // --- Browse Tab Persistence ---
