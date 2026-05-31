@@ -110,8 +110,13 @@ export function applySettings(ui) {
     if (ui.downloadConnectionsInput) {
         ui.downloadConnectionsInput.value = Math.max(1, Math.min(16, ui.settings.numConnections || 1));
     }
-    if (ui.downloadModelTypeSelect && Object.keys(ui.modelTypes).length > 0) {
+    // Seed the download form's model type with the default ONCE, on first load.
+    // After that we must not clobber whatever the user manually picked, otherwise
+    // re-applying settings (e.g. visiting the Settings tab to set an HF token)
+    // would silently reset their chosen save location back to the default.
+    if (ui.downloadModelTypeSelect && Object.keys(ui.modelTypes).length > 0 && !ui._downloadTypeInitialized) {
         ui.downloadModelTypeSelect.value = ui.settings.defaultModelType || 'checkpoint';
+        ui._downloadTypeInitialized = true;
     }
 }
 
@@ -148,6 +153,11 @@ export function handleSettingsSave(ui) {
     ui.settings.civitaiDomain = civitaiDomain;
 
     ui.saveSettingsToCookie();
+    // Changing the default model type here is an explicit user action, so reflect
+    // it on the download form immediately (applySettings only seeds it once).
+    if (ui.downloadModelTypeSelect && ui.downloadModelTypeSelect.querySelector(`option[value="${defaultModelType}"]`)) {
+        ui.downloadModelTypeSelect.value = defaultModelType;
+    }
     ui.applySettings();
 }
 

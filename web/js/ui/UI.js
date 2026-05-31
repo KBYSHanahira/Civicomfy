@@ -534,10 +534,11 @@ export class CivitaiDownloaderUI {
         }
         else if (tabId === 'settings') { this.applySettings(); this.loadDirectorySettings(); }
         else if(tabId === 'download') {
-            this.downloadConnectionsInput.value = this.settings.numConnections;
-            if (Object.keys(this.modelTypes).length > 0) {
-                this.downloadModelTypeSelect.value = this.settings.defaultModelType;
-            }
+            // Do NOT reset the model type / connections here. Switching back to the
+            // Download tab must preserve the user's current selection — clobbering it
+            // with the defaults is what made HuggingFace downloads land in the default
+            // folder after a detour through the Settings tab. The default is seeded
+            // once at startup (see applySettings).
         }
     }
 

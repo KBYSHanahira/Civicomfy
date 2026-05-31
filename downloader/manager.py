@@ -189,24 +189,30 @@ class DownloadManager:
                 # Keep 'thumbnail', 'filename', 'model_name', 'version_name' etc for display
             ]
 
+            def _strip(item_data):
+                # Strip excluded fields, but expose the target directory (derived
+                # from output_path) so the UI can show where the file is saved.
+                stripped = {k: v for k, v in item_data.items() if k not in exclude_fields_for_ui}
+                output_path = item_data.get('output_path')
+                if output_path:
+                    stripped['output_dir'] = os.path.dirname(output_path)
+                return stripped
+
             # Prepare active downloads list
             active_list = [
-                {k: v for k, v in item_data.items() if k not in exclude_fields_for_ui}
+                _strip(item_data)
                 for item_id, item_data in self.active_downloads.items()
             ]
 
             # Prepare history list similarly
             history_list = [
-                {k: v for k, v in item_data.items() if k not in exclude_fields_for_ui}
+                _strip(item_data)
                 for item_data in self.history[:DOWNLOAD_HISTORY_LIMIT]
             ]
 
             # Return copies
             return {
-                "queue": [
-                    {k:v for k,v in item.items() if k not in exclude_fields_for_ui}
-                    for item in self.queue
-                ],
+                "queue": [_strip(item) for item in self.queue],
                 "active": active_list,
                 "history": history_list,
             }

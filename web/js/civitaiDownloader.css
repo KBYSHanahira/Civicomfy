@@ -2097,6 +2097,16 @@
   font-size: 0.8em;
   color: rgba(238,238,238,0.38);
 }
+.civitai-download-info .output-dir {
+  font-size: 0.8em;
+  color: rgba(120,180,255,0.75);
+  direction: rtl;
+  text-align: left;
+}
+.civitai-download-info .output-dir i {
+  margin-right: 4px;
+  direction: ltr;
+}
 .civitai-download-info .error-message {
   color: #ff7070;
   font-size: 0.84em;

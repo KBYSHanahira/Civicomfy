@@ -35,6 +35,7 @@ export function renderDownloadList(ui, items, container, emptyMessage) {
     const addedTime = item.added_time || null;
     const startTime = item.start_time || null;
     const endTime = item.end_time || null;
+    const outputDir = item.output_dir || null;
     const thumbnail = item.thumbnail || PLACEHOLDER_IMAGE_URL;
     const nsfwLevel = Number(item.thumbnail_nsfw_level ?? 0);
     const blurMinLevel = Number(ui.settings?.nsfwBlurMinLevel ?? 4);
@@ -75,6 +76,7 @@ export function renderDownloadList(ui, items, container, emptyMessage) {
         <strong>${esc(modelName)}</strong>
         <p>Ver: ${esc(versionName)}</p>
         <p class="filename" ${filenameTooltip}>${esc(filename)}</p>
+        ${outputDir ? `<p class="output-dir" title="Saving to: ${esc(outputDir)}"><i class="fas fa-folder"></i> ${esc(outputDir)}</p>` : ''}
         ${size > 0 ? `<p>Size: ${ui.formatBytes(size)}</p>` : ''}
         ${item.file_format ? `<p>Format: ${esc(item.file_format)}</p>` : ''}
         ${item.file_precision || item.file_model_size ? `<p>${item.file_precision ? 'Precision: ' + esc(String(item.file_precision).toUpperCase()) : ''}${item.file_precision && item.file_model_size ? ' • ' : ''}${item.file_model_size ? 'Model Size: ' + esc(item.file_model_size) : ''}</p>` : ''}
