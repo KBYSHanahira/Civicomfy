@@ -31,8 +31,9 @@ export function debounceFetchDownloadPreview(ui, delay = 500) {
 }
 
 export async function fetchAndDisplayDownloadPreview(ui) {
+    if (!ui.modelUrlInput || !ui.downloadPreviewArea) return;
     const modelUrlOrId = ui.modelUrlInput.value.trim();
-    const versionId = ui.modelVersionIdInput.value.trim();
+    const versionId = ui.modelVersionIdInput ? ui.modelVersionIdInput.value.trim() : '';
 
     if (!modelUrlOrId) {
         ui.downloadPreviewArea.innerHTML = '';
@@ -52,7 +53,7 @@ export async function fetchAndDisplayDownloadPreview(ui) {
             if (result && result.success) {
                 ui.downloadPreviewArea.innerHTML = `
                     <div style="display:flex;align-items:flex-start;gap:14px;">
-                      <div style="flex-shrink:0;font-size:2em;color:var(--accent-color,#5c8aff);">
+                      <div style="flex-shrink:0;font-size:2em;color:var(--cfy-accent,#5c8aff);">
                         <i class="fas fa-database"></i>
                       </div>
                       <div>
@@ -110,7 +111,7 @@ export async function fetchAndDisplayDownloadPreview(ui) {
 }
 
 export async function handleDownloadSubmit(ui) {
-    const modelUrlOrId = ui.modelUrlInput.value.trim();
+    const modelUrlOrId = ui.modelUrlInput ? ui.modelUrlInput.value.trim() : '';
     if (!modelUrlOrId) {
         ui.showToast("Model URL or ID cannot be empty.", "error");
         return;
@@ -134,7 +135,7 @@ export async function handleDownloadSubmit(ui) {
 
     // Subfolder comes from dropdown; filename is base name only
     const selectedSubdir = ui.subdirSelect ? ui.subdirSelect.value.trim() : '';
-    const userFilename = ui.customFilenameInput.value.trim();
+    const userFilename = ui.customFilenameInput ? ui.customFilenameInput.value.trim() : '';
 
     const params = {
         model_url_or_id: modelUrlOrId,
@@ -190,7 +191,7 @@ async function _handleHFDownloadSubmit(ui, hfUrl) {
     ui.downloadSubmitButton.textContent = 'Starting...';
 
     const selectedSubdir = ui.subdirSelect ? ui.subdirSelect.value.trim() : '';
-    const userFilename = ui.customFilenameInput.value.trim();
+    const userFilename = ui.customFilenameInput ? ui.customFilenameInput.value.trim() : '';
 
     const params = {
         hf_url: hfUrl,

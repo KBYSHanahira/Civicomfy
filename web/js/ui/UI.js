@@ -532,7 +532,8 @@ export class CivitaiDownloaderUI {
                 this.handleGalleryLoad();
             }
         }
-        else if (tabId === 'settings') { this.applySettings(); this.loadDirectorySettings(); }
+        else if (tabId === 'settings') { this.applySettings(); }
+        else if (tabId === 'directory') { this.loadDirectorySettings(); }
         else if(tabId === 'download') {
             // Do NOT reset the model type / connections here. Switching back to the
             // Download tab must preserve the user's current selection — clobbering it

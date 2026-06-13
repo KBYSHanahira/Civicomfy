@@ -19,6 +19,7 @@ export function modalTemplate(settings = {}) {
           <button class="civitai-downloader-tab" data-tab="gallery"><i class="fas fa-images"></i> Gallery</button>
           <button class="civitai-downloader-tab" data-tab="status"><i class="fas fa-tasks"></i> Status <span id="civitai-status-indicator" style="display:none;">(<span id="civitai-active-count">0</span>)</span></button>
           <button class="civitai-downloader-tab" data-tab="settings"><i class="fas fa-cog"></i> Settings</button>
+          <button class="civitai-downloader-tab" data-tab="directory"><i class="fas fa-folder-tree"></i> Directory</button>
         </div>
         <div id="civitai-tab-download" class="civitai-downloader-tab-content active">
           <form id="civitai-download-form">
@@ -121,7 +122,7 @@ export function modalTemplate(settings = {}) {
             </div>
           </div>
           <div id="civitai-browse-selected-bar" class="civitai-browse-selected-bar" style="display:none;">
-            <i class="fas fa-check-circle" style="color:var(--accent-color,#5c8aff);flex-shrink:0;"></i>
+            <i class="fas fa-check-circle" style="color:var(--cfy-accent,#5c8aff);flex-shrink:0;"></i>
             <span class="civitai-browse-selected-label">Selected:</span>
             <span id="civitai-browse-selected-text" class="civitai-browse-selected-text"></span>
           </div>
@@ -304,9 +305,11 @@ export function modalTemplate(settings = {}) {
                     <option value="8">X &amp; above</option>
                     <option value="16">XXX / Explicit only</option>
                     <option value="32">Blocked only (least strict)</option>
+                    <option value="128">🔓 Unlock — See everything (never blur)</option>
                   </select>
                   <p class="civitai-field-hint">
                     Blur thumbnails when a model's nsfwLevel is at or above the selected rating.
+                    Choose <strong>Unlock</strong> to disable blurring entirely.
                   </p>
                 </div>
               </div>
@@ -359,32 +362,34 @@ export function modalTemplate(settings = {}) {
                 <!-- Progress / result area -->
                 <div id="civitai-maintenance-result" class="civitai-maintenance-result" style="display:none;"></div>
               </div>
-
-              <!-- ── Directory Settings ─────────────────── -->
-              <div class="civitai-settings-section">
-                <div class="civitai-dir-settings-header">
-                  <h4><i class="fas fa-folder-tree"></i> Directory Settings</h4>
-                  <button type="button" id="civitai-dir-refresh-btn" class="civitai-button small secondary" title="Reload directory list">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                  </button>
-                </div>
-                <p class="civitai-field-hint" style="margin-bottom:10px;">
-                  Set a custom save folder for each model type. Leave blank to use the system default shown as the placeholder.
-                </p>
-                <div id="civitai-dir-settings-list" class="civitai-dir-settings-list">
-                  <p class="civitai-field-hint"><i class="fas fa-spinner fa-spin"></i> Loading directories...</p>
-                </div>
-                <div class="civitai-maintenance-actions" style="margin-top:10px;">
-                  <button type="button" id="civitai-dir-save-btn" class="civitai-button primary">
-                    <i class="fas fa-save"></i> Save Directories
-                  </button>
-                </div>
-              </div>
             </div>
             <div class="civitai-form-actions">
               <button type="submit" id="civitai-settings-save" class="civitai-button primary"><i class="fas fa-save"></i> Save Settings</button>
             </div>
           </form>
+        </div>
+        <div id="civitai-tab-directory" class="civitai-downloader-tab-content">
+          <div class="civitai-settings-container">
+            <div class="civitai-settings-section">
+              <div class="civitai-dir-settings-header">
+                <h4><i class="fas fa-folder-tree"></i> Directory Settings</h4>
+                <button type="button" id="civitai-dir-refresh-btn" class="civitai-button small secondary" title="Reload directory list">
+                  <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+              </div>
+              <p class="civitai-field-hint" style="margin-bottom:10px;">
+                Set a custom save folder for each model type. Leave blank to use the system default shown as the placeholder.
+              </p>
+              <div id="civitai-dir-settings-list" class="civitai-dir-settings-list">
+                <p class="civitai-field-hint"><i class="fas fa-spinner fa-spin"></i> Loading directories...</p>
+              </div>
+            </div>
+          </div>
+          <div class="civitai-form-actions">
+            <button type="button" id="civitai-dir-save-btn" class="civitai-button primary">
+              <i class="fas fa-save"></i> Save Directories
+            </button>
+          </div>
         </div>
       </div>
       <!-- Toast Notification Area -->

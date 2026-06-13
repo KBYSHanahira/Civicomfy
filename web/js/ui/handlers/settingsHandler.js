@@ -121,14 +121,20 @@ export function applySettings(ui) {
 }
 
 export function handleSettingsSave(ui) {
-    const apiKey = ui.settingsApiKeyInput.value.trim();
-    const hfToken = ui.settingsHfTokenInput ? ui.settingsHfTokenInput.value.trim() : '';
-    const numConnections = parseInt(ui.settingsConnectionsInput.value, 10);
-    const defaultModelType = ui.settingsDefaultTypeSelect.value;
-    const autoOpenStatusTab = ui.settingsAutoOpenCheckbox.checked;
-    const deepSubfolderCheck = ui.settingsDeepSubfolderCheck ? ui.settingsDeepSubfolderCheck.checked : false;
-    const hideMatureInSearch = ui.settingsHideMatureCheckbox.checked;
-    const nsfwBlurMinLevel = Number(ui.settingsNsfwThresholdInput.value);
+    // Guard every element access: if the settings form was not fully rendered,
+    // fall back to the current persisted value instead of crashing.
+    const apiKey = ui.settingsApiKeyInput ? ui.settingsApiKeyInput.value.trim() : (ui.settings.apiKey || '');
+    const hfToken = ui.settingsHfTokenInput ? ui.settingsHfTokenInput.value.trim() : (ui.settings.hfToken || '');
+    const numConnections = ui.settingsConnectionsInput
+        ? parseInt(ui.settingsConnectionsInput.value, 10)
+        : (ui.settings.numConnections || 1);
+    const defaultModelType = ui.settingsDefaultTypeSelect
+        ? ui.settingsDefaultTypeSelect.value
+        : (ui.settings.defaultModelType || 'checkpoint');
+    const autoOpenStatusTab = ui.settingsAutoOpenCheckbox ? ui.settingsAutoOpenCheckbox.checked : !!ui.settings.autoOpenStatusTab;
+    const deepSubfolderCheck = ui.settingsDeepSubfolderCheck ? ui.settingsDeepSubfolderCheck.checked : !!ui.settings.deepSubfolderCheck;
+    const hideMatureInSearch = ui.settingsHideMatureCheckbox ? ui.settingsHideMatureCheckbox.checked : !!ui.settings.hideMatureInSearch;
+    const nsfwBlurMinLevel = ui.settingsNsfwThresholdInput ? Number(ui.settingsNsfwThresholdInput.value) : Number(ui.settings.nsfwBlurMinLevel);
     const civitaiDomain = ui.settingsCivitaiDomainSelect && ALLOWED_CIVITAI_DOMAINS.includes(ui.settingsCivitaiDomainSelect.value)
         ? ui.settingsCivitaiDomainSelect.value
         : 'civitai.com';
@@ -137,7 +143,7 @@ export function handleSettingsSave(ui) {
         ui.showToast("Invalid Default Connections (must be 1-16).", "error");
         return;
     }
-    if (!ui.settingsDefaultTypeSelect.querySelector(`option[value="${defaultModelType}"]`)) {
+    if (ui.settingsDefaultTypeSelect && !ui.settingsDefaultTypeSelect.querySelector(`option[value="${defaultModelType}"]`)) {
         ui.showToast("Invalid Default Model Type selected.", "error");
         return;
     }
