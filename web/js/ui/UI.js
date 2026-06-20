@@ -136,6 +136,7 @@ export class CivitaiDownloaderUI {
 
         // My Models Tab
         this.myModelsTypeFilter = this.modal.querySelector('#civitai-mymodels-type-filter');
+        this.myModelsBaseFilter = this.modal.querySelector('#civitai-mymodels-base-filter');
         this.myModelsSearchInput = this.modal.querySelector('#civitai-mymodels-search');
         this.myModelsSortSelect = this.modal.querySelector('#civitai-mymodels-sort');
         this.myModelsLimitSelect = this.modal.querySelector('#civitai-mymodels-limit');

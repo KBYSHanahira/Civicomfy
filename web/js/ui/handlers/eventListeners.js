@@ -388,6 +388,13 @@ export function setupEventListeners(ui) {
         });
     }
 
+    if (ui.myModelsBaseFilter) {
+        ui.myModelsBaseFilter.addEventListener('change', () => {
+            if (ui.myModelsPagination) ui.myModelsPagination.currentPage = 1;
+            ui.renderMyModels();
+        });
+    }
+
     if (ui.myModelsSearchInput) {
         let _myModelsSearchDebounce = null;
         ui.myModelsSearchInput.addEventListener('input', () => {

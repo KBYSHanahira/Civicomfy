@@ -47,12 +47,39 @@ export async function handleMyModelsLoad(ui) {
         }
 
         ui._myModelsAll = data.models;
+        _populateBaseFilter(ui);
         renderMyModels(ui);
 
     } catch (err) {
         console.error("[Civicomfy] Failed to load local models:", err);
         listEl.innerHTML = `<p style="color:var(--error-text,#ff6b6b);">Failed to load models: ${err.message}</p>`;
     }
+}
+
+/**
+ * Populate the Base Model filter dropdown with the distinct base models present
+ * in the currently loaded set, preserving the current selection when possible.
+ * @param {object} ui
+ */
+function _populateBaseFilter(ui) {
+    const sel = ui.myModelsBaseFilter;
+    if (!sel) return;
+    const current = sel.value;
+    const bases = Array.from(new Set(
+        (ui._myModelsAll || [])
+            .map(m => (m.base_model || '').trim())
+            .filter(Boolean)
+    )).sort((a, b) => a.localeCompare(b));
+
+    sel.innerHTML = '<option value="">All Base Models</option>';
+    bases.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b;
+        opt.textContent = b;
+        sel.appendChild(opt);
+    });
+    // Keep the previous choice if it still exists in the new set.
+    sel.value = (current && bases.includes(current)) ? current : '';
 }
 
 /**
@@ -66,13 +93,15 @@ export function renderMyModels(ui) {
 
     const query = (ui.myModelsSearchInput?.value || '').toLowerCase().trim();
     const typeFilter = ui.myModelsTypeFilter?.value || '';
+    const baseFilter = ui.myModelsBaseFilter?.value || '';
     const sortBy = ui.myModelsSortSelect?.value || 'time_desc';
     const all = ui._myModelsAll || [];
 
     const filtered = all.filter(m => {
         const matchType = !typeFilter || m.model_type === typeFilter;
+        const matchBase = !baseFilter || (m.base_model || '') === baseFilter;
         const matchName = !query || m.name.toLowerCase().includes(query) || m.rel_path.toLowerCase().includes(query);
-        return matchType && matchName;
+        return matchType && matchBase && matchName;
     });
 
     // Sort

@@ -136,6 +136,9 @@ export function modalTemplate(settings = {}) {
                 <select id="civitai-mymodels-type-filter" class="civitai-select">
                   <option value="">All Types</option>
                 </select>
+                <select id="civitai-mymodels-base-filter" class="civitai-select" title="Filter by base model">
+                  <option value="">All Base Models</option>
+                </select>
                 <select id="civitai-mymodels-sort" class="civitai-select" title="Sort models">
                   <option value="name_asc">Name (A → Z)</option>
                   <option value="name_desc">Name (Z → A)</option>
