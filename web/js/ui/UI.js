@@ -136,7 +136,12 @@ export class CivitaiDownloaderUI {
 
         // My Models Tab
         this.myModelsTypeFilter = this.modal.querySelector('#civitai-mymodels-type-filter');
-        this.myModelsBaseFilter = this.modal.querySelector('#civitai-mymodels-base-filter');
+        this.myModelsBaseModelPickerToggle = this.modal.querySelector('#civitai-mymodels-base-model-toggle');
+        this.myModelsBaseModelPickerDropdown = this.modal.querySelector('#civitai-mymodels-base-model-dropdown');
+        this.myModelsBaseModelPickerOptions = this.modal.querySelector('#civitai-mymodels-base-model-options');
+        this.myModelsBaseModelPickerLabel = this.modal.querySelector('#civitai-mymodels-base-model-label');
+        this.myModelsBaseModelPickerSearch = this.modal.querySelector('#civitai-mymodels-base-model-search');
+        this.myModelsBaseModelClearButton = this.modal.querySelector('#civitai-mymodels-base-model-clear');
         this.myModelsSearchInput = this.modal.querySelector('#civitai-mymodels-search');
         this.myModelsSortSelect = this.modal.querySelector('#civitai-mymodels-sort');
         this.myModelsLimitSelect = this.modal.querySelector('#civitai-mymodels-limit');
@@ -324,6 +329,24 @@ export class CivitaiDownloaderUI {
             this.browseBaseModelPickerLabel.textContent = selected.join(', ');
         } else {
             this.browseBaseModelPickerLabel.textContent = `${selected.length} selected`;
+        }
+    }
+
+    getMyModelsSelectedBaseModels() {
+        if (!this.myModelsBaseModelPickerOptions) return [];
+        return Array.from(this.myModelsBaseModelPickerOptions.querySelectorAll('input[type=checkbox]:checked'))
+            .map(cb => cb.value);
+    }
+
+    updateMyModelsBaseModelLabel() {
+        if (!this.myModelsBaseModelPickerLabel) return;
+        const selected = this.getMyModelsSelectedBaseModels();
+        if (selected.length === 0) {
+            this.myModelsBaseModelPickerLabel.textContent = 'All Base Models';
+        } else if (selected.length <= 2) {
+            this.myModelsBaseModelPickerLabel.textContent = selected.join(', ');
+        } else {
+            this.myModelsBaseModelPickerLabel.textContent = `${selected.length} selected`;
         }
     }
 

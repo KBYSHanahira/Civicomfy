@@ -988,6 +988,17 @@
   transition: background var(--cfy-transition);
 }
 .civitai-base-model-option:hover { background: var(--cfy-surface); }
+.civitai-base-model-group-label {
+  padding: 7px 12px 3px;
+  font-size: 0.7em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--cfy-text-dim);
+  position: sticky;
+  top: 0;
+  background: var(--cfy-bg);
+}
 .civitai-base-model-checkbox {
   accent-color: var(--cfy-accent);
   width: 14px;

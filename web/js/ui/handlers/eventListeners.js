@@ -388,12 +388,49 @@ export function setupEventListeners(ui) {
         });
     }
 
-    if (ui.myModelsBaseFilter) {
-        ui.myModelsBaseFilter.addEventListener('change', () => {
+    if (ui.myModelsBaseModelPickerToggle) {
+        ui.myModelsBaseModelPickerToggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const dropdown = ui.myModelsBaseModelPickerDropdown;
+            if (dropdown) dropdown.style.display = (dropdown.style.display !== 'none') ? 'none' : 'block';
+        });
+    }
+
+    if (ui.myModelsBaseModelPickerSearch) {
+        ui.myModelsBaseModelPickerSearch.addEventListener('input', () => {
+            const q = ui.myModelsBaseModelPickerSearch.value.toLowerCase();
+            ui.myModelsBaseModelPickerOptions.querySelectorAll('.civitai-base-model-option').forEach(label => {
+                label.style.display = label.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        });
+    }
+
+    if (ui.myModelsBaseModelPickerOptions) {
+        ui.myModelsBaseModelPickerOptions.addEventListener('change', () => {
+            ui.updateMyModelsBaseModelLabel();
             if (ui.myModelsPagination) ui.myModelsPagination.currentPage = 1;
             ui.renderMyModels();
         });
     }
+
+    if (ui.myModelsBaseModelClearButton) {
+        ui.myModelsBaseModelClearButton.addEventListener('click', () => {
+            ui.myModelsBaseModelPickerOptions.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+            ui.updateMyModelsBaseModelLabel();
+            if (ui.myModelsPagination) ui.myModelsPagination.currentPage = 1;
+            ui.renderMyModels();
+        });
+    }
+
+    // Close My Models base-model picker when clicking outside
+    document.addEventListener('click', (event) => {
+        const dd = ui.myModelsBaseModelPickerDropdown;
+        if (dd && dd.style.display !== 'none') {
+            if (!dd.contains(event.target) && event.target !== ui.myModelsBaseModelPickerToggle) {
+                dd.style.display = 'none';
+            }
+        }
+    });
 
     if (ui.myModelsSearchInput) {
         let _myModelsSearchDebounce = null;

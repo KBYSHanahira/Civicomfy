@@ -62,9 +62,11 @@ export async function handleMyModelsLoad(ui) {
  * @param {object} ui
  */
 function _populateBaseFilter(ui) {
-    const sel = ui.myModelsBaseFilter;
-    if (!sel) return;
-    const current = sel.value;
+    const container = ui.myModelsBaseModelPickerOptions;
+    if (!container) return;
+
+    // Preserve the current selection across rebuilds (e.g. after a type reload).
+    const checked = new Set(ui.getMyModelsSelectedBaseModels?.() || []);
 
     // Base models actually present in the loaded set (these filter to real results).
     const localBases = Array.from(new Set(
@@ -74,34 +76,39 @@ function _populateBaseFilter(ui) {
     )).sort((a, b) => a.localeCompare(b));
 
     // Full Civitai catalog (same source as the Browse tab), excluding ones already
-    // listed under the library so the dropdown is as complete as Browse.
+    // listed under the library so the picker is as complete as Browse.
     const localSet = new Set(localBases);
     const catalogBases = (ui.baseModels || [])
         .map(b => (b || '').trim())
         .filter(b => b && !localSet.has(b))
         .sort((a, b) => a.localeCompare(b));
 
-    sel.innerHTML = '<option value="">All Base Models</option>';
+    container.innerHTML = '';
 
-    const addGroup = (label, list) => {
+    const addGroup = (labelText, list) => {
         if (!list.length) return;
-        const group = document.createElement('optgroup');
-        group.label = label;
+        const head = document.createElement('div');
+        head.className = 'civitai-base-model-group-label';
+        head.textContent = labelText;
+        container.appendChild(head);
         list.forEach(b => {
-            const opt = document.createElement('option');
-            opt.value = b;
-            opt.textContent = b;
-            group.appendChild(opt);
+            const label = document.createElement('label');
+            label.className = 'civitai-base-model-option';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = b;
+            cb.className = 'civitai-base-model-checkbox';
+            if (checked.has(b)) cb.checked = true;
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(' ' + b));
+            container.appendChild(label);
         });
-        sel.appendChild(group);
     };
 
     addGroup('In your library', localBases);
     addGroup('All base models', catalogBases);
 
-    // Keep the previous choice if it still exists.
-    const allValues = new Set([...localBases, ...catalogBases]);
-    sel.value = (current && allValues.has(current)) ? current : '';
+    ui.updateMyModelsBaseModelLabel?.();
 }
 
 /**
@@ -115,13 +122,13 @@ export function renderMyModels(ui) {
 
     const query = (ui.myModelsSearchInput?.value || '').toLowerCase().trim();
     const typeFilter = ui.myModelsTypeFilter?.value || '';
-    const baseFilter = ui.myModelsBaseFilter?.value || '';
+    const baseFilters = ui.getMyModelsSelectedBaseModels?.() || [];
     const sortBy = ui.myModelsSortSelect?.value || 'time_desc';
     const all = ui._myModelsAll || [];
 
     const filtered = all.filter(m => {
         const matchType = !typeFilter || m.model_type === typeFilter;
-        const matchBase = !baseFilter || (m.base_model || '') === baseFilter;
+        const matchBase = baseFilters.length === 0 || baseFilters.includes((m.base_model || '').trim());
         const matchName = !query || m.name.toLowerCase().includes(query) || m.rel_path.toLowerCase().includes(query);
         return matchType && matchBase && matchName;
     });

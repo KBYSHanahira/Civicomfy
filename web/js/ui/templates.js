@@ -136,9 +136,20 @@ export function modalTemplate(settings = {}) {
                 <select id="civitai-mymodels-type-filter" class="civitai-select">
                   <option value="">All Types</option>
                 </select>
-                <select id="civitai-mymodels-base-filter" class="civitai-select" title="Filter by base model">
-                  <option value="">All Base Models</option>
-                </select>
+                <div id="civitai-mymodels-base-model-picker" class="civitai-base-model-picker">
+                  <button type="button" class="civitai-base-model-picker-toggle" id="civitai-mymodels-base-model-toggle" title="Filter by base model">
+                    <span id="civitai-mymodels-base-model-label">All Base Models</span> <i class="fas fa-chevron-down"></i>
+                  </button>
+                  <div class="civitai-base-model-picker-dropdown" id="civitai-mymodels-base-model-dropdown" style="display:none;">
+                    <div class="civitai-base-model-picker-search-wrap">
+                      <input type="text" id="civitai-mymodels-base-model-search" class="civitai-input" placeholder="Filter..." autocomplete="off">
+                    </div>
+                    <div class="civitai-base-model-picker-options" id="civitai-mymodels-base-model-options"></div>
+                    <div class="civitai-base-model-picker-footer">
+                      <button type="button" id="civitai-mymodels-base-model-clear" class="civitai-button small secondary">Clear</button>
+                    </div>
+                  </div>
+                </div>
                 <select id="civitai-mymodels-sort" class="civitai-select" title="Sort models">
                   <option value="name_asc">Name (A → Z)</option>
                   <option value="name_desc">Name (Z → A)</option>
