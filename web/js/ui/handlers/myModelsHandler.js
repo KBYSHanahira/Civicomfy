@@ -65,21 +65,43 @@ function _populateBaseFilter(ui) {
     const sel = ui.myModelsBaseFilter;
     if (!sel) return;
     const current = sel.value;
-    const bases = Array.from(new Set(
+
+    // Base models actually present in the loaded set (these filter to real results).
+    const localBases = Array.from(new Set(
         (ui._myModelsAll || [])
             .map(m => (m.base_model || '').trim())
             .filter(Boolean)
     )).sort((a, b) => a.localeCompare(b));
 
+    // Full Civitai catalog (same source as the Browse tab), excluding ones already
+    // listed under the library so the dropdown is as complete as Browse.
+    const localSet = new Set(localBases);
+    const catalogBases = (ui.baseModels || [])
+        .map(b => (b || '').trim())
+        .filter(b => b && !localSet.has(b))
+        .sort((a, b) => a.localeCompare(b));
+
     sel.innerHTML = '<option value="">All Base Models</option>';
-    bases.forEach(b => {
-        const opt = document.createElement('option');
-        opt.value = b;
-        opt.textContent = b;
-        sel.appendChild(opt);
-    });
-    // Keep the previous choice if it still exists in the new set.
-    sel.value = (current && bases.includes(current)) ? current : '';
+
+    const addGroup = (label, list) => {
+        if (!list.length) return;
+        const group = document.createElement('optgroup');
+        group.label = label;
+        list.forEach(b => {
+            const opt = document.createElement('option');
+            opt.value = b;
+            opt.textContent = b;
+            group.appendChild(opt);
+        });
+        sel.appendChild(group);
+    };
+
+    addGroup('In your library', localBases);
+    addGroup('All base models', catalogBases);
+
+    // Keep the previous choice if it still exists.
+    const allValues = new Set([...localBases, ...catalogBases]);
+    sel.value = (current && allValues.has(current)) ? current : '';
 }
 
 /**
