@@ -53,6 +53,7 @@ async def route_open_path(request):
         return web.json_response({"error": "Invalid JSON body"}, status=400)
     except Exception as e:
         import traceback
-        print(f"Error handling /civitai/open_path request for ID '{data.get('download_id', 'N/A')}': {e}")
+        _data = locals().get('data') or {}
+        print(f"Error handling /civitai/open_path request for ID '{_data.get('download_id', 'N/A')}': {e}")
         # traceback.print_exc()
         return web.json_response({"error": "Internal Server Error", "details": f"An unexpected error occurred: {str(e)}"}, status=500)

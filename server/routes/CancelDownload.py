@@ -16,7 +16,7 @@ async def route_cancel_download(request):
         data = await get_request_json(request)
         download_id = data.get("download_id")
         if not download_id:
-            print("not download id " + download_id)
+            print("[Civicomfy] Cancel request missing 'download_id'")
             raise web.HTTPBadRequest(reason="Missing 'download_id'")
 
         success = download_manager.cancel_download(download_id)

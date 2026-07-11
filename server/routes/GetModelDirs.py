@@ -77,6 +77,32 @@ def _get_all_roots_for_type(model_type: str):
         print(f"[Civicomfy] Warning: Failed to enumerate models dir subfolders: {e}")
     return roots
 
+def _is_within(child: str, parent: str) -> bool:
+    """True if `child` is `parent` or a path inside it (realpath-based)."""
+    try:
+        child_r = os.path.realpath(os.path.abspath(child))
+        parent_r = os.path.realpath(os.path.abspath(parent))
+    except Exception:
+        return False
+    if child_r == parent_r:
+        return True
+    return child_r.startswith(parent_r + os.sep)
+
+def _resolve_allowed_root(model_type: str, requested_root: str):
+    """Resolve the base directory to use, confining any client-supplied root.
+
+    Returns (base_dir, None) when allowed, or (None, error_message) when the
+    requested root is outside every known/custom root for this model type.
+    """
+    requested_root = (requested_root or "").strip()
+    if not requested_root:
+        return get_model_dir(model_type), None
+    allowed = _get_all_roots_for_type(model_type)
+    for base in allowed:
+        if _is_within(requested_root, base):
+            return requested_root, None
+    return None, "Requested root is outside allowed locations"
+
 def _list_subdirs(root_dir: str, max_entries: int = 5000):
     """Return a sorted list of relative subdirectory paths under root_dir, including nested.
 
@@ -118,7 +144,9 @@ async def route_get_model_dirs(request):
     model_type = request.query.get("type", "checkpoint").lower().strip()
     root = (request.query.get("root") or "").strip()
     try:
-        base_dir = root if root else get_model_dir(model_type)
+        base_dir, err = _resolve_allowed_root(model_type, root)
+        if err:
+            return web.json_response({"error": err}, status=400)
         subdirs = _list_subdirs(base_dir)
         return web.json_response({
             "model_type": model_type,
@@ -138,8 +166,10 @@ async def route_create_model_dir(request):
         if not new_dir:
             return web.json_response({"error": "Missing 'new_dir'"}, status=400)
 
-        # If client provided an explicit root, prefer it
-        base_dir = (data.get("root") or "").strip() or get_model_dir(model_type)
+        # If client provided an explicit root, prefer it — but confine it to a known root
+        base_dir, err = _resolve_allowed_root(model_type, (data.get("root") or "").strip())
+        if err:
+            return web.json_response({"error": err}, status=400)
 
         # Normalize and sanitize each part; disallow absolute and traversal
         norm = os.path.normpath(new_dir.replace("\\", "/"))
