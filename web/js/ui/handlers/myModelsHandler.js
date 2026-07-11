@@ -129,7 +129,7 @@ export function renderMyModels(ui) {
     const filtered = all.filter(m => {
         const matchType = !typeFilter || m.model_type === typeFilter;
         const matchBase = baseFilters.length === 0 || baseFilters.includes((m.base_model || '').trim());
-        const matchName = !query || m.name.toLowerCase().includes(query) || m.rel_path.toLowerCase().includes(query);
+        const matchName = !query || (m.name || '').toLowerCase().includes(query) || (m.rel_path || '').toLowerCase().includes(query);
         return matchType && matchBase && matchName;
     });
 
@@ -495,21 +495,29 @@ function _showDetailModal(ui, model) {
             const lb = document.createElement('div');
             lb.id = 'civitai-lightbox';
             lb.className = 'civitai-lightbox';
+            let zoomHandle = null;
+            const closeLb = () => {
+                document.removeEventListener('keydown', onLbKey);
+                if (zoomHandle && typeof zoomHandle.cleanup === 'function') {
+                    try { zoomHandle.cleanup(); } catch (_) {}
+                }
+                lb.remove();
+            };
             const closeX = document.createElement('button');
             closeX.className = 'civitai-lightbox-close';
             closeX.innerHTML = '&times;';
-            closeX.addEventListener('click', (e) => { e.stopPropagation(); lb.remove(); });
+            closeX.addEventListener('click', (e) => { e.stopPropagation(); closeLb(); });
             const zoomImg = document.createElement('img');
             zoomImg.src = imgUrl;
             zoomImg.className = 'civitai-lightbox-media';
             zoomImg.addEventListener('click', (e) => e.stopPropagation());
             lb.appendChild(closeX);
             lb.appendChild(zoomImg);
-            lb.addEventListener('click', () => lb.remove());
-            const onLbKey = (e) => { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', onLbKey); } };
+            lb.addEventListener('click', () => closeLb());
+            const onLbKey = (e) => { if (e.key === 'Escape') closeLb(); };
             document.addEventListener('keydown', onLbKey);
             document.body.appendChild(lb);
-            attachLightboxZoom(zoomImg, lb);
+            zoomHandle = attachLightboxZoom(zoomImg, lb);
         });
         previewWrap.appendChild(img);
     } else {

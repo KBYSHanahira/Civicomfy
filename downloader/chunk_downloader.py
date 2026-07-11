@@ -207,8 +207,10 @@ class ChunkDownloader:
                             print(f"[Downloader {self.download_id}] Segment {segment_index} cancelled mid-stream.")
                             # Ensure error is set if not already
                             if not self.error: self.error = "Cancelled during segment download"
-                            
-                            
+                            if response:
+                                response.close()
+                            return
+
                         if chunk:
                             bytes_written = f.write(chunk)
                             bytes_written_this_segment += bytes_written

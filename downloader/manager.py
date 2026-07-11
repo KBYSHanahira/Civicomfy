@@ -537,7 +537,7 @@ class DownloadManager:
 
         except Exception as e:
             import traceback
-            print(f"[Manager Meta {download_id}] Error saving metadata file {meta_path}: {e}")
+            print(f"[Manager Meta {download_id}] Error saving metadata file {locals().get('meta_path', '<unknown>')}: {e}")
             # traceback.print_exc() # Uncomment for full trace
 
     # --- _download_and_save_preview remains the same ---
@@ -706,7 +706,6 @@ class DownloadManager:
             # Make a deep copy to avoid modifying the history item directly
             try:
                 retry_info = json.loads(json.dumps(original_info))
-                print(retry_info)
             except Exception as e:
                  return {"success": False, "error": f"Failed to copy original download data: {e}"}
 
@@ -749,11 +748,16 @@ class DownloadManager:
 
                     if items_removed == 1:
                         print(f"[Manager] Successfully removed original download '{original_download_id}' from history.")
-                        return {
-                            "success": True,
-                            "message": f"Retry initiated. New download queued. Original removed from history.",
-                            "new_download_id": new_download_id
-                        }
+                    else:
+                        # The original entry was already gone (e.g. concurrently removed);
+                        # the retry was still queued successfully, so report success.
+                        print(f"[Manager] Retry queued for '{original_download_id}', but original was not found in history (removed {items_removed}).")
+
+                return {
+                    "success": True,
+                    "message": "Retry initiated. New download queued.",
+                    "new_download_id": new_download_id
+                }
 
             else:
                 # Should have been caught by the except block, but as a failsafe
@@ -826,7 +830,11 @@ class DownloadManager:
                      print(f"[Manager OpenPath] Warning: Failed to load custom roots: {_e}")
                  # Include all first-level subdirectories under models_dir as safe
                  try:
-                     models_dir = getattr(__import__('folder_paths'), 'folder_paths').models_dir
+                     _fp = __import__('folder_paths')
+                     models_dir = getattr(_fp, 'models_dir', None)
+                     if not models_dir:
+                         _base = getattr(_fp, 'base_path', os.getcwd())
+                         models_dir = os.path.join(_base, 'models')
                  except Exception:
                      models_dir = None
                  try:

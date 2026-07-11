@@ -272,10 +272,18 @@ export function renderDownloadPreview(ui, data) {
       const lb = document.createElement('div');
       lb.id = 'civitai-lightbox';
       lb.className = 'civitai-lightbox';
+      let zoomHandle = null;
+      const close = () => {
+        document.removeEventListener('keydown', onKey);
+        if (zoomHandle && typeof zoomHandle.cleanup === 'function') {
+          try { zoomHandle.cleanup(); } catch (_) {}
+        }
+        lb.remove();
+      };
       const closeBtn = document.createElement('button');
       closeBtn.className = 'civitai-lightbox-close';
       closeBtn.innerHTML = '&times;';
-      closeBtn.addEventListener('click', (e) => { e.stopPropagation(); lb.remove(); });
+      closeBtn.addEventListener('click', (e) => { e.stopPropagation(); close(); });
       const img = document.createElement('img');
       img.src = src;
       img.alt = heroEl0.alt || '';
@@ -283,11 +291,11 @@ export function renderDownloadPreview(ui, data) {
       img.addEventListener('click', (e) => e.stopPropagation());
       lb.appendChild(closeBtn);
       lb.appendChild(img);
-      lb.addEventListener('click', () => lb.remove());
-      const onKey = (e) => { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', onKey); } };
+      lb.addEventListener('click', () => close());
+      const onKey = (e) => { if (e.key === 'Escape') close(); };
       document.addEventListener('keydown', onKey);
       document.body.appendChild(lb);
-      attachLightboxZoom(img, lb);
+      zoomHandle = attachLightboxZoom(img, lb);
     });
   }
 

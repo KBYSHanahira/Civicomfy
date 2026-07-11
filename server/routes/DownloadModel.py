@@ -376,7 +376,7 @@ async def route_download_model(request):
              print(f"[Server Download] Force Re-download enabled. Will overwrite existing file: {output_path}")
 
         # --- Prepare Download Info and Queue ---
-        model_name = model_info.get('name', version_info['model']['name'])
+        model_name = model_info.get('name') or (version_info.get('model') or {}).get('name') or 'Unknown Model'
         version_name = version_info.get('name', 'Unknown Version')
 
         # Extract a suitable thumbnail URL (ensure it's done robustly) and nsfw level for it

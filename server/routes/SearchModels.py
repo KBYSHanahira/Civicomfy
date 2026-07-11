@@ -152,7 +152,7 @@ async def route_search_models(request):
         else:
              # Handle unexpected format from API or empty results
              print(f"[Server Search] Warning: Unexpected Meili search result format or empty hits: {meili_results}")
-             return web.json_response({"items": [], "metadata": {"totalItems": 0, "currentPage": page, "pageSize": limit, "totalPages": 0}}, status=500)
+             return web.json_response({"items": [], "metadata": {"totalItems": 0, "currentPage": page, "pageSize": limit, "totalPages": 0}})
 
     # --- Keep existing error handlers ---
     except web.HTTPError as http_err:

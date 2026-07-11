@@ -37,11 +37,22 @@ function _openLightbox(url, isVideo = false) {
     lb.id = 'civitai-lightbox';
     lb.className = 'civitai-lightbox';
 
+    // Centralized teardown so every close path (Esc, backdrop, ×) removes the
+    // document-level listeners and the zoom handlers — avoids listener leaks.
+    let zoomHandle = null;
+    const close = () => {
+        document.removeEventListener('keydown', onKey);
+        if (zoomHandle && typeof zoomHandle.cleanup === 'function') {
+            try { zoomHandle.cleanup(); } catch (_) {}
+        }
+        lb.remove();
+    };
+
     const closeBtn = document.createElement('button');
     closeBtn.className = 'civitai-lightbox-close';
     closeBtn.innerHTML = '&times;';
     closeBtn.title = 'Close';
-    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); lb.remove(); });
+    closeBtn.addEventListener('click', (e) => { e.stopPropagation(); close(); });
 
     let media;
     if (isVideo) {
@@ -62,17 +73,17 @@ function _openLightbox(url, isVideo = false) {
 
     lb.appendChild(closeBtn);
     lb.appendChild(media);
-    lb.addEventListener('click', () => lb.remove());
+    lb.addEventListener('click', () => close());
 
     // ESC key closes lightbox
-    const onKey = (e) => { if (e.key === 'Escape') { lb.remove(); document.removeEventListener('keydown', onKey); } };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
     document.addEventListener('keydown', onKey);
 
     document.body.appendChild(lb);
 
     // Wheel zoom (images only)
     if (!isVideo) {
-        attachLightboxZoom(media, lb);
+        zoomHandle = attachLightboxZoom(media, lb);
     }
 }
 
@@ -223,7 +234,7 @@ export function renderBrowseCards(ui, items) {
             btn.dataset.versionName = ver.name || 'Unknown';
             btn.title = ver.id ? 'Pre-fill Download Tab' : 'Version ID missing';
             if (!ver.id) btn.disabled = true;
-            btn.innerHTML = `<span class="base-model-badge">${ver.baseModel || 'N/A'}</span> ${ver.name || 'Unknown'} <i class="fas fa-download"></i>`;
+            btn.innerHTML = `<span class="base-model-badge">${esc(ver.baseModel || 'N/A')}</span> ${esc(ver.name || 'Unknown')} <i class="fas fa-download"></i>`;
             overlay.appendChild(btn);
         });
 
@@ -623,9 +634,9 @@ function _renderBrowseInfoModal(ui, hit) {
             grid.append(k, v);
         };
 
-        kv('Model ID',  `<code>${modelId}</code>`);
+        kv('Model ID',  `<code>${esc(modelId)}</code>`);
         if (uniqueBaseModels.length > 0)
-            kv('Base Model', uniqueBaseModels.map(bm => `<span class="base-model-badge">${bm}</span>`).join(' '));
+            kv('Base Model', uniqueBaseModels.map(bm => `<span class="base-model-badge">${esc(bm)}</span>`).join(' '));
         if (allVersions.length > 0) kv('Versions', allVersions.length);
         if (publishedAt) kv('Published', publishedAt);
         if (updatedAt && updatedAt !== publishedAt) kv('Updated', updatedAt);
@@ -739,9 +750,9 @@ function _renderBrowseInfoModal(ui, hit) {
                     const sizeStr = f.sizeKB ? _fmtBytes(f.sizeKB * 1024) : '';
                     const isPrimary = f.primary || (f.type || '').toLowerCase() === 'model';
                     fRow.innerHTML = `
-                        <span class="civitai-browse-info-file-ext${isPrimary ? ' primary' : ''}">${ext}</span>
-                        <span class="civitai-browse-info-file-name" title="${f.name || ''}">${f.name || 'Unknown'}</span>
-                        ${sizeStr ? `<span class="civitai-browse-info-file-size">${sizeStr}</span>` : ''}
+                        <span class="civitai-browse-info-file-ext${isPrimary ? ' primary' : ''}">${esc(ext)}</span>
+                        <span class="civitai-browse-info-file-name" title="${esc(f.name || '')}">${esc(f.name || 'Unknown')}</span>
+                        ${sizeStr ? `<span class="civitai-browse-info-file-size">${esc(sizeStr)}</span>` : ''}
                     `;
                     filesList.appendChild(fRow);
                 });
@@ -993,7 +1004,7 @@ export function renderSearchResults(ui, items) {
                 data-version-id="${versionId || ''}"
                 data-model-type="${modelTypeApi || ''}"
                 ${!versionId ? 'disabled title="Version ID missing, cannot pre-fill"' : 'title="Pre-fill Download Tab"'} >
-          <span class="base-model-badge">${baseModel}</span> ${versionName} <i class="fas fa-download"></i>
+          <span class="base-model-badge">${esc(baseModel)}</span> ${esc(versionName)} <i class="fas fa-download"></i>
         </button>
       `;
     }).join('');
@@ -1024,7 +1035,7 @@ export function renderSearchResults(ui, items) {
                       data-version-id="${versionId || ''}"
                       data-model-type="${modelTypeApi || ''}"
                       ${!versionId ? 'disabled title="Version ID missing, cannot pre-fill"' : 'title="Pre-fill Download Tab"'} >
-                <span class="base-model-badge">${baseModel}</span> ${versionName} <i class="fas fa-download"></i>
+                <span class="base-model-badge">${esc(baseModel)}</span> ${esc(versionName)} <i class="fas fa-download"></i>
               </button>
             `;
           }).join('')}
@@ -1037,8 +1048,8 @@ export function renderSearchResults(ui, items) {
     const imageAlt = `${modelName} thumbnail`;
     if (thumbnailUrl && typeof thumbnailUrl === 'string' && thumbnailType === 'video') {
       thumbnailHtml = `
-        <video class="civitai-search-thumbnail" src="${thumbnailUrl}" autoplay loop muted playsinline
-               title="${videoTitle}"
+        <video class="civitai-search-thumbnail" src="${esc(thumbnailUrl)}" autoplay loop muted playsinline
+               title="${esc(videoTitle)}"
                onerror="console.error('Failed to load video preview:', this.src)">
           Your browser does not support the video tag.
         </video>
@@ -1046,7 +1057,7 @@ export function renderSearchResults(ui, items) {
     } else {
       const effective = thumbnailUrl || placeholder;
       thumbnailHtml = `
-        <img src="${effective}" alt="${imageAlt}" class="civitai-search-thumbnail" loading="lazy" onerror="${onErrorScript}">
+        <img src="${esc(effective)}" alt="${esc(imageAlt)}" class="civitai-search-thumbnail" loading="lazy" onerror="${onErrorScript}">
       `;
     }
 
@@ -1054,17 +1065,17 @@ export function renderSearchResults(ui, items) {
     const containerClasses = `civitai-thumbnail-container${shouldBlur ? ' blurred' : ''}`;
 
     listItem.innerHTML = `
-      <div class="${containerClasses}" data-nsfw-level="${nsfwLevel ?? ''}">
+      <div class="${containerClasses}" data-nsfw-level="${esc(nsfwLevel ?? '')}">
         ${thumbnailHtml}
         ${overlayHtml}
-        <div class="civitai-type-badge" data-type="${modelTypeApi.toLowerCase()}">${modelTypeApi}</div>
+        <div class="civitai-type-badge" data-type="${esc(modelTypeApi.toLowerCase())}">${esc(modelTypeApi)}</div>
       </div>
       <div class="civitai-search-info">
-        <h4>${modelName}</h4>
+        <h4>${esc(modelName)}</h4>
         <div class="civitai-search-meta-info">
-          <span title="Creator: ${creator}"><i class="fas fa-user"></i> ${creator}</span>
-          <span title="Base Models: ${baseModelsDisplay}"><i class="fas fa-layer-group"></i> ${baseModelsDisplay}</span>
-          <span title="Published: ${lastUpdatedFormatted}"><i class="fas fa-calendar-alt"></i> ${lastUpdatedFormatted}</span>
+          <span title="Creator: ${esc(creator)}"><i class="fas fa-user"></i> ${esc(creator)}</span>
+          <span title="Base Models: ${esc(baseModelsDisplay)}"><i class="fas fa-layer-group"></i> ${esc(baseModelsDisplay)}</span>
+          <span title="Published: ${esc(lastUpdatedFormatted)}"><i class="fas fa-calendar-alt"></i> ${esc(lastUpdatedFormatted)}</span>
         </div>
         <div class="civitai-search-stats" title="Stats: Downloads / Rating (Count) / Likes">
           <span title="Downloads"><i class="fas fa-download"></i> ${stats.downloadCount?.toLocaleString() || 0}</span>
@@ -1073,8 +1084,8 @@ export function renderSearchResults(ui, items) {
           <span title="Buzz"><i class="fas fa-bolt"></i> ${stats.tippedAmountCount?.toLocaleString() || 0}</span>
         </div>
         ${tags.length > 0 ? `
-        <div class="civitai-search-tags" title="${tags.join(', ')}">
-          ${tags.slice(0, 5).map(tag => `<span class="civitai-search-tag">${tag}</span>`).join('')}
+        <div class="civitai-search-tags" title="${esc(tags.join(', '))}">
+          ${tags.slice(0, 5).map(tag => `<span class="civitai-search-tag">${esc(tag)}</span>`).join('')}
           ${tags.length > 5 ? `<span class="civitai-search-tag">...</span>` : ''}
         </div>
         ` : ''}
