@@ -391,13 +391,38 @@ function _mmSection(label, iconClass) {
 }
 
 function _showDetailModal(ui, model) {
-    // Remove any existing detail modal
-    const existing = ui.modal.querySelector('#civitai-mymodel-detail-modal');
-    if (existing) existing.remove();
+    // Thin wrapper preserving the original My Models call convention.
+    return showModelDetailModal(model, { ui });
+}
+
+/**
+ * Render the model-detail modal. Shared between the My Models tab and the
+ * CiviComfyModelInfo workflow node so both show an identical popup.
+ *
+ * @param {object} model  Model data (My Models schema). For the workflow node,
+ *                        map node.properties into this shape and set `preview_url`.
+ * @param {object} opts
+ *   - ui:        UI instance (needs showToast/modal); a no-op shim is used if absent.
+ *   - attachTo:  DOM node to mount into (defaults to ui.modal, else document.body).
+ *   - fixed:     When true, position the overlay fixed over the whole viewport
+ *                (used when mounting on document.body, e.g. from the canvas node).
+ *   - showSendToWorkflow: Set false to hide the "Send to Workflow" footer button.
+ */
+export function showModelDetailModal(model, opts = {}) {
+    const ui = opts.ui || { showToast: () => {} };
+    const attachTo = opts.attachTo || ui.modal || document.body;
+
+    // Remove any existing detail modal (search document-wide to cover both mounts)
+    document.getElementById('civitai-mymodel-detail-modal')?.remove();
 
     const overlay = document.createElement('div');
     overlay.id = 'civitai-mymodel-detail-modal';
     overlay.className = 'civitai-mymodel-detail-overlay';
+    if (opts.fixed) {
+        overlay.style.position = 'fixed';
+        overlay.style.inset = '0';
+        overlay.style.zIndex = '10000';
+    }
 
     const panel = document.createElement('div');
     panel.className = 'civitai-mymodel-detail-panel';
@@ -479,8 +504,11 @@ function _showDetailModal(ui, model) {
     const previewWrap = document.createElement('div');
     previewWrap.className = 'civitai-mymodel-detail-preview-wrap';
 
-    if (model.has_preview) {
-        const imgUrl = `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`;
+    const previewUrl = model.has_preview
+        ? `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`
+        : (model.preview_url || '');
+    if (previewUrl) {
+        const imgUrl = previewUrl;
         const img = document.createElement('img');
         img.src = imgUrl;
         img.alt = model.name;
@@ -689,6 +717,8 @@ function _showDetailModal(ui, model) {
     footerRight.className = 'civitai-mymodel-detail-footer-right';
 
     // ── Send to Workflow button ────────────────────
+    // Hidden when the popup is itself opened from a workflow node (redundant there).
+    if (opts.showSendToWorkflow !== false) {
     // Recover node ID from graph after page reload (module var reset to null)
     if (_workflowNodeId === null && app.graph) {
         const found = app.graph._nodes?.find(n => n.type === 'CiviComfyModelInfo');
@@ -724,6 +754,7 @@ function _showDetailModal(ui, model) {
                 modelId:        String(model.civitai_model_id || ''),
                 versionName:    model.version_name || '',
                 civitaiUrl,
+                description:    model.description || '',
                 triggerWords:   Array.isArray(model.trained_words)   ? model.trained_words   : [],
                 examplePrompts: Array.isArray(model.example_prompts) ? model.example_prompts : [],
                 fileName:       model.name || '',
@@ -768,6 +799,7 @@ function _showDetailModal(ui, model) {
     });
 
     footerRight.appendChild(sendToWfBtn);
+    } // end showSendToWorkflow
 
     if (model.civitai_model_id) {
         const civitBtn = document.createElement('a');
@@ -800,7 +832,7 @@ function _showDetailModal(ui, model) {
     closeBtn.addEventListener('click', _close);
     overlay.addEventListener('click', e => { if (e.target === overlay) _close(); });
 
-    ui.modal.appendChild(overlay);
+    attachTo.appendChild(overlay);
 }
 export async function handleMyModelDelete(ui, relPath, name, btn) {
     if (!confirm(`Delete "${name}"?\n\nThis will permanently remove the file from disk.`)) return;

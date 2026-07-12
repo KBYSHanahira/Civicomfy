@@ -1,6 +1,7 @@
 import { app } from "../../../scripts/app.js";
 import { addCssLink } from "./utils/dom.js";
 import { CivitaiDownloaderUI } from "./ui/UI.js";
+import { showModelDetailModal } from "./ui/handlers/myModelsHandler.js";
 
 console.log("Loading Civicomfy UI...");
 
@@ -10,219 +11,32 @@ const CSS_URL = `../civitaiDownloader.css`;
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 
 // ─── Detailed model-info popup for the CiviComfyModelInfo workflow node ────────
-// Self-contained (built from the node's own properties): no dependency on the
-// main Civicomfy modal being open or on a server round-trip. Reuses the
-// `.civitai-mymodel-detail-*` styles, which are global and inherit :root vars.
+// Renders the SAME modal as the My Models detail view (showModelDetailModal),
+// so the node's ⓘ Info popup looks identical. Node properties are mapped into
+// the My Models `model` shape; the preview image comes from the node's imageUrl.
 function showCivicomfyNodeInfo(props = {}) {
-    document.getElementById("civitai-node-info-modal")?.remove();
-
     const p = props || {};
-    const name        = p.modelName || p.fileName || "Untitled Model";
-    const modelType   = p.modelType || "";
-    const baseModel   = p.baseModel || "";
-    const creator     = p.creator || "";
-    const versionName = p.versionName || "";
-    const fileName    = p.fileName || (p.filePath ? String(p.filePath).split(/[\/\\]/).pop() : "");
-    const modelId     = p.modelId ? String(p.modelId) : "";
-    const civitaiUrl  = p.civitaiUrl || "";
-    const imageUrl    = p.imageUrl || "";
-    const triggerWords  = Array.isArray(p.triggerWords)   ? p.triggerWords.filter(Boolean)   : [];
-    const examplePrompts = Array.isArray(p.examplePrompts) ? p.examplePrompts.filter(Boolean) : [];
-
-    // Transient copy feedback on a button (no toast system available here).
-    const flashCopied = (btn, original) => {
-        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-        setTimeout(() => { btn.innerHTML = original; }, 1300);
+    const model = {
+        name:               p.fileName || (p.filePath ? String(p.filePath).split(/[/\\]/).pop() : ""),
+        model_name:         p.modelName || "",
+        model_type:         p.modelType || "",
+        base_model:         p.baseModel || "",
+        version_name:       p.versionName || "",
+        creator:            p.creator || "",
+        civitai_model_id:   p.modelId || "",
+        civitai_version_id: "",
+        trained_words:      Array.isArray(p.triggerWords)   ? p.triggerWords   : [],
+        example_prompts:    Array.isArray(p.examplePrompts) ? p.examplePrompts : [],
+        description:        p.description || "",
+        rel_path:           p.filePath || "",
+        has_preview:        false,
+        preview_url:        p.imageUrl || "",
     };
-
-    const overlay = document.createElement("div");
-    overlay.id = "civitai-node-info-modal";
-    overlay.className = "civitai-mymodel-detail-overlay";
-    // Body-level popup: cover the viewport and sit above the canvas.
-    overlay.style.position = "fixed";
-    overlay.style.zIndex = "10000";
-
-    const panel = document.createElement("div");
-    panel.className = "civitai-mymodel-detail-panel";
-
-    // ── Header ──
-    const header = document.createElement("div");
-    header.className = "civitai-mymodel-detail-header";
-    const titleWrap = document.createElement("div");
-    titleWrap.className = "civitai-mymodel-detail-title-wrap";
-    if (modelType) {
-        const chip = document.createElement("span");
-        chip.className = "civitai-mymodel-detail-type-chip";
-        chip.textContent = modelType;
-        titleWrap.appendChild(chip);
-    }
-    const titleEl = document.createElement("h3");
-    titleEl.className = "civitai-mymodel-detail-title";
-    titleEl.textContent = name;
-    titleEl.title = name;
-    titleWrap.appendChild(titleEl);
-
-    const headerRight = document.createElement("div");
-    headerRight.className = "civitai-mymodel-detail-header-right";
-    if (civitaiUrl) {
-        const link = document.createElement("a");
-        link.href = civitaiUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.className = "civitai-button secondary small";
-        link.innerHTML = '<i class="fas fa-external-link-alt"></i> Civitai';
-        headerRight.appendChild(link);
-    }
-    const closeBtn = document.createElement("button");
-    closeBtn.className = "civitai-close-button";
-    closeBtn.innerHTML = "&times;";
-    closeBtn.title = "Close (Esc)";
-    headerRight.appendChild(closeBtn);
-    header.append(titleWrap, headerRight);
-
-    // ── Meta bar ──
-    const metaBar = document.createElement("div");
-    metaBar.className = "civitai-mymodel-detail-meta-bar";
-    [
-        versionName ? { icon: "fa-code-branch", text: versionName } : null,
-        baseModel   ? { icon: "fa-layer-group", text: baseModel }   : null,
-        creator     ? { icon: "fa-user",        text: creator }     : null,
-    ].filter(Boolean).forEach(({ icon, text }) => {
-        const item = document.createElement("span");
-        item.className = "civitai-mymodel-detail-meta-item";
-        const ic = document.createElement("i");
-        ic.className = `fas ${icon}`;
-        item.append(ic, document.createTextNode(" " + text));
-        metaBar.appendChild(item);
+    showModelDetailModal(model, {
+        attachTo: document.body,
+        fixed: true,
+        showSendToWorkflow: false,
     });
-
-    // ── Body ──
-    const body = document.createElement("div");
-    body.className = "civitai-mymodel-detail-body";
-
-    const left = document.createElement("div");
-    left.className = "civitai-mymodel-detail-left";
-    const previewWrap = document.createElement("div");
-    previewWrap.className = "civitai-mymodel-detail-preview-wrap";
-    if (imageUrl) {
-        const img = document.createElement("img");
-        img.src = imageUrl;
-        img.alt = name;
-        img.className = "civitai-mymodel-detail-preview";
-        img.onerror = () => {
-            previewWrap.classList.add("no-preview");
-            img.remove();
-            previewWrap.innerHTML = '<i class="fas fa-image"></i>';
-        };
-        previewWrap.appendChild(img);
-    } else {
-        previewWrap.classList.add("no-preview");
-        previewWrap.innerHTML = '<i class="fas fa-image"></i>';
-    }
-    left.appendChild(previewWrap);
-
-    const right = document.createElement("div");
-    right.className = "civitai-mymodel-detail-right";
-
-    const _section = (label, iconClass) => {
-        const sec = document.createElement("div");
-        sec.className = "civitai-mymodel-detail-section";
-        const lbl = document.createElement("div");
-        lbl.className = "civitai-mymodel-detail-section-label";
-        const ic = document.createElement("i");
-        ic.className = `fas ${iconClass}`;
-        lbl.append(ic, document.createTextNode(" " + label));
-        sec.appendChild(lbl);
-        return sec;
-    };
-
-    // File Info
-    const infoSec = _section("File Info", "fa-file-alt");
-    const kvGrid = document.createElement("div");
-    kvGrid.className = "civitai-mymodel-detail-kv-grid";
-    [
-        ["Filename",   fileName],
-        ["Model Name", (name && name !== fileName) ? name : ""],
-        ["Version",    versionName],
-        ["Type",       modelType],
-        ["Base Model", baseModel],
-        ["Creator",    creator],
-        ["Model ID",   modelId],
-    ].forEach(([key, val]) => {
-        if (!val) return;
-        const kEl = document.createElement("div");
-        kEl.className = "civitai-mymodel-detail-kv-key";
-        kEl.textContent = key;
-        const vEl = document.createElement("div");
-        vEl.className = "civitai-mymodel-detail-kv-val";
-        vEl.textContent = String(val);
-        kvGrid.append(kEl, vEl);
-    });
-    infoSec.appendChild(kvGrid);
-    right.appendChild(infoSec);
-
-    // Trigger Words
-    if (triggerWords.length > 0) {
-        const twSec = _section("Trigger Words", "fa-tags");
-        const twWrap = document.createElement("div");
-        twWrap.className = "civitai-mymodel-detail-trigger-words";
-        triggerWords.forEach(w => {
-            const tag = document.createElement("span");
-            tag.className = "civitai-mymodel-detail-trigger-word";
-            tag.textContent = w;
-            tag.title = "Click to copy";
-            tag.addEventListener("click", () => navigator.clipboard?.writeText(w).catch(() => {}));
-            twWrap.appendChild(tag);
-        });
-        twSec.appendChild(twWrap);
-        right.appendChild(twSec);
-    }
-
-    // Example Prompts
-    if (examplePrompts.length > 0) {
-        const epSec = _section("Example Prompts", "fa-lightbulb");
-        const promptsWrap = document.createElement("div");
-        promptsWrap.className = "civitai-mymodel-detail-prompts";
-        examplePrompts.forEach((prompt, i) => {
-            const card = document.createElement("div");
-            card.className = "civitai-mymodel-detail-prompt-card";
-            const cardHeader = document.createElement("div");
-            cardHeader.className = "civitai-mymodel-detail-prompt-header";
-            const num = document.createElement("span");
-            num.className = "civitai-mymodel-detail-prompt-num";
-            num.textContent = `Prompt ${i + 1}`;
-            const copyBtn = document.createElement("button");
-            copyBtn.className = "civitai-button small";
-            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
-            copyBtn.addEventListener("click", () => {
-                navigator.clipboard?.writeText(String(prompt)).catch(() => {});
-                flashCopied(copyBtn, '<i class="fas fa-copy"></i> Copy');
-            });
-            cardHeader.append(num, copyBtn);
-            const text = document.createElement("div");
-            text.className = "civitai-mymodel-detail-prompt-text";
-            text.textContent = String(prompt);
-            card.append(cardHeader, text);
-            promptsWrap.appendChild(card);
-        });
-        epSec.appendChild(promptsWrap);
-        right.appendChild(epSec);
-    }
-
-    body.append(left, right);
-    panel.append(header, metaBar, body);
-    overlay.appendChild(panel);
-
-    // Close on Esc / backdrop / close button
-    const onEsc = (e) => {
-        if (e.key === "Escape") { overlay.remove(); document.removeEventListener("keydown", onEsc); }
-    };
-    document.addEventListener("keydown", onEsc);
-    const _close = () => { overlay.remove(); document.removeEventListener("keydown", onEsc); };
-    closeBtn.addEventListener("click", _close);
-    overlay.addEventListener("click", (e) => { if (e.target === overlay) _close(); });
-
-    document.body.appendChild(overlay);
 }
 
 // Add Menu Button to ComfyUI
@@ -339,6 +153,7 @@ app.registerExtension({
                     modelId: "",
                     versionName: "",
                     civitaiUrl: "",
+                    description: "",
                     triggerWords: [],
                     examplePrompts: [],
                     fileName: "",
@@ -346,11 +161,20 @@ app.registerExtension({
                 };
                 this.size = [580, 360];
                 this.resizable = true;
+                this.min_size = [200, 90];
                 this._img = null;
                 this._imgLoaded = false;
                 this._imgSrc = "";
                 this._clickZones = [];
-                this.bgcolor = "#0f1825";
+                this.bgcolor = "#16181f";
+            }
+
+            // Report a small minimum so the user can freely shrink the node.
+            // Never auto-grow to fit content — content is clipped to this.size,
+            // so the node always keeps whatever size the user set (even when its
+            // model/content changes on "Update Workflow").
+            computeSize() {
+                return [200, 90];
             }
 
             onPropertyChanged(name, val) {
@@ -424,16 +248,13 @@ app.registerExtension({
                            chipBg, chipBorder, chipText, maxRows = 4) {
                 const CHIP_H = 17, CHIP_GAP_X = 5, CHIP_GAP_Y = 5, PAD_X = 8, FONT = "10px Arial";
                 ctx.font = FONT;
+                // Reserve room for a possible "+N" overflow chip on the last row.
+                const moreW = ctx.measureText("+99").width + PAD_X * 2;
                 let cx = startX, cy = startY, rows = 0;
-                const chipZones = [];
-                for (const w of words) {
-                    const wW = ctx.measureText(w).width + PAD_X * 2;
-                    if (cx + wW > startX + maxW && cx > startX) {
-                        cx = startX; cy += CHIP_H + CHIP_GAP_Y; rows++;
-                        if (rows >= maxRows) { /* draw "…more" */ break; }
-                    }
+                let drawn = 0;
+                const drawChip = (label, x, y, w) => {
                     ctx.beginPath();
-                    _rrect(ctx, cx, cy, wW, CHIP_H, 5);
+                    _rrect(ctx, x, y, w, CHIP_H, 5);
                     ctx.fillStyle = chipBg;
                     ctx.fill();
                     ctx.strokeStyle = chipBorder;
@@ -442,11 +263,31 @@ app.registerExtension({
                     ctx.fillStyle = chipText;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
-                    ctx.fillText(w, cx + wW / 2, cy + CHIP_H / 2);
+                    ctx.fillText(label, x + w / 2, y + CHIP_H / 2, w - 6);
                     ctx.textAlign = "left";
                     ctx.textBaseline = "alphabetic";
-                    chipZones.push({ x: cx, y: cy, w: wW, h: CHIP_H, word: w });
+                };
+                for (let i = 0; i < words.length; i++) {
+                    const w = words[i];
+                    // Clamp: a single word can never exceed the row width.
+                    const wW = Math.min(ctx.measureText(w).width + PAD_X * 2, maxW);
+                    const isLastRow = rows === maxRows - 1;
+                    const remaining = words.length - i;
+                    // On the final row keep space for the "+N" chip unless this
+                    // is the very last word and it fits as-is.
+                    const rowLimit = startX + maxW
+                        - ((isLastRow && remaining > 1) ? moreW + CHIP_GAP_X : 0);
+                    if (cx + wW > rowLimit && cx > startX) {
+                        if (isLastRow) break;
+                        cx = startX; cy += CHIP_H + CHIP_GAP_Y; rows++;
+                    }
+                    drawChip(w, cx, cy, wW);
+                    drawn++;
                     cx += wW + CHIP_GAP_X;
+                }
+                if (drawn < words.length) {
+                    // "+N" chip — signals hidden words (full list in ⓘ Info).
+                    drawChip(`+${words.length - drawn}`, cx, cy, moreW);
                 }
                 return cy + CHIP_H; // bottom of last row
             }
@@ -473,6 +314,51 @@ app.registerExtension({
                 return y + H;
             }
 
+            /**
+             * Unified section header bar — one consistent style for every block
+             * (Trigger Words, Example Prompts, …). Draws a tinted rounded bar
+             * with a left accent stripe, an icon + label, and an optional
+             * right-aligned action chip. Returns the y just below the bar.
+             *
+             * @param opts.label       Section title text.
+             * @param opts.accent      6-digit hex accent (e.g. "#f5a942"); tints
+             *                          bg/border/stripe/text/chip consistently.
+             * @param opts.icon        Optional glyph drawn before the label.
+             * @param opts.actionLabel Optional chip label (e.g. "⎘ Copy All").
+             * @param opts.action      Click handler for the chip.
+             */
+            _drawSectionBar(ctx, x, y, w, opts) {
+                const { label, accent = "#7aabff", icon = "",
+                        actionLabel = null, action = null } = opts;
+                const H = CiviComfyModelInfoNode.SECTION_BAR_H;
+                // Tinted background + border
+                ctx.beginPath();
+                _rrect(ctx, x, y, w, H, 6);
+                ctx.fillStyle = accent + "1f";   // ~12% alpha
+                ctx.fill();
+                ctx.strokeStyle = accent + "4d"; // ~30% alpha
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
+                // Left accent stripe
+                ctx.beginPath();
+                _rrect(ctx, x + 3, y + 5, 3, H - 10, 1.5);
+                ctx.fillStyle = accent;
+                ctx.fill();
+                // Icon + label
+                ctx.font = "bold 10px Arial";
+                ctx.fillStyle = accent;
+                ctx.textAlign = "left";
+                ctx.textBaseline = "middle";
+                ctx.fillText(icon ? `${icon}  ${label}` : label, x + 12, y + H / 2);
+                ctx.textBaseline = "alphabetic";
+                // Optional right-aligned action chip
+                if (actionLabel && action) {
+                    this._drawCopyChip(ctx, actionLabel, action, x + w - 4, y + H / 2,
+                                       accent + "26", accent + "73", accent);
+                }
+                return y + H;
+            }
+
             onMouseDown(e, pos) {
                 for (const z of this._clickZones) {
                     if (pos[0] >= z.x && pos[0] <= z.x + z.w &&
@@ -488,14 +374,22 @@ app.registerExtension({
                 if (this.flags?.collapsed) return;
                 this._clickZones = [];
                 const [W, H] = this.size;
-                const pad = 10;
+                const pad = 12;
+                const T = CiviComfyModelInfoNode.THEME;
 
                 // ── Background ──────────────────────────────────
-                ctx.fillStyle = "#0f1825";
+                ctx.fillStyle = T.bg;
                 ctx.fillRect(0, 0, W, H);
 
+                // Top accent hairline — same blue→purple gradient as the UI header.
+                const topGrad = ctx.createLinearGradient(0, 0, W, 0);
+                topGrad.addColorStop(0, CiviComfyModelInfoNode.ACCENT.info);
+                topGrad.addColorStop(1, CiviComfyModelInfoNode.ACCENT.base);
+                ctx.fillStyle = topGrad;
+                ctx.fillRect(0, 0, W, 2);
+
                 // Subtle inner border
-                ctx.strokeStyle = "rgba(92,138,255,0.15)";
+                ctx.strokeStyle = T.border;
                 ctx.lineWidth = 1;
                 ctx.strokeRect(0.5, 0.5, W - 1, H - 1);
 
@@ -528,19 +422,19 @@ app.registerExtension({
                     // Thin border around image
                     ctx.beginPath();
                     _rrect(ctx, pad, pad, imgW, dH, 7);
-                    ctx.strokeStyle = "rgba(92,138,255,0.3)";
+                    ctx.strokeStyle = T.border;
                     ctx.lineWidth = 1;
                     ctx.stroke();
                 } else {
                     ctx.beginPath();
                     _rrect(ctx, pad, pad, imgW, imgColH, 7);
-                    ctx.fillStyle = "#1a2540";
+                    ctx.fillStyle = T.surface;
                     ctx.fill();
-                    ctx.strokeStyle = "rgba(92,138,255,0.2)";
+                    ctx.strokeStyle = T.border;
                     ctx.lineWidth = 1;
                     ctx.stroke();
                     ctx.font = "28px Arial";
-                    ctx.fillStyle = "#2a3a5a";
+                    ctx.fillStyle = T.textFaint;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
                     ctx.fillText("🖼", pad + imgW / 2, H / 2);
@@ -556,16 +450,17 @@ app.registerExtension({
 
                 // ── Info button (top-right) ───────────────────────
                 // Opens a detailed, self-contained model-info popup.
+                const AC = CiviComfyModelInfoNode.ACCENT;
                 const infoLeftX = this._drawCopyChip(
                     ctx, "ⓘ Info",
                     () => showCivicomfyNodeInfo(this.properties),
-                    tx + tw, pad + 7,
-                    "#10233f", "#2a5cab", "#9ec5ff"
+                    tx + tw, pad + 8,
+                    AC.info + "26", AC.info + "73", AC.info
                 );
 
                 // ── Model Name ────────────────────────────────────
                 ctx.font = "bold 13px Arial";
-                ctx.fillStyle = "#e0eaff";
+                ctx.fillStyle = T.text;
                 const nameLines = this._wrap(ctx, p.modelName || "–", tw);
                 nameLines.slice(0, 2).forEach((l, idx) => {
                     // Keep the first line clear of the Info chip.
@@ -573,52 +468,61 @@ app.registerExtension({
                     ctx.fillText(l, tx, ty, lineMaxW);
                     ty += 17;
                 });
-                ty += 2;
+                ty += 3;
 
-                // ── Meta pills row ────────────────────────────────
+                // ── Meta pills row (type = blue accent, base = purple accent) ──
                 if (p.modelType || p.baseModel) {
                     let mx = tx;
-                    const drawPill = (text, bg, border, col) => {
+                    const drawPill = (text, accent) => {
                         ctx.font = "bold 9px Arial";
-                        const pw = ctx.measureText(text).width + 12;
-                        const ph = 15;
+                        const pw = ctx.measureText(text).width + 14;
+                        const ph = 16;
                         const py = ty - 12;
                         ctx.beginPath();
-                        _rrect(ctx, mx, py, pw, ph, 7);
-                        ctx.fillStyle = bg;
+                        _rrect(ctx, mx, py, pw, ph, 8);
+                        ctx.fillStyle = accent + "26";
                         ctx.fill();
-                        ctx.strokeStyle = border;
+                        ctx.strokeStyle = accent + "66";
                         ctx.lineWidth = 0.7;
                         ctx.stroke();
-                        ctx.fillStyle = col;
+                        ctx.fillStyle = accent;
                         ctx.textAlign = "center";
                         ctx.textBaseline = "middle";
                         ctx.fillText(text, mx + pw / 2, py + ph / 2);
                         ctx.textAlign = "left";
                         ctx.textBaseline = "alphabetic";
-                        mx += pw + 5;
+                        mx += pw + 6;
                     };
-                    if (p.modelType) drawPill(p.modelType.toUpperCase(), "rgba(92,138,255,0.2)", "rgba(92,138,255,0.5)", "#7aabff");
-                    if (p.baseModel) drawPill(p.baseModel, "rgba(128,184,216,0.12)", "rgba(128,184,216,0.35)", "#80b8d8");
-                    ty += 18;
+                    if (p.modelType) drawPill(p.modelType.toUpperCase(), AC.info);
+                    if (p.baseModel) drawPill(p.baseModel, AC.base);
+                    ty += 20;
                 }
 
-                // ── Creator / Version ─────────────────────────────
-                ctx.font = "10px Arial";
-                if (p.creator)     { ctx.fillStyle = "#6878a0"; ctx.fillText("by  " + p.creator, tx, ty, tw); ty += 14; }
-                if (p.versionName) { ctx.fillStyle = "#505878"; ctx.fillText("ver  " + p.versionName, tx, ty, tw); ty += 14; }
+                // ── Creator · Version — one quiet meta line ───────
+                {
+                    const metaParts = [];
+                    if (p.creator)     metaParts.push(`by ${p.creator}`);
+                    if (p.versionName) metaParts.push(`ver ${p.versionName}`);
+                    if (metaParts.length) {
+                        ctx.font = "10px Arial";
+                        ctx.fillStyle = T.textDim;
+                        ctx.fillText(metaParts.join("   ·   "), tx, ty, tw);
+                        ty += 15;
+                    }
+                }
                 ty += 2;
 
                 // ── Filename box ──────────────────────────────────
                 const fname = p.fileName || (p.filePath ? p.filePath.split(/[\/\\]/).pop() : '');
                 if (fname) {
+                    const accent = CiviComfyModelInfoNode.ACCENT.file;
                     const boxH = 24;
                     const boxY = ty - 2;
                     ctx.beginPath();
-                    _rrect(ctx, tx, boxY, tw, boxH, 5);
-                    ctx.fillStyle = "rgba(160,224,176,0.07)";
+                    _rrect(ctx, tx, boxY, tw, boxH, 6);
+                    ctx.fillStyle = accent + "14";
                     ctx.fill();
-                    ctx.strokeStyle = "rgba(160,224,176,0.2)";
+                    ctx.strokeStyle = accent + "33";
                     ctx.lineWidth = 0.8;
                     ctx.stroke();
 
@@ -626,14 +530,14 @@ app.registerExtension({
                     const chipRight = tx + tw - 4;
                     this._drawCopyChip(ctx, "⎘ Copy", () => {
                         navigator.clipboard?.writeText(fname).catch(() => {});
-                    }, chipRight, chipCenterY, "#1a3a28", "#2e6a44", "#70c090");
+                    }, chipRight, chipCenterY, accent + "26", accent + "66", accent);
 
                     ctx.font = "10px Arial";
-                    ctx.fillStyle = "#90d0a8";
+                    ctx.fillStyle = accent;
                     ctx.textBaseline = "middle";
                     ctx.fillText(fname, tx + 8, chipCenterY, tw - 75);
                     ctx.textBaseline = "alphabetic";
-                    ty = boxY + boxH + 8;
+                    ty = boxY + boxH + CiviComfyModelInfoNode.SECTION_GAP;
                 }
 
                 // ── Trigger Words section ─────────────────────────
@@ -641,31 +545,16 @@ app.registerExtension({
                 if (words.length > 0 && ty + 30 < H - 4) {
                     const sectionX = tx;
                     const sectionW = tw;
-
-                    // Header bar with "Copy All" chip
-                    const headerY = ty;
-                    const headerH = 20;
-                    ctx.beginPath();
-                    _rrect(ctx, sectionX, headerY, sectionW, headerH, 5);
-                    ctx.fillStyle = "rgba(245,158,11,0.12)";
-                    ctx.fill();
-                    ctx.strokeStyle = "rgba(245,158,11,0.3)";
-                    ctx.lineWidth = 0.8;
-                    ctx.stroke();
-
-                    ctx.font = "bold 10px Arial";
-                    ctx.fillStyle = "#f0a050";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText("✦ Trigger Words", sectionX + 8, headerY + headerH / 2);
-                    ctx.textBaseline = "alphabetic";
+                    const accent = CiviComfyModelInfoNode.ACCENT.trigger;
 
                     const allStr = words.join(", ");
-                    this._drawCopyChip(ctx, "⎘ Copy All", () => {
-                        navigator.clipboard?.writeText(allStr).catch(() => {});
-                    }, sectionX + sectionW - 4, headerY + headerH / 2,
-                       "#2a1e08", "#6a4a18", "#d4900a");
-
-                    ty = headerY + headerH + 5;
+                    ty = this._drawSectionBar(ctx, sectionX, ty, sectionW, {
+                        label: "Trigger Words",
+                        icon: "✦",
+                        accent,
+                        actionLabel: "⎘ Copy All",
+                        action: () => { navigator.clipboard?.writeText(allStr).catch(() => {}); },
+                    }) + 5;
 
                     // Chips area
                     if (ty + 22 < H - 4) {
@@ -674,7 +563,7 @@ app.registerExtension({
                         const maxRows = Math.max(1, Math.floor((availH + 5) / 22));
                         const newY = this._drawWordChips(
                             ctx, words, sectionX, chipsAreaY, sectionW,
-                            "rgba(245,158,11,0.15)", "rgba(245,158,11,0.4)", "#f0b840",
+                            accent + "26", accent + "66", accent,
                             maxRows
                         );
                         ty = newY + 8;
@@ -684,54 +573,67 @@ app.registerExtension({
                 // ── Example Prompts section ───────────────────────
                 const prompts = Array.isArray(p.examplePrompts) ? p.examplePrompts.filter(Boolean) : [];
                 if (prompts.length > 0 && ty + 30 < H - 4) {
-                    // Header
-                    const headerY = ty;
-                    const headerH = 20;
-                    ctx.beginPath();
-                    _rrect(ctx, tx, headerY, tw, headerH, 5);
-                    ctx.fillStyle = "rgba(112,216,144,0.1)";
-                    ctx.fill();
-                    ctx.strokeStyle = "rgba(112,216,144,0.25)";
-                    ctx.lineWidth = 0.8;
-                    ctx.stroke();
-                    ctx.font = "bold 10px Arial";
-                    ctx.fillStyle = "#70d890";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText(`💡 Example Prompts  (${prompts.length})`, tx + 8, headerY + headerH / 2);
-                    ctx.textBaseline = "alphabetic";
-                    ty = headerY + headerH + 5;
+                    const accent = CiviComfyModelInfoNode.ACCENT.prompt;
+                    ty = this._drawSectionBar(ctx, tx, ty, tw, {
+                        label: `Example Prompts  (${prompts.length})`,
+                        icon: "💡",
+                        accent,
+                    }) + 5;
 
                     prompts.slice(0, 2).forEach((prompt, i) => {
                         if (ty + 16 >= H - 24) return;
                         const pStr = String(prompt);
-                        const chipCenterY = ty + 6;
-                        this._drawCopyChip(ctx, `⎘ #${i + 1}`, () => {
-                            navigator.clipboard?.writeText(pStr).catch(() => {});
-                        }, tx + tw - 4, chipCenterY, "#0e2a18", "#205a30", "#50c070");
 
+                        // Measure first so the card wraps snugly around its text.
                         ctx.font = "9.5px Arial";
-                        ctx.fillStyle = "#78a898";
                         // Wrap narrow enough that the first line clears the copy
                         // chip; all lines then fit comfortably inside the node.
                         const pLines = this._wrap(ctx, pStr, tw - 60);
                         const MAX_LINES = 3;
                         const shown = Math.min(MAX_LINES, pLines.length);
+
+                        // Card background wrapping the prompt lines.
+                        const cardTop = ty;
+                        const cardH = shown * 13 + 12;
+                        ctx.beginPath();
+                        _rrect(ctx, tx, cardTop, tw, cardH, 5);
+                        ctx.fillStyle = accent + "12";
+                        ctx.fill();
+                        ctx.strokeStyle = accent + "26";
+                        ctx.lineWidth = 0.7;
+                        ctx.stroke();
+
+                        const chipCenterY = cardTop + 9;
+                        this._drawCopyChip(ctx, `⎘ #${i + 1}`, () => {
+                            navigator.clipboard?.writeText(pStr).catch(() => {});
+                        }, tx + tw - 5, chipCenterY, accent + "22", accent + "55", accent);
+
+                        ctx.font = "9.5px Arial";
+                        ctx.fillStyle = "#9fc7b3";
+                        let lineY = cardTop + 6;
                         for (let li = 0; li < shown; li++) {
-                            if (ty + 14 >= H - 6) break;
+                            if (lineY + 14 >= H - 6) break;
                             let line = pLines[li];
                             if (li === shown - 1 && pLines.length > shown) line += "…";
-                            ctx.fillText(line, tx, ty + 12, tw - 8);
-                            ty += 13;
+                            ctx.fillText(line, tx + 8, lineY + 12, tw - 16);
+                            lineY += 13;
                         }
-                        ty += 4;
+                        ty = cardTop + cardH + CiviComfyModelInfoNode.SECTION_GAP;
                     });
                 }
 
-                // ── Civitai URL ───────────────────────────────────
-                if (p.civitaiUrl && ty + 12 <= H - 4) {
+                // ── Civitai URL footer ────────────────────────────
+                if (p.civitaiUrl && ty + 16 <= H - 4) {
+                    // Hairline separator above the footer.
+                    ctx.strokeStyle = "rgba(255,255,255,0.07)";
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(tx, H - 18.5);
+                    ctx.lineTo(tx + tw, H - 18.5);
+                    ctx.stroke();
                     ctx.font = "9px Arial";
-                    ctx.fillStyle = "#3a6acc";
-                    ctx.fillText(p.civitaiUrl.replace("https://", ""), tx, H - 6, tw);
+                    ctx.fillStyle = AC.info + "aa";
+                    ctx.fillText("🔗 " + p.civitaiUrl.replace(/^https?:\/\//, ""), tx, H - 6, tw);
                 }
 
                 ctx.restore(); // end node-bounds clip
@@ -745,6 +647,26 @@ app.registerExtension({
 
         CiviComfyModelInfoNode.title = "CiviComfy Model Info";
         CiviComfyModelInfoNode.category = "Civicomfy";
+        // ── Shared design tokens ──────────────────────────────────────────────
+        // Mirrors the Civicomfy modal CSS (:root --cfy-*) so the workflow node
+        // and the HTML UI read as one system.
+        CiviComfyModelInfoNode.SECTION_BAR_H = 22;  // height of every section header
+        CiviComfyModelInfoNode.SECTION_GAP   = 8;   // vertical gap between blocks
+        CiviComfyModelInfoNode.THEME = {
+            bg:        "#16181f",             // node surface  (≈ --cfy-bg)
+            surface:   "#1d2029",             // inner cards   (≈ --cfy-surface)
+            border:    "rgba(138,124,255,0.22)",
+            text:      "#eef1f8",             // ≈ --cfy-text
+            textDim:   "rgba(238,241,248,0.55)",
+            textFaint: "rgba(238,241,248,0.35)",
+        };
+        CiviComfyModelInfoNode.ACCENT = {
+            info:    "#5c8aff",  // --cfy-accent   (blue)
+            base:    "#8a6cff",  // --cfy-accent-2 (purple)
+            file:    "#5fc08a",  // filename (green = "file ok")
+            trigger: "#f59e0b",  // --cfy-warning (amber)
+            prompt:  "#4caf50",  // --cfy-success (green)
+        };
         LG.registerNodeType("CiviComfyModelInfo", CiviComfyModelInfoNode);
         console.log("[Civicomfy] Registered CiviComfyModelInfo node type.");
     },
