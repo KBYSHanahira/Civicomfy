@@ -9,11 +9,47 @@ export function setupEventListeners(ui) {
         if (event.target === ui.modal) ui.closeModal();
     });
 
-    // Tab switching
+    // Section switching. `closest` (not `matches`) so clicks that land on the
+    // icon or label inside the button still switch tabs.
     ui.tabContainer.addEventListener('click', (event) => {
-        if (event.target.matches('.civitai-downloader-tab')) {
-            ui.switchTab(event.target.dataset.tab);
+        const tabButton = event.target.closest('.civitai-downloader-tab');
+        if (tabButton && ui.tabContainer.contains(tabButton)) {
+            ui.switchTab(tabButton.dataset.tab);
         }
+    });
+
+    // Theme toggle (dark ⇄ light Claude palette)
+    if (ui.themeToggleButton) {
+        ui.themeToggleButton.addEventListener('click', () => ui.toggleTheme());
+    }
+
+    // Rail collapse (wide) / drawer open-close (narrow)
+    if (ui.railCollapseButton) {
+        ui.railCollapseButton.addEventListener('click', () => ui.toggleRail());
+    }
+    if (ui.railOpenButton) {
+        ui.railOpenButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            ui.setRailOpen(!ui.modalContent?.classList.contains('rail-open'));
+        });
+    }
+    if (ui.railScrim) {
+        ui.railScrim.addEventListener('click', () => ui.setRailOpen(false));
+    }
+
+    // Esc closes the modal — but only when nothing is layered on top. Detail
+    // panels, info panels and lightboxes each close themselves on Esc, so we
+    // must not also tear down the whole window underneath them.
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        if (!ui.modal?.classList.contains('open')) return;
+        if (document.querySelector('.civitai-mymodel-detail-overlay, .civitai-browse-info-overlay, .civitai-lightbox')) return;
+        if (ui.galleryLightbox && ui.galleryLightbox.style.display !== 'none') return;
+        if (ui.confirmClearModal && ui.confirmClearModal.style.display === 'flex') {
+            ui.confirmClearModal.style.display = 'none';
+            return;
+        }
+        ui.closeModal();
     });
 
     // --- FORMS ---

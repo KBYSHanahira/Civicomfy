@@ -6,6 +6,7 @@
 import { app } from "../../../../scripts/app.js";
 import { attachLightboxZoom } from "../utils/dom.js";
 import { buildCivitaiModelUrl } from "./handlers/settingsHandler.js";
+import { typeColor } from "./typeColors.js";
 
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 
@@ -87,22 +88,9 @@ function _openLightbox(url, isVideo = false) {
     }
 }
 
-// Return a consistent accent color for a model type
+// Return a consistent accent color for a model type (shared with My Models)
 function _typeColor(modelType) {
-    const t = (modelType || '').toLowerCase();
-    const map = {
-        'checkpoint': '#5c8aff',
-        'lora': '#a855f7', 'locon': '#a855f7', 'lycoris': '#a855f7',
-        'vae': '#22c55e',
-        'textualinversion': '#f97316', 'embedding': '#f97316',
-        'hypernetwork': '#ef4444',
-        'controlnet': '#06b6d4',
-        'upscaler': '#eab308', 'upscalers': '#eab308',
-        'motionmodule': '#ec4899',
-        'unet': '#8b5cf6',
-        'diffusers': '#14b8a6', 'diffusion_models': '#14b8a6',
-    };
-    return map[t] || '#888';
+    return typeColor(modelType);
 }
 
 /**

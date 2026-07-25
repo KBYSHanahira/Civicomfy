@@ -2,14 +2,14 @@ import { Feedback } from "./feedback.js";
 import { setupEventListeners } from "./handlers/eventListeners.js";
 import { handleDownloadSubmit, fetchAndDisplayDownloadPreview, debounceFetchDownloadPreview } from "./handlers/downloadHandler.js";
 import { handleBrowseLoad } from "./handlers/browseHandler.js";
-import { handleSettingsSave, loadAndApplySettings, loadSettingsFromCookie, saveSettingsToCookie, applySettings, getDefaultSettings, saveBrowseSettings, loadBrowseSettings, saveMyModelsSettings, loadMyModelsSettings, loadDirectorySettings, saveDirectorySettings } from "./handlers/settingsHandler.js";
+import { handleSettingsSave, loadAndApplySettings, loadSettingsFromCookie, saveSettingsToCookie, applySettings, getDefaultSettings, saveBrowseSettings, loadBrowseSettings, saveMyModelsSettings, loadMyModelsSettings, loadDirectorySettings, saveDirectorySettings, loadThemePreference, saveThemePreference } from "./handlers/settingsHandler.js";
 import { startStatusUpdates, stopStatusUpdates, updateStatus, handleCancelDownload, handleRetryDownload, handleOpenPath, handleClearHistory } from "./handlers/statusHandler.js";
 import { handleMyModelsLoad, renderMyModels, handleMyModelOpenOnCivit, handleMyModelViewDetail, handleMyModelDelete } from "./handlers/myModelsHandler.js";
 import { handleGalleryLoad, renderGalleryGrid, openGalleryLightbox, closeGalleryLightbox, lightboxPrev, lightboxNext, toggleGallerySelect, updateGallerySelectionBar, deleteSelectedGallery, downloadSelectedGallery, deleteGalleryImage } from "./handlers/galleryHandler.js";
 import { renderDownloadList } from "./statusRenderer.js";
 import { renderSearchResults, renderBrowseCards, showBrowseCardInfo } from "./searchRenderer.js";
 import { renderDownloadPreview } from "./previewRenderer.js";
-import { modalTemplate } from "./templates.js";
+import { modalTemplate, PAGE_META } from "./templates.js";
 import { CivitaiDownloaderAPI } from "../api/civitai.js";
 
 export class CivitaiDownloaderUI {
@@ -45,6 +45,8 @@ export class CivitaiDownloaderUI {
         this.feedback = new Feedback(this.modal.querySelector('#civitai-toast'));
         // Ensure icon stylesheet is loaded so buttons render icons immediately
         this.ensureFontAwesome();
+        // Theme is a browser-local preference, applied before the modal is shown.
+        this.applyTheme(loadThemePreference());
     }
 
     // --- Core UI Methods ---
@@ -56,9 +58,18 @@ export class CivitaiDownloaderUI {
     }
 
     cacheDOMElements() {
+        this.modalContent = this.modal.querySelector('.civitai-downloader-modal-content');
         this.closeButton = this.modal.querySelector('#civitai-close-modal');
         this.fullscreenButton = this.modal.querySelector('#civitai-fullscreen-toggle');
         this.tabContainer = this.modal.querySelector('.civitai-downloader-tabs');
+
+        // Shell chrome (rail, theme, page header)
+        this.themeToggleButton = this.modal.querySelector('#civitai-theme-toggle');
+        this.railCollapseButton = this.modal.querySelector('#civitai-rail-collapse');
+        this.railOpenButton = this.modal.querySelector('#civitai-rail-open');
+        this.railScrim = this.modal.querySelector('#civitai-rail-scrim');
+        this.pageTitleEl = this.modal.querySelector('#civitai-page-title');
+        this.pageSubEl = this.modal.querySelector('#civitai-page-sub');
 
         // Download Tab
         this.downloadForm = this.modal.querySelector('#civitai-download-form');
@@ -519,6 +530,55 @@ export class CivitaiDownloaderUI {
         }
     }
 
+    // --- Shell chrome ---
+    /** Apply 'dark' | 'light'. The class lives on <body> so popups that are
+     *  appended outside the modal (lightbox, detail panels) inherit it too. */
+    applyTheme(theme) {
+        const isLight = theme === 'light';
+        this.theme = isLight ? 'light' : 'dark';
+        document.body.classList.toggle('cfy-theme-light', isLight);
+        if (this.themeToggleButton) {
+            const icon = this.themeToggleButton.querySelector('i');
+            const label = this.themeToggleButton.querySelector('span');
+            if (icon) icon.className = isLight ? 'fas fa-moon' : 'fas fa-sun';
+            if (label) label.textContent = isLight ? 'Dark theme' : 'Light theme';
+            this.themeToggleButton.title = isLight ? 'Switch to the dark theme' : 'Switch to the light theme';
+        }
+    }
+
+    toggleTheme() {
+        const next = this.theme === 'light' ? 'dark' : 'light';
+        this.applyTheme(next);
+        saveThemePreference(next);
+    }
+
+    /** Collapse/expand the rail (wide layout) or open/close it (narrow layout). */
+    toggleRail(force) {
+        if (!this.modalContent) return;
+        const collapsed = typeof force === 'boolean'
+            ? force
+            : !this.modalContent.classList.contains('rail-collapsed');
+        this.modalContent.classList.toggle('rail-collapsed', collapsed);
+        if (this.railCollapseButton) {
+            const icon = this.railCollapseButton.querySelector('i');
+            const label = this.railCollapseButton.querySelector('span');
+            if (icon) icon.className = collapsed ? 'fas fa-angle-double-right' : 'fas fa-angle-double-left';
+            if (label) label.textContent = collapsed ? 'Expand' : 'Collapse';
+            this.railCollapseButton.title = collapsed ? 'Expand the sidebar' : 'Collapse the sidebar';
+        }
+    }
+
+    setRailOpen(open) {
+        this.modalContent?.classList.toggle('rail-open', open === true);
+    }
+
+    updatePageHeader(tabId) {
+        const meta = PAGE_META[tabId];
+        if (!meta) return;
+        if (this.pageTitleEl) this.pageTitleEl.textContent = meta.title;
+        if (this.pageSubEl) this.pageSubEl.textContent = meta.sub;
+    }
+
     switchTab(tabId) {
         if (this.activeTab === tabId || !this.tabs[tabId] || !this.tabContents[tabId]) return;
 
@@ -534,6 +594,9 @@ export class CivitaiDownloaderUI {
         this.tabContents[tabId].classList.add('active');
         this.tabContents[tabId].scrollTop = this._tabScrollPositions[tabId] || 0;
         this.activeTab = tabId;
+        this.updatePageHeader(tabId);
+        // On narrow layouts the rail is a drawer — close it once a section is picked.
+        this.setRailOpen(false);
 
         if (tabId === 'status') { this._statusNeedsRender = true; this.updateStatus(); }
         else if (tabId === 'browse') {

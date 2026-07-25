@@ -52,34 +52,31 @@ export async function fetchAndDisplayDownloadPreview(ui) {
             });
             if (result && result.success) {
                 ui.downloadPreviewArea.innerHTML = `
-                    <div style="display:flex;align-items:flex-start;gap:14px;">
-                      <div style="flex-shrink:0;font-size:2em;color:var(--cfy-accent,#5c8aff);">
-                        <i class="fas fa-database"></i>
-                      </div>
-                      <div>
-                        <div style="font-weight:bold;font-size:1.05em;margin-bottom:4px;">
-                          <i class="fas fa-cubes" style="margin-right:5px;color:#fbbf24;"></i>
+                    <div class="cfy-hf-preview">
+                      <div class="cfy-hf-preview-icon"><i class="fas fa-database"></i></div>
+                      <div class="cfy-hf-preview-body">
+                        <div class="cfy-hf-preview-title">
+                          <span class="cfy-prev-type-badge">HuggingFace</span>
                           ${esc(result.repo_id)}
                         </div>
-                        <div style="color:#aaa;font-size:0.9em;margin-bottom:2px;">
-                          Revision: <code>${esc(result.revision)}</code>
-                        </div>
-                        <div style="color:#ccc;font-size:0.9em;margin-bottom:2px;">
-                          File: <code>${esc(result.filepath)}</code>
-                        </div>
-                        <div style="color:#ccc;font-size:0.9em;">
-                          Size: <strong>${formatBytes(result.size)}</strong>
+                        <div class="civitai-browse-info-kv-grid">
+                          <div class="civitai-browse-info-kv-key">Revision</div>
+                          <div class="civitai-browse-info-kv-val"><code>${esc(result.revision)}</code></div>
+                          <div class="civitai-browse-info-kv-key">File</div>
+                          <div class="civitai-browse-info-kv-val"><code>${esc(result.filepath)}</code></div>
+                          <div class="civitai-browse-info-kv-key">Size</div>
+                          <div class="civitai-browse-info-kv-val"><strong>${formatBytes(result.size)}</strong></div>
                         </div>
                       </div>
                     </div>`;
             } else {
                 const message = result?.error || 'Unknown error from server';
-                ui.downloadPreviewArea.innerHTML = `<p style="color:var(--error-text,#ff6b6b);">${esc(message)}</p>`;
+                ui.downloadPreviewArea.innerHTML = `<p class="cfy-preview-error"><i class="fas fa-exclamation-triangle"></i> ${esc(message)}</p>`;
             }
         } catch (error) {
             const message = `Error fetching HuggingFace details: ${error.details || error.message || 'Unknown error'}`;
             console.error("HF Preview Fetch Error:", error);
-            ui.downloadPreviewArea.innerHTML = `<p style="color:var(--error-text,#ff6b6b);">${esc(message)}</p>`;
+            ui.downloadPreviewArea.innerHTML = `<p class="cfy-preview-error"><i class="fas fa-exclamation-triangle"></i> ${esc(message)}</p>`;
         }
         return;
     }
@@ -101,12 +98,12 @@ export async function fetchAndDisplayDownloadPreview(ui) {
             }
         } else {
             const message = `Failed to get details: ${result.details || result.error || 'Unknown backend error'}`;
-            ui.downloadPreviewArea.innerHTML = `<p style="color: var(--error-text, #ff6b6b);">${message}</p>`;
+            ui.downloadPreviewArea.innerHTML = `<p class="cfy-preview-error"><i class="fas fa-exclamation-triangle"></i> ${esc(message)}</p>`;
         }
     } catch (error) {
         const message = `Error fetching details: ${error.details || error.message || 'Unknown error'}`;
         console.error("Download Preview Fetch Error:", error);
-        ui.downloadPreviewArea.innerHTML = `<p style="color: var(--error-text, #ff6b6b);">${message}</p>`;
+        ui.downloadPreviewArea.innerHTML = `<p class="cfy-preview-error"><i class="fas fa-exclamation-triangle"></i> ${esc(message)}</p>`;
     }
 }
 

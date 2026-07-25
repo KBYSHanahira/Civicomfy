@@ -2,6 +2,7 @@ import { setCookie, getCookie } from "../../utils/cookies.js";
 import { CivitaiDownloaderAPI } from "../../api/civitai.js";
 
 const SETTINGS_COOKIE_NAME = 'civitaiDownloaderSettings';
+const THEME_COOKIE_NAME = 'civicomfyTheme';
 
 const ALLOWED_CIVITAI_DOMAINS = ['civitai.com', 'civitai.red'];
 
@@ -17,6 +18,24 @@ export function getDefaultSettings() {
         nsfwBlurMinLevel: 4, // Blur thumbnails with nsfwLevel >= this value
         civitaiDomain: 'civitai.com',
     };
+}
+
+// --- Theme preference (stored separately so it applies instantly, without
+// requiring the user to press "Save settings") ---
+export function loadThemePreference() {
+    try {
+        return getCookie(THEME_COOKIE_NAME) === 'light' ? 'light' : 'dark';
+    } catch (e) {
+        return 'dark';
+    }
+}
+
+export function saveThemePreference(theme) {
+    try {
+        setCookie(THEME_COOKIE_NAME, theme === 'light' ? 'light' : 'dark', 365);
+    } catch (e) {
+        console.error('[Civicomfy] Failed to save theme preference:', e);
+    }
 }
 
 export function getCivitaiDomain() {
@@ -185,7 +204,7 @@ export async function loadDirectorySettings(ui, force = false) {
         listEl.innerHTML = '';
         const err = document.createElement('p');
         err.className = 'civitai-field-hint';
-        err.style.color = 'var(--error-text, #ff6b6b)';
+        err.style.color = 'var(--cfy-danger-text)';
         err.textContent = `Failed to load directories: ${e.details || e.message || 'Unknown error'}`;
         listEl.appendChild(err);
     }
@@ -226,7 +245,7 @@ function renderDirectorySettings(ui, items) {
         reset.type = 'button';
         reset.className = 'civitai-button small secondary civitai-dir-row-reset';
         reset.title = 'Clear (use default)';
-        reset.innerHTML = '<i class="fas fa-rotate-left"></i>';
+        reset.innerHTML = '<i class="fas fa-undo"></i>';
         reset.addEventListener('click', () => { input.value = ''; });
 
         row.append(label, input, reset);

@@ -3,6 +3,7 @@ import { app } from "../../../../../scripts/app.js";
 import { attachLightboxZoom } from "../../utils/dom.js";
 import { sanitizeHtml } from "../../utils/sanitize.js";
 import { getCivitaiDomain, buildCivitaiModelUrl } from "./settingsHandler.js";
+import { typeColor } from "../typeColors.js";
 
 const civitaiBase = () => `https://${getCivitaiDomain()}/models/`;
 
@@ -52,7 +53,7 @@ export async function handleMyModelsLoad(ui) {
 
     } catch (err) {
         console.error("[Civicomfy] Failed to load local models:", err);
-        listEl.innerHTML = `<p style="color:var(--error-text,#ff6b6b);">Failed to load models: ${err.message}</p>`;
+        listEl.innerHTML = `<p class="cfy-preview-error">Failed to load models: ${err.message}</p>`;
     }
 }
 
@@ -372,12 +373,7 @@ function _fmtDate(ts) {
 }
 
 function _mmTypeColor(type) {
-    const map = {
-        'checkpoints': '#4a9eff', 'loras': '#f59e0b', 'controlnet': '#22d3ee',
-        'vae': '#fb7185', 'embeddings': '#a78bfa', 'hypernetworks': '#34d399',
-        'upscale_models': '#fb923c', 'clip': '#a3e635',
-    };
-    return map[(type || '').toLowerCase()] || '#888';
+    return typeColor(type);
 }
 
 function _mmSection(label, iconClass) {
@@ -728,7 +724,7 @@ export function showModelDetailModal(model, opts = {}) {
 
     const sendToWfBtn = document.createElement('button');
     sendToWfBtn.className = 'civitai-button small';
-    sendToWfBtn.style.cssText = 'background:var(--cfy-accent,#5c8aff);color:#fff;';
+    sendToWfBtn.style.cssText = 'background:var(--cfy-accent);color:#fff;';
     sendToWfBtn.title = 'Add or update model info as a CiviComfy Model Info node in the workflow';
     sendToWfBtn.innerHTML = _nodeExists()
         ? '<i class="fas fa-sync-alt"></i> Update Workflow'

@@ -65,7 +65,7 @@ export async function handleBrowseLoad(ui) {
     } catch (error) {
         const message = `Browse failed: ${error.details || error.message || 'Unknown error'}`;
         console.error("[Civicomfy] Browse Load Error:", error);
-        ui.browseResultsContainer.innerHTML = `<p style="color: var(--error-text, #ff6b6b);">${message}</p>`;
+        ui.browseResultsContainer.innerHTML = `<p class="cfy-preview-error">${message}</p>`;
         ui.showToast(message, 'error');
     } finally {
         if (ui.browseRefreshButton) {

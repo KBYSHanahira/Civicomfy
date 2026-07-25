@@ -30,7 +30,7 @@ export async function handleSearchSubmit(ui) {
     } catch (error) {
         const message = `Search failed: ${error.details || error.message || 'Unknown error'}`;
         console.error("Search Submit Error:", error);
-        ui.searchResultsContainer.innerHTML = `<p style="color: var(--error-text, #ff6b6b);">${message}</p>`;
+        ui.searchResultsContainer.innerHTML = `<p class="cfy-preview-error">${message}</p>`;
         ui.showToast(message, 'error');
     } finally {
         ui.searchSubmitButton.disabled = false;

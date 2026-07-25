@@ -12,24 +12,36 @@ Browse, search, and download models — and manage the ones you already have —
 - ⬇️ **Download** from Civitai *or* HuggingFace by URL/ID
 - 📂 **Auto-saves** to the right ComfyUI folder (checkpoints, loras, vae, etc.)
 - 🗂️ **My Models** — see, sort, and delete locally installed models
-- 🖼️ **Gallery** — view preview images saved with your models
-- 📊 **Status** — watch active downloads, queue, and history in real time
+- 🖼️ **Gallery** — browse the images your workflows produced
+- 📊 **Downloads** — watch active transfers, queue, and history in real time
+- 🎨 **Claude theme** — one warm design system, in dark or cream
 
 ---
 
 ## Screenshots
 
-<img width="920" alt="Download tab" src="https://github.com/user-attachments/assets/80cece16-c999-4766-848c-39d08ea4cde5" />
-<img width="923" alt="Browse tab" src="https://github.com/user-attachments/assets/7de727ff-33b5-4a75-aaf3-a2d8d8aa31b9" />
-<img width="914" alt="My Models" src="https://github.com/user-attachments/assets/8cb9ec25-70d8-4b37-a93b-7be3b4034742" />
-<img width="919" alt="Status" src="https://github.com/user-attachments/assets/c0d7b47f-4949-461c-8e9f-40b42a5285da" />
-<img width="920" alt="Settings" src="https://github.com/user-attachments/assets/a2e24eec-f5b0-45ab-ae24-1f910275c098" />
+<img width="920" alt="Download — paste a link, pick a folder" src="docs/images/download.png" />
 
-**Newer screens:**
+The preview resolves before you commit: exact file, exact folder, trigger words ready to copy.
 
-<img width="824" src="https://github.com/user-attachments/assets/b9f7c0aa-b75c-4f39-82e7-3feca17cba0e" />
-<img width="1180" src="https://github.com/user-attachments/assets/dbb9c1cc-839e-4260-9ac8-da2c5f81c0e9" />
-<img width="921" src="https://github.com/user-attachments/assets/1cb18beb-4e22-4293-a637-998d0c02a6d8" />
+<img width="920" alt="Download — live model preview" src="docs/images/download-preview.png" />
+
+<table>
+<tr>
+<td width="50%"><img alt="Browse Civitai" src="docs/images/browse.png" /><br><em>Browse — search, filter, queue</em></td>
+<td width="50%"><img alt="My Models" src="docs/images/my-models.png" /><br><em>My Models — everything on disk</em></td>
+</tr>
+<tr>
+<td width="50%"><img alt="Downloads" src="docs/images/downloads.png" /><br><em>Downloads — active, queued, history</em></td>
+<td width="50%"><img alt="Gallery in the light theme" src="docs/images/gallery-light.png" /><br><em>Gallery — light theme, multi-select</em></td>
+</tr>
+<tr>
+<td width="50%"><img alt="Settings in the light theme" src="docs/images/settings-light.png" /><br><em>Settings — light theme</em></td>
+<td width="50%"><img alt="Sidebar collapsed to an icon rail" src="docs/images/collapsed.png" /><br><em>Sidebar collapsed to an icon rail</em></td>
+</tr>
+</table>
+
+> Captured from the real interface; model names, thumbnails and counts are placeholder data.
 
 ---
 
@@ -49,13 +61,37 @@ Restart ComfyUI. A **Civicomfy** button appears in the top-right toolbar.
 1. Click **Civicomfy** in the toolbar
 2. Open **Settings** → paste your [Civitai API Key](https://civitai.com/user/account)
 3. Paste a Civitai or HuggingFace link into the **Download** tab
-4. Click **Start Download** — watch progress in **Status**
+4. Click **Start download** — watch progress in **Downloads**
 
 > 💡 No API key? You can still browse and download HuggingFace files. Civitai downloads need a free API key.
 
 ---
 
-## The tabs
+## The interface
+
+**Sidebar navigation.** Sections are grouped by what you're trying to do —
+**Get models** (Download, Browse), **Library** (My Models, Gallery),
+**Activity** (Downloads), **Configure** (Settings, Directories). The current
+section's name and a one-line description sit in the top bar, and a badge on
+**Downloads** counts transfers in flight from anywhere in the app.
+
+**It shrinks with the window.** Collapse the sidebar to a 60 px icon rail, or let
+it become a slide-over drawer when the window gets narrow. Every panel keeps its
+own scroll position, and long forms keep their primary action pinned to the
+bottom instead of hiding it below the fold.
+
+**Claude theme, two palettes.** Warm dark by default, warm cream on request —
+switch with the toggle at the bottom of the sidebar. Every colour comes from one
+token set, so both palettes stay consistent down to the badges and progress bars.
+Your choice is remembered per browser.
+
+**Keyboard & mouse.** `Esc` closes the window (or just the panel on top of it),
+arrow keys page through the gallery lightbox, and card grids resize live with the
+slider in each toolbar.
+
+---
+
+## The sections
 
 ### 📥 Download
 
@@ -92,7 +128,7 @@ Search and discover models from Civitai.
 
 ---
 
-### 📊 Status
+### 📊 Downloads (Activity)
 
 A live dashboard for everything that's downloading.
 
@@ -119,7 +155,20 @@ Manage models already on disk.
 
 ### 🖼️ Gallery
 
-A grid view of every preview image stored next to your models. Filter by subfolder, sort, lightbox view, multi-select for batch delete.
+A grid view of your ComfyUI **output** folder — the images your workflows actually produced.
+
+- Filter by subfolder, sort by date or name, resize thumbnails live
+- Lightbox with arrow-key navigation and zoom
+- Multi-select for batch **download** or **delete**
+
+---
+
+### 🧭 Directories
+
+Point any model type at a folder of your choosing — handy when checkpoints live
+on a different drive from LoRAs. Leave a row blank to keep ComfyUI's default
+(shown as the placeholder). Paths are validated on the server before they're
+saved, and overrides persist in `directory_overrides.json`.
 
 ---
 
@@ -130,7 +179,7 @@ A grid view of every preview image stored next to your models. Filter by subfold
 | **Civitai API Key** | Required to download from Civitai |
 | **HuggingFace Token** | Needed for gated/private HF models |
 | **Default model type** | What's pre-selected in the Download tab |
-| **Auto-open Status tab** | Jumps to Status after queuing a download |
+| **Auto-open Downloads** | Jumps to Downloads after queuing a download |
 | **Deep subfolder check** | When checking for duplicates, scans every subfolder (and MKLink/junction-mounted drives) instead of just the target folder |
 | **Hide mature content** | Filter NSFW out of Browse results |
 | **NSFW blur threshold** | Blur thumbnails at this `nsfwLevel` and above (0–128) |

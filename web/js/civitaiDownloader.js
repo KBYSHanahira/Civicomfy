@@ -166,7 +166,7 @@ app.registerExtension({
                 this._imgLoaded = false;
                 this._imgSrc = "";
                 this._clickZones = [];
-                this.bgcolor = "#16181f";
+                this.bgcolor = "#1f1e1d";
             }
 
             // Report a small minimum so the user can freely shrink the node.
@@ -217,7 +217,7 @@ app.registerExtension({
 
             /** Draw a copy button chip, returns the left-edge x */
             _drawCopyChip(ctx, label, actionFn, rightEdgeX, centerY,
-                          bgColor = "#1a2d50", borderColor = "#2e4e8a", textColor = "#7aabee") {
+                          bgColor = "#3a2a23", borderColor = "#6b4331", textColor = "#e6a184") {
                 ctx.font = "bold 9px Arial";
                 const bW = Math.ceil(ctx.measureText(label).width) + 14;
                 const bH = 17;
@@ -296,7 +296,7 @@ app.registerExtension({
             _drawSectionHeader(ctx, label, x, y, w,
                                bgColor = "rgba(255,255,255,0.05)",
                                borderColor = "rgba(255,255,255,0.1)",
-                               textColor = "rgba(200,210,230,0.7)") {
+                               textColor = "rgba(245,244,239,0.7)") {
                 const H = 20;
                 ctx.beginPath();
                 _rrect(ctx, x, y, w, H, 5);
@@ -328,7 +328,7 @@ app.registerExtension({
              * @param opts.action      Click handler for the chip.
              */
             _drawSectionBar(ctx, x, y, w, opts) {
-                const { label, accent = "#7aabff", icon = "",
+                const { label, accent = "#d97757", icon = "",
                         actionLabel = null, action = null } = opts;
                 const H = CiviComfyModelInfoNode.SECTION_BAR_H;
                 // Tinted background + border
@@ -653,19 +653,19 @@ app.registerExtension({
         CiviComfyModelInfoNode.SECTION_BAR_H = 22;  // height of every section header
         CiviComfyModelInfoNode.SECTION_GAP   = 8;   // vertical gap between blocks
         CiviComfyModelInfoNode.THEME = {
-            bg:        "#16181f",             // node surface  (≈ --cfy-bg)
-            surface:   "#1d2029",             // inner cards   (≈ --cfy-surface)
-            border:    "rgba(138,124,255,0.22)",
-            text:      "#eef1f8",             // ≈ --cfy-text
-            textDim:   "rgba(238,241,248,0.55)",
-            textFaint: "rgba(238,241,248,0.35)",
+            bg:        "#1f1e1d",             // node surface  (= --cfy-bg)
+            surface:   "#30302e",             // inner cards   (= --cfy-surface)
+            border:    "rgba(245,244,239,0.14)",
+            text:      "#f5f4ef",             // = --cfy-text
+            textDim:   "rgba(245,244,239,0.62)",
+            textFaint: "rgba(245,244,239,0.38)",
         };
         CiviComfyModelInfoNode.ACCENT = {
-            info:    "#5c8aff",  // --cfy-accent   (blue)
-            base:    "#8a6cff",  // --cfy-accent-2 (purple)
-            file:    "#5fc08a",  // filename (green = "file ok")
-            trigger: "#f59e0b",  // --cfy-warning (amber)
-            prompt:  "#4caf50",  // --cfy-success (green)
+            info:    "#d97757",  // --cfy-accent   (Claude coral)
+            base:    "#c2603f",  // --cfy-accent-2 (deep coral)
+            file:    "#6d9d6d",  // --cfy-success  (sage) — "file ok"
+            trigger: "#d99a4e",  // --cfy-amber
+            prompt:  "#7fa88d",  // muted sage for prompt blocks
         };
         LG.registerNodeType("CiviComfyModelInfo", CiviComfyModelInfoNode);
         console.log("[Civicomfy] Registered CiviComfyModelInfo node type.");

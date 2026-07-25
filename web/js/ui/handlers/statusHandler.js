@@ -40,7 +40,9 @@ export async function updateStatus(ui) {
         // Always keep counters in sync
         const activeCount = ui.statusData.active.length + ui.statusData.queue.length;
         if (ui.activeCountSpan) ui.activeCountSpan.textContent = activeCount;
-        if (ui.statusIndicator) ui.statusIndicator.style.display = activeCount > 0 ? 'inline' : 'none';
+        // The badge is a flex pill in the nav — keep it inline-flex so its
+        // padding and centring hold when it becomes visible.
+        if (ui.statusIndicator) ui.statusIndicator.style.display = activeCount > 0 ? 'inline-flex' : 'none';
 
         // Re-render the Status tab only when data has changed or the tab was just switched to
         if (ui.activeTab === 'status' && (dataChanged || ui._statusNeedsRender)) {
@@ -52,7 +54,7 @@ export async function updateStatus(ui) {
     } catch (error) {
         console.error("[Civicomfy] Failed to update status:", error);
         if (ui.activeTab === 'status') {
-            const errorHtml = `<p style="color: var(--error-text, #ff6b6b);">${error.details || error.message}</p>`;
+            const errorHtml = `<p class="cfy-preview-error">${error.details || error.message}</p>`;
             if (ui.activeListContainer) ui.activeListContainer.innerHTML = errorHtml;
             if (ui.queuedListContainer) ui.queuedListContainer.innerHTML = '';
             if (ui.historyListContainer) ui.historyListContainer.innerHTML = '';
