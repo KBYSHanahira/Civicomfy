@@ -17,6 +17,7 @@
 <body>
 <script type="module">
 import { modalTemplate, PAGE_META } from '../web/js/ui/templates.js';
+import { renderDownloadList } from '../web/js/ui/statusRenderer.js';
 
 // ---- synthetic thumbnails (warm gradients, clearly illustrative) ----
 function thumb(i, w = 240, h = 320) {
@@ -191,30 +192,36 @@ q('#civitai-gallery-count').textContent = '18 of 1,204 images';
 q('#civitai-gallery-select-bar').style.display = 'flex';
 q('#civitai-gallery-select-count').textContent = '2 selected';
 
-// ---- Status tab ----
-const item = (name, file, dir, pct, speed, cls, extra) => `
-  <div class="civitai-download-item">
-    <div class="civitai-thumbnail-container"><img src="${thumb(name.length % 8)}"></div>
-    <div class="civitai-download-info">
-      <strong>${name}</strong>
-      <p class="filename">${file}</p>
-      <p class="output-dir"><i class="fas fa-folder"></i> ${dir}</p>
-      ${pct === null ? `<p class="status-line-simple">${extra}</p>` : `
-      <div class="civitai-progress-header"><span class="civitai-progress-pct">${pct}%</span></div>
-      <div class="civitai-progress-container"><div class="civitai-progress-bar ${cls}" style="width:${pct}%"></div></div>
-      <div class="civitai-speed-indicator">${speed}</div>`}
-    </div>
-    <div class="civitai-download-actions">
-      <button class="civitai-button small danger civitai-cancel-button"><i class="fas fa-times"></i></button>
-    </div>
-  </div>`;
-q('#civitai-active-list').innerHTML =
-  item('Example Watercolour Style — v2.0', 'example_watercolour_v2.safetensors', 'models/loras/style', 68, '14.2 MB/s · 00:22 left', '') +
-  item('Demo Cinematic Light — v1.0', 'demo_cinematic.safetensors', 'models/loras', 23, '9.8 MB/s · 01:05 left', '');
-q('#civitai-queued-list').innerHTML =
-  item('Sample Line Art — v3.1', 'sample_line_art.safetensors', 'models/loras/lineart', null, '', '', '<i class="fas fa-clock"></i> Waiting in queue');
-q('#civitai-history-list').innerHTML =
-  item('Placeholder Ink Wash — v1.2', 'placeholder_ink.safetensors', 'models/loras', 100, 'Completed in 1m 12s', 'completed');
+// ---- Status tab (rendered by the real statusRenderer) ----
+const fmtBytes = (b) => {
+  if (!b) return '0 Bytes';
+  const u = ['Bytes','KB','MB','GB','TB']; const i = Math.min(u.length - 1, Math.floor(Math.log(Math.abs(b)) / Math.log(1024)));
+  return parseFloat((b / Math.pow(1024, i)).toFixed(2)) + ' ' + u[i];
+};
+const uiShim = {
+  settings: { hideMatureInSearch: true, nsfwBlurMinLevel: 4 },
+  formatBytes: fmtBytes,
+  formatSpeed: (s) => (s > 0 ? fmtBytes(s) + '/s' : ''),
+  formatDuration: () => '1m 12s',
+  ensureFontAwesome: () => {},
+};
+const dl = (over) => Object.assign({
+  id: 'x', model_name: 'Example Watercolour Style', version_name: 'v2.0',
+  filename: 'example_watercolour_v2.safetensors', output_dir: 'models/loras/style',
+  known_size: 151000000, file_format: 'SafeTensor', file_precision: 'fp16', file_model_size: 'full',
+  thumbnail: thumb(1, 160, 220), thumbnail_nsfw_level: 1, connection_type: '1',
+}, over);
+renderDownloadList(uiShim, [
+  dl({ status: 'downloading', progress: 68, speed: 14.2 * 1024 * 1024 }),
+  dl({ status: 'downloading', progress: 23, speed: 9.8 * 1024 * 1024, model_name: 'Demo Cinematic Light', version_name: 'v1.0', filename: 'demo_cinematic.safetensors', output_dir: 'models/loras', thumbnail: thumb(4, 160, 220) }),
+], q('#civitai-active-list'), 'No active downloads.');
+renderDownloadList(uiShim, [
+  dl({ status: 'queued', progress: 0, model_name: 'Sample Line Art', version_name: 'v3.1', filename: 'sample_line_art.safetensors', output_dir: 'models/loras/lineart', thumbnail: thumb(6, 160, 220) }),
+], q('#civitai-queued-list'), 'Download queue is empty.');
+renderDownloadList(uiShim, [
+  dl({ status: 'completed', progress: 100, model_name: 'Placeholder Ink Wash', version_name: 'v1.2', filename: 'placeholder_ink.safetensors', output_dir: 'models/loras', thumbnail: thumb(3, 160, 220), start_time: '2026-07-25T09:00:00Z', end_time: '2026-07-25T09:01:12Z' }),
+  dl({ status: 'failed', progress: 42, model_name: 'Example Neon City', version_name: 'v1.0', filename: 'example_neon.safetensors', output_dir: 'models/loras', thumbnail: thumb(8, 160, 220), error: 'HTTP 401 — the Civitai API key is missing or expired.' }),
+], q('#civitai-history-list'), 'No download history yet.');
 
 // ---- Settings tab ----
 q('#civitai-settings-nsfw-threshold').value = '4';

@@ -2,7 +2,7 @@ import { Feedback } from "./feedback.js";
 import { setupEventListeners } from "./handlers/eventListeners.js";
 import { handleDownloadSubmit, fetchAndDisplayDownloadPreview, debounceFetchDownloadPreview } from "./handlers/downloadHandler.js";
 import { handleBrowseLoad } from "./handlers/browseHandler.js";
-import { handleSettingsSave, loadAndApplySettings, loadSettingsFromCookie, saveSettingsToCookie, applySettings, getDefaultSettings, saveBrowseSettings, loadBrowseSettings, saveMyModelsSettings, loadMyModelsSettings, loadDirectorySettings, saveDirectorySettings, loadThemePreference, saveThemePreference } from "./handlers/settingsHandler.js";
+import { handleSettingsSave, loadAndApplySettings, loadSettingsFromCookie, saveSettingsToCookie, applySettings, getDefaultSettings, saveBrowseSettings, loadBrowseSettings, saveMyModelsSettings, loadMyModelsSettings, loadDirectorySettings, saveDirectorySettings, loadThemePreference, saveThemePreference, saveGallerySettings, loadGallerySettings } from "./handlers/settingsHandler.js";
 import { startStatusUpdates, stopStatusUpdates, updateStatus, handleCancelDownload, handleRetryDownload, handleOpenPath, handleClearHistory } from "./handlers/statusHandler.js";
 import { handleMyModelsLoad, renderMyModels, handleMyModelOpenOnCivit, handleMyModelViewDetail, handleMyModelDelete } from "./handlers/myModelsHandler.js";
 import { handleGalleryLoad, renderGalleryGrid, openGalleryLightbox, closeGalleryLightbox, lightboxPrev, lightboxNext, toggleGallerySelect, updateGallerySelectionBar, deleteSelectedGallery, downloadSelectedGallery, deleteGalleryImage } from "./handlers/galleryHandler.js";
@@ -207,6 +207,7 @@ export class CivitaiDownloaderUI {
         this.loadAndApplySettings();
         this.loadBrowseSettings();
         this.loadMyModelsSettings();
+        this.loadGallerySettings();
     }
 
     async populateModelTypes() {
@@ -636,7 +637,14 @@ export class CivitaiDownloaderUI {
         document.body.style.setProperty('overflow', 'hidden', 'important');
         this.startStatusUpdates();
         if (this.activeTab === 'status') { this._statusNeedsRender = true; this.updateStatus(); }
-        if (!this.settings.apiKey) this.switchTab('settings');
+        // Nudge first-time users towards the API key, but only once: doing it on
+        // every open hijacked navigation for anyone who only downloads from
+        // HuggingFace (which needs no Civitai key at all).
+        if (!this.settings.apiKey && !this._apiKeyNudgeShown) {
+            this._apiKeyNudgeShown = true;
+            this.switchTab('settings');
+            this.showToast('Add your Civitai API key to enable Civitai downloads.', 'info', 5000);
+        }
     }
 
     closeModal() {
@@ -856,6 +864,8 @@ export class CivitaiDownloaderUI {
     loadBrowseSettings = () => loadBrowseSettings(this);
     saveMyModelsSettings = () => saveMyModelsSettings(this);
     loadMyModelsSettings = () => loadMyModelsSettings(this);
+    saveGallerySettings = () => saveGallerySettings(this);
+    loadGallerySettings = () => loadGallerySettings(this);
     handleDownloadSubmit = () => handleDownloadSubmit(this);
     handleBrowseLoad = () => handleBrowseLoad(this);
     fetchAndDisplayDownloadPreview = () => fetchAndDisplayDownloadPreview(this);

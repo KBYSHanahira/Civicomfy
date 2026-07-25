@@ -102,12 +102,12 @@ export function renderBrowseCards(ui, items) {
 
     if (!items || items.length === 0) {
         ui.browseResultsContainer.className = 'civitai-browse-cards';
-        ui.browseResultsContainer.innerHTML = '<p style="grid-column:1/-1;">No models found for this category.</p>';
+        ui.browseResultsContainer.innerHTML = '<p class="civitai-empty-state"><i class="fas fa-compass"></i> No models match these filters.</p>';
         return;
     }
 
     const placeholder = PLACEHOLDER_IMAGE_URL;
-    const onErrorScript = `this.onerror=null; this.src='${placeholder}'; this.style.backgroundColor='#444';`;
+    const onErrorScript = `this.onerror=null; this.src='${placeholder}'; this.style.backgroundColor='transparent';`;
     const fragment = document.createDocumentFragment();
 
     items.forEach(hit => {
@@ -357,7 +357,7 @@ function _renderBrowseInfoModal(ui, hit) {
     const placeholder = PLACEHOLDER_IMAGE_URL;
     const blurMinLevel = Number(ui.settings?.nsfwBlurMinLevel ?? 4);
     const shouldBlurGlobal = ui.settings?.hideMatureInSearch === true;
-    const onError = `this.onerror=null;this.src='${placeholder}';this.style.backgroundColor='#444';`;
+    const onError = `this.onerror=null;this.src='${placeholder}';this.style.backgroundColor='transparent';`;
 
     // ── Data ──────────────────────────────────────
     const modelId       = hit.id;
@@ -930,7 +930,7 @@ export function renderSearchResults(ui, items) {
   }
 
   const placeholder = PLACEHOLDER_IMAGE_URL;
-  const onErrorScript = `this.onerror=null; this.src='${placeholder}'; this.style.backgroundColor='#444';`;
+  const onErrorScript = `this.onerror=null; this.src='${placeholder}'; this.style.backgroundColor='transparent';`;
   const fragment = document.createDocumentFragment();
 
   items.forEach(hit => {

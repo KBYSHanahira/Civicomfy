@@ -16,7 +16,7 @@ function esc(value) {
 
 export function renderDownloadList(ui, items, container, emptyMessage) {
   if (!items || items.length === 0) {
-    container.innerHTML = `<p>${emptyMessage}</p>`;
+    container.innerHTML = `<p class="civitai-empty-state">${emptyMessage}</p>`;
     return;
   }
 
@@ -55,17 +55,38 @@ export function renderDownloadList(ui, items, container, emptyMessage) {
     listItem.className = 'civitai-download-item';
     listItem.dataset.id = id;
 
-    const onErrorScript = `this.onerror=null; this.src='${PLACEHOLDER_IMAGE_URL}'; this.style.backgroundColor='#444';`;
+    const onErrorScript = `this.onerror=null; this.src='${PLACEHOLDER_IMAGE_URL}'; this.style.backgroundColor='transparent';`;
     const addedTooltip = addedTime ? `data-tooltip="Added: ${new Date(addedTime).toLocaleString()}"` : '';
     const startedTooltip = startTime ? `data-tooltip="Started: ${new Date(startTime).toLocaleString()}"` : '';
     const endedTooltip = endTime ? `data-tooltip="Ended: ${new Date(endTime).toLocaleString()}"` : '';
     const durationTooltip = startTime && endTime ? `data-tooltip="Duration: ${ui.formatDuration(startTime, endTime)}"` : '';
     const filenameTooltip = filename !== 'N/A' ? `title="Filename: ${esc(filename)}"` : '';
     const errorTooltip = errorMsg ? `title="Error Details: ${esc(String(errorMsg).substring(0, 200))}${String(errorMsg).length > 200 ? '...' : ''}"` : '';
-    const connectionInfoHtml = connectionType !== "N/A" ? `<span style="font-size: 0.85em; color: #aaa; margin-left: 10px;">(Conn: ${esc(connectionType)})</span>` : '';
 
     const overlayHtml = shouldBlur ? `<div class=\"civitai-nsfw-overlay\" title=\"R-rated: click to reveal\">R</div>` : '';
     const containerClasses = `civitai-thumbnail-container${shouldBlur ? ' blurred' : ''}`;
+
+    // File facts as a single wrapped chip row instead of one labelled line each —
+    // an item used to be ~250px tall, so barely two downloads fit on screen.
+    const chip = (text, icon, tip) => text
+      ? `<span class="civitai-dl-chip"${tip ? ` title="${esc(tip)}"` : ''}>${icon ? `<i class="fas ${icon}"></i>` : ''}${esc(text)}</span>`
+      : '';
+    const chipsHtml = [
+      chip(versionName !== 'Unknown Version' ? versionName : '', 'fa-code-branch', 'Version'),
+      chip(size > 0 ? ui.formatBytes(size) : '', 'fa-hdd', 'File size'),
+      chip(item.file_format || '', '', 'Format'),
+      chip(item.file_precision ? String(item.file_precision).toUpperCase() : '', '', 'Precision'),
+      chip(item.file_model_size || '', '', 'Model size'),
+      // Only worth showing when it isn't the single-connection default.
+      (connectionType !== 'N/A' && String(connectionType) !== '1')
+        ? `<span class="civitai-dl-chip" title="Connections">${esc(connectionType)} conn</span>` : '',
+    ].filter(Boolean).join('');
+
+    const statusModifier = {
+      downloading: 'active', starting: 'active', queued: 'queued',
+      completed: 'completed', failed: 'failed', cancelled: 'cancelled',
+    }[status] || 'queued';
+    const timeTooltip = durationTooltip || endedTooltip || startedTooltip || addedTooltip;
 
     let innerHTML = `
       <div class="${containerClasses}" data-nsfw-level="${Number.isFinite(nsfwLevel) ? nsfwLevel : ''}">
@@ -73,36 +94,30 @@ export function renderDownloadList(ui, items, container, emptyMessage) {
         ${overlayHtml}
       </div>
       <div class="civitai-download-info">
-        <strong>${esc(modelName)}</strong>
-        <p>Ver: ${esc(versionName)}</p>
+        <div class="civitai-dl-titlerow">
+          <strong class="civitai-dl-name" title="${esc(modelName)}">${esc(modelName)}</strong>
+          <span class="civitai-dl-status civitai-dl-status--${statusModifier}" ${timeTooltip}>${esc(statusText)}</span>
+        </div>
+        ${chipsHtml ? `<div class="civitai-dl-chips">${chipsHtml}</div>` : ''}
         <p class="filename" ${filenameTooltip}>${esc(filename)}</p>
         ${outputDir ? `<p class="output-dir" title="Saving to: ${esc(outputDir)}"><i class="fas fa-folder"></i> ${esc(outputDir)}</p>` : ''}
-        ${size > 0 ? `<p>Size: ${ui.formatBytes(size)}</p>` : ''}
-        ${item.file_format ? `<p>Format: ${esc(item.file_format)}</p>` : ''}
-        ${item.file_precision || item.file_model_size ? `<p>${item.file_precision ? 'Precision: ' + esc(String(item.file_precision).toUpperCase()) : ''}${item.file_precision && item.file_model_size ? ' • ' : ''}${item.file_model_size ? 'Model Size: ' + esc(item.file_model_size) : ''}</p>` : ''}
-        ${errorMsg ? `<p class="error-message" ${errorTooltip}><i class="fas fa-exclamation-triangle"></i> ${esc(String(errorMsg).substring(0, 100))}${String(errorMsg).length > 100 ? '...' : ''}</p>` : ''}
+        ${errorMsg ? `<p class="error-message" ${errorTooltip}><i class="fas fa-exclamation-triangle"></i> ${esc(String(errorMsg).substring(0, 140))}${String(errorMsg).length > 140 ? '…' : ''}</p>` : ''}
     `;
 
-    if (status === 'downloading' || status === 'starting' || status === 'completed') {
-      const statusLine = `<div ${durationTooltip} ${endedTooltip}>Status: ${statusText} ${connectionInfoHtml}</div>`;
+    if (status === 'downloading' || status === 'starting') {
+      const speedText = speed > 0 ? ui.formatSpeed(speed) : '';
+      const progressText = size > 0 ? `${ui.formatBytes(downloadedBytes)} of ${ui.formatBytes(size)}` : '';
       innerHTML += `
-        <div class="civitai-progress-header">
+        <div class="civitai-dl-progress-row">
+          <div class="civitai-progress-container" title="${esc(statusText)} — ${progress.toFixed(1)}%">
+            <div class="civitai-progress-bar ${progressBarClass}" style="width: ${progress}%;"></div>
+          </div>
           <span class="civitai-progress-pct">${progress.toFixed(0)}%</span>
         </div>
-        <div class="civitai-progress-container" title="${statusText} - ${progress.toFixed(1)}%">
-          <div class="civitai-progress-bar ${progressBarClass}" style="width: ${progress}%;"></div>
-        </div>
+        ${(speedText || progressText) ? `<div class="civitai-speed-indicator">${[speedText, progressText].filter(Boolean).join(' · ')}</div>` : ''}
       `;
-      const speedText = (status === 'downloading' && speed > 0) ? ui.formatSpeed(speed) : '';
-      const progressText = (status === 'downloading' && size > 0) ? `(${ui.formatBytes(downloadedBytes)} / ${ui.formatBytes(size)})` : '';
-      const completedText = status === 'completed' ? '' : '';
-      const speedProgLine = `<div class="civitai-speed-indicator">${speedText} ${progressText} ${completedText}</div>`;
-      if (status === 'downloading') { innerHTML += speedProgLine; }
-      innerHTML += statusLine;
-    } else if (status === 'failed' || status === 'cancelled' || status === 'queued') {
-      innerHTML += `<div class="status-line-simple" ${durationTooltip} ${endedTooltip} ${addedTooltip}>Status: ${statusText} ${connectionInfoHtml}</div>`;
-    } else {
-      innerHTML += `<div class="status-line-simple">Status: ${statusText} ${connectionInfoHtml}</div>`;
+    } else if (status === 'completed' && startTime && endTime) {
+      innerHTML += `<div class="civitai-speed-indicator">Finished in ${esc(ui.formatDuration(startTime, endTime))}</div>`;
     }
 
     innerHTML += `</div>`;

@@ -66,9 +66,16 @@ function _buildGalleryCard(img, idx, ui) {
     imgEl.dataset.src = url;
     imgEl.alt = img.filename;
     imgEl.onerror = () => {
-        imgEl.style.display = 'none';
+        // Only drop the image — replacing preview.innerHTML here used to wipe the
+        // date badge, the selection checkbox and the whole action overlay, leaving
+        // broken thumbnails unselectable and undeletable.
+        imgEl.remove();
         preview.classList.add('no-preview');
-        preview.innerHTML = '<i class="fas fa-image" style="font-size:2em;opacity:0.25;"></i>';
+        if (!preview.querySelector('.civitai-card-fallback-icon')) {
+            const fallback = document.createElement('i');
+            fallback.className = 'fas fa-image civitai-card-fallback-icon';
+            preview.prepend(fallback);
+        }
     };
 
     // Date badge (top-right)
@@ -234,10 +241,18 @@ export async function handleGalleryLoad(ui) {
     }
     ui._galleryAnchorIdx = undefined;
 
-    grid.innerHTML = '<p style="padding:20px;color:var(--cfy-text-dim)"><i class="fas fa-spinner fa-spin"></i> Loading images…</p>';
+    grid.innerHTML = '<p class="civitai-empty-state"><i class="fas fa-spinner fa-spin"></i> Loading images…</p>';
     if (countEl) countEl.textContent = '';
 
     try {
+        // A saved subfolder can only be applied once the options exist, so the
+        // first load restores it before reading the control.
+        if (ui._savedGallerySubfolder !== undefined && ui.gallerySubfolderSelect) {
+            if (ui.gallerySubfolderSelect.querySelector(`option[value="${ui._savedGallerySubfolder}"]`)) {
+                ui.gallerySubfolderSelect.value = ui._savedGallerySubfolder;
+                ui._savedGallerySubfolder = undefined;
+            }
+        }
         const subfolder = ui.gallerySubfolderSelect?.value ?? '';
         const sort = ui.gallerySortSelect?.value ?? 'time_desc';
         const limit = parseInt(ui.galleryLimitSelect?.value ?? '30', 10);
@@ -252,15 +267,25 @@ export async function handleGalleryLoad(ui) {
         // Populate subfolder dropdown on first load
         if (ui.gallerySubfolderSelect && Array.isArray(data.subfolders)) {
             const current = ui.gallerySubfolderSelect.value;
-            ui.gallerySubfolderSelect.innerHTML = '<option value="">All Subfolders</option>';
+            ui.gallerySubfolderSelect.innerHTML = '<option value="">All subfolders</option>';
             data.subfolders.forEach(sf => {
                 const opt = document.createElement('option');
                 opt.value = sf;
                 opt.textContent = sf;
                 ui.gallerySubfolderSelect.appendChild(opt);
             });
-            if (Array.from(ui.gallerySubfolderSelect.options).some(o => o.value === current)) {
-                ui.gallerySubfolderSelect.value = current;
+            const restore = ui._savedGallerySubfolder !== undefined ? ui._savedGallerySubfolder : current;
+            if (Array.from(ui.gallerySubfolderSelect.options).some(o => o.value === restore)) {
+                ui.gallerySubfolderSelect.value = restore;
+            }
+            if (ui._savedGallerySubfolder !== undefined) {
+                ui._savedGallerySubfolder = undefined;
+                // The first request used the default subfolder; reload if the
+                // restored one differs so the view matches the control.
+                if (ui.gallerySubfolderSelect.value !== subfolder) {
+                    ui._galleryPage = 1;
+                    return handleGalleryLoad(ui);
+                }
             }
         }
 
@@ -272,16 +297,25 @@ export async function handleGalleryLoad(ui) {
         renderGalleryGrid(ui, data.images);
         renderGalleryPagination(ui, data.page, data.total_pages, data.total, data.images.length);
 
-        if (countEl) {
-            countEl.textContent = data.total === 0
-                ? 'No images found'
-                : `${data.total} image${data.total !== 1 ? 's' : ''}`;
-        }
+        _renderGalleryCount(ui);
 
     } catch (err) {
         console.error("[Civicomfy] Failed to load gallery:", err);
-        grid.innerHTML = `<p style="padding:20px;color:var(--cfy-danger);">Failed to load images: ${err.message}</p>`;
+        grid.innerHTML = `<p class="civitai-empty-state civitai-empty-state--error"><i class="fas fa-exclamation-triangle"></i> Failed to load images: ${err.message}</p>`;
     }
+}
+
+// ---- Count label ----
+
+function _renderGalleryCount(ui) {
+    const countEl = ui.galleryCountEl;
+    if (!countEl) return;
+    const total = Number.isFinite(ui._galleryTotal) ? ui._galleryTotal : (ui._galleryImages || []).length;
+    if (total === 0) { countEl.textContent = 'No images found'; return; }
+    const shown = (ui._galleryImages || []).length;
+    countEl.textContent = shown < total
+        ? `${shown} of ${total} images`
+        : `${total} image${total !== 1 ? 's' : ''}`;
 }
 
 // ---- Lazy-load observer (one per grid instance) ----
@@ -321,7 +355,7 @@ export function renderGalleryGrid(ui, images) {
     grid.style.setProperty('--cfy-gallery-card-w', `${cardSize}px`);
 
     if (!images || images.length === 0) {
-        grid.innerHTML = '<p style="padding:20px;color:var(--cfy-text-dim);">No output images found.</p>';
+        grid.innerHTML = '<p class="civitai-empty-state"><i class="fas fa-images"></i> No images in your ComfyUI output folder yet.</p>';
         return;
     }
 
@@ -529,6 +563,7 @@ export async function deleteGalleryImage(ui, img, cardEl) {
                 i => i.filename === img.filename && (i.subfolder ?? '') === (img.subfolder ?? '')
             );
             if (idx !== -1) ui._galleryImages.splice(idx, 1);
+            if (Number.isFinite(ui._galleryTotal)) ui._galleryTotal = Math.max(0, ui._galleryTotal - 1);
 
             if (cardEl) {
                 cardEl.style.transition = 'opacity 0.3s, transform 0.3s';
@@ -536,11 +571,7 @@ export async function deleteGalleryImage(ui, img, cardEl) {
                 cardEl.style.transform = 'scale(0.85)';
                 setTimeout(() => {
                     cardEl.remove();
-                    const countEl = ui.galleryCountEl;
-                    if (countEl && ui._galleryImages) {
-                        const total = ui._galleryImages.length;
-                        countEl.textContent = total === 0 ? 'No images found' : `${total} image${total !== 1 ? 's' : ''}`;
-                    }
+                    _renderGalleryCount(ui);
                 }, 300);
             }
 
@@ -581,7 +612,7 @@ export async function deleteSelectedGallery(ui) {
         const errors = result?.errors ?? [];
         if (errors.length > 0) {
             console.warn('[Civicomfy] Batch delete errors:', errors);
-            if (ui.feedback) ui.feedback.show(`${errors.length} file(s) could not be deleted.`, 'warn');
+            if (ui.feedback) ui.feedback.show(`${errors.length} file(s) could not be deleted.`, 'warning');
         }
     } catch (err) {
         console.error('[Civicomfy] deleteSelectedGallery error:', err);

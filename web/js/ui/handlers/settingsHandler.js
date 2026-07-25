@@ -359,6 +359,56 @@ export function loadBrowseSettings(ui) {
     }
 }
 
+// --- Gallery Tab Persistence ---
+// The Gallery toolbar used to be the only one that forgot its state between
+// sessions, which made the three library views behave inconsistently.
+const GALLERY_SETTINGS_COOKIE = 'civitaiGallerySettings';
+
+export function saveGallerySettings(ui) {
+    try {
+        const data = {
+            sort: ui.gallerySortSelect?.value || 'time_desc',
+            limit: parseInt(ui.galleryLimitSelect?.value, 10) || 30,
+            subfolder: ui.gallerySubfolderSelect?.value || '',
+            cardSize: parseInt(ui.galleryCardSizeSlider?.value, 10) || 148,
+        };
+        setCookie(GALLERY_SETTINGS_COOKIE, JSON.stringify(data), 365);
+    } catch (e) {
+        console.error('[Civicomfy] Failed to save Gallery settings:', e);
+    }
+}
+
+export function loadGallerySettings(ui) {
+    try {
+        const cookieValue = getCookie(GALLERY_SETTINGS_COOKIE);
+        if (!cookieValue) return;
+        const data = JSON.parse(cookieValue);
+
+        if (data.sort && ui.gallerySortSelect
+            && ui.gallerySortSelect.querySelector(`option[value="${data.sort}"]`)) {
+            ui.gallerySortSelect.value = data.sort;
+        }
+        if (data.limit && ui.galleryLimitSelect) {
+            const limitStr = String(data.limit);
+            if (ui.galleryLimitSelect.querySelector(`option[value="${limitStr}"]`)) {
+                ui.galleryLimitSelect.value = limitStr;
+            }
+        }
+        // Subfolder options are only known after the first load, so keep the
+        // saved value around for handleGalleryLoad to restore.
+        if (typeof data.subfolder === 'string') {
+            ui._savedGallerySubfolder = data.subfolder;
+        }
+        if (data.cardSize && ui.galleryCardSizeSlider) {
+            const val = Math.max(100, Math.min(300, Math.round(data.cardSize / 10) * 10));
+            ui.galleryCardSizeSlider.value = val;
+            if (ui.galleryGrid) ui.galleryGrid.style.setProperty('--cfy-gallery-card-w', `${val}px`);
+        }
+    } catch (e) {
+        console.error('[Civicomfy] Failed to load Gallery settings:', e);
+    }
+}
+
 // --- My Models Tab Persistence ---
 const MYMODELS_SETTINGS_COOKIE = 'civitaiMyModelsSettings';
 

@@ -499,17 +499,20 @@ export function modalTemplate(settings = {}) {
         </div>
         </div>
       </div>
-      <!-- Toast Notification Area -->
-      <div id="civitai-toast" class="civitai-toast"></div>
-      <!-- Confirmation Modal -->
-      <div id="civitai-confirm-clear-modal" class="civitai-confirmation-modal">
-        <div class="civitai-confirmation-modal-content">
-          <h4><i class="fas fa-exclamation-triangle"></i> Clear history?</h4>
-          <p>This removes every entry from the download history. It cannot be undone.</p>
-          <div class="civitai-confirmation-modal-actions">
-            <button id="civitai-confirm-clear-no" class="civitai-button secondary">Cancel</button>
-            <button id="civitai-confirm-clear-yes" class="civitai-button danger">Clear history</button>
-          </div>
+    </div>
+    <!-- Toast + confirmation live OUTSIDE .civitai-downloader-modal-content:
+         the backdrop-filter on the wrapper makes it the containing block for
+         fixed positioning, so anything fixed inside the content box gets
+         clipped by its overflow:hidden (toasts were invisible on tall
+         screens). -->
+    <div id="civitai-toast" class="civitai-toast"></div>
+    <div id="civitai-confirm-clear-modal" class="civitai-confirmation-modal">
+      <div class="civitai-confirmation-modal-content">
+        <h4><i class="fas fa-exclamation-triangle"></i> Clear history?</h4>
+        <p>This removes every entry from the download history. It cannot be undone.</p>
+        <div class="civitai-confirmation-modal-actions">
+          <button id="civitai-confirm-clear-no" class="civitai-button secondary">Cancel</button>
+          <button id="civitai-confirm-clear-yes" class="civitai-button danger">Clear history</button>
         </div>
       </div>
     </div>

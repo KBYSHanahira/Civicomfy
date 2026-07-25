@@ -19,7 +19,7 @@ export async function handleMyModelsLoad(ui) {
     const countEl = ui.myModelsCountEl;
     if (!listEl) return;
 
-    listEl.innerHTML = '<p>Loading models...</p>';
+    listEl.innerHTML = '<p class="civitai-empty-state"><i class="fas fa-spinner fa-spin"></i> Scanning your model folders…</p>';
     if (countEl) countEl.textContent = '';
 
     try {
@@ -53,7 +53,7 @@ export async function handleMyModelsLoad(ui) {
 
     } catch (err) {
         console.error("[Civicomfy] Failed to load local models:", err);
-        listEl.innerHTML = `<p class="cfy-preview-error">Failed to load models: ${err.message}</p>`;
+        listEl.innerHTML = `<p class="civitai-empty-state civitai-empty-state--error"><i class="fas fa-exclamation-triangle"></i> Failed to load models: ${err.message}</p>`;
     }
 }
 
@@ -167,7 +167,9 @@ export function renderMyModels(ui) {
     }
 
     if (filtered.length === 0) {
-        listEl.innerHTML = '<p>No models found.</p>';
+        listEl.innerHTML = all.length === 0
+            ? '<p class="civitai-empty-state"><i class="fas fa-layer-group"></i> No models found in your ComfyUI model folders.</p>'
+            : '<p class="civitai-empty-state"><i class="fas fa-filter"></i> No models match the current filters.</p>';
         if (ui.myModelsPaginationContainer) ui.myModelsPaginationContainer.innerHTML = '';
         return;
     }
@@ -249,11 +251,19 @@ function _buildModelRow(model) {
         img.src = `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`;
         img.alt = model.name;
         img.loading = 'lazy';
-        img.onerror = () => { previewWrap.classList.add('no-preview'); img.remove(); };
+        img.onerror = () => {
+            previewWrap.classList.add('no-preview');
+            img.remove();
+            if (!previewWrap.querySelector('.civitai-card-fallback-icon')) {
+                const fallback = document.createElement('i');
+                fallback.className = 'fas fa-image civitai-card-fallback-icon';
+                previewWrap.prepend(fallback);
+            }
+        };
         previewWrap.appendChild(img);
     } else {
         previewWrap.classList.add('no-preview');
-        previewWrap.innerHTML = '<i class="fas fa-image" style="font-size:2em;opacity:0.25;"></i>';
+        previewWrap.innerHTML = '<i class="fas fa-image civitai-card-fallback-icon"></i>';
     }
 
     // Type badge — bottom-left

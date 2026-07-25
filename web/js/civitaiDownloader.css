@@ -818,7 +818,8 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   font-size: 0.94em;
 }
 
-/* Shared empty state for grids/lists */
+/* Shared empty / loading / error state for grids and lists.
+   grid-column spans the whole row so it never renders as one narrow cell. */
 .civitai-empty-state {
   grid-column: 1 / -1;
   display: flex;
@@ -832,9 +833,25 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   background: var(--cfy-fill-1);
   color: var(--cfy-text-dim);
   font-size: 0.88em;
+  line-height: 1.5;
   text-align: center;
+  word-break: break-word;
 }
-.civitai-empty-state i { opacity: 0.5; }
+.civitai-empty-state i { opacity: 0.5; flex-shrink: 0; }
+.civitai-empty-state--error {
+  border-style: solid;
+  border-color: var(--cfy-danger-glow);
+  background: var(--cfy-danger-surface);
+  color: var(--cfy-danger-text);
+}
+.civitai-empty-state--error i { opacity: 0.8; }
+
+/* Fallback glyph for cards whose thumbnail failed to load */
+.civitai-card-fallback-icon {
+  font-size: 1.8em;
+  opacity: 0.22;
+  color: var(--cfy-text);
+}
 .civitai-input-btn-group {
   display: flex;
   gap: 6px;
@@ -1821,20 +1838,39 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   text-overflow: ellipsis;
 }
 #civitai-browse-pagination,
-.civitai-mymodels-pagination {
+.civitai-mymodels-pagination,
+.civitai-gallery-pagination {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 6px;
   margin-top: 16px;
   flex-wrap: wrap;
   flex-shrink: 0;
 }
 #civitai-browse-pagination .civitai-button,
-.civitai-mymodels-pagination .civitai-button {
-  min-width: 36px;
+.civitai-mymodels-pagination .civitai-button,
+.civitai-gallery-pagination .civitai-button {
+  min-width: 34px;
   height: 32px;
   font-size: 0.84em;
   padding: 0 10px;
+}
+/* Page counter caption: full-width line under the buttons, not squeezed
+   between them (it had no styling at all before). */
+.civitai-pagination-info {
+  flex-basis: 100%;
+  text-align: center;
+  margin-top: 4px;
+  font-size: 0.76em;
+  color: var(--cfy-text-dim);
+}
+/* Ellipsis separators rendered by the pagination builders */
+#civitai-browse-pagination > span:not(.civitai-pagination-info),
+.civitai-mymodels-pagination > span:not(.civitai-pagination-info) {
+  color: var(--cfy-text-faint);
+  padding: 0 2px;
+  user-select: none;
 }
 
 /* =============================================================
@@ -2571,21 +2607,13 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   flex-direction: column;
   gap: 10px;
 }
-.civitai-download-list > p {
-  font-size: 0.88em;
-  color: var(--cfy-text-dim);
-  margin: 0;
-  padding: 16px;
-  background: var(--cfy-surface);
-  border: 1px dashed var(--cfy-border);
-  border-radius: var(--cfy-radius);
-  text-align: center;
-}
+/* Empty lists use the shared .civitai-empty-state component (see above) so
+   Status matches Browse / My Models / Gallery. */
 .civitai-download-item {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  padding: 12px 14px;
+  padding: 11px 13px;
   border-radius: var(--cfy-radius-lg);
   background: var(--cfy-surface);
   border: 1px solid var(--cfy-border);
@@ -2594,7 +2622,7 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
 .civitai-download-item:hover { border-color: var(--cfy-line-strong); }
 .civitai-thumbnail-container {
   position: relative;
-  width: 76px; height: 106px;
+  width: 64px; height: 90px;
   overflow: hidden;
   border-radius: var(--cfy-radius);
   flex-shrink: 0;
@@ -2640,6 +2668,68 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Title row: name + status pill */
+.civitai-dl-titlerow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.civitai-dl-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.98em;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.civitai-dl-status {
+  flex-shrink: 0;
+  padding: 1px 9px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.civitai-dl-status--active    { background: var(--cfy-accent-dim);   border-color: var(--cfy-accent-glow);  color: var(--cfy-accent); }
+.civitai-dl-status--queued    { background: var(--cfy-fill-2);       border-color: var(--cfy-line);         color: var(--cfy-text-dim); }
+.civitai-dl-status--completed { background: var(--cfy-success-dim);  border-color: var(--cfy-success-glow); color: var(--cfy-success-text); }
+.civitai-dl-status--failed    { background: var(--cfy-danger-dim);   border-color: var(--cfy-danger-glow);  color: var(--cfy-danger-text); }
+.civitai-dl-status--cancelled { background: var(--cfy-fill-1);       border-color: var(--cfy-line);         color: var(--cfy-text-faint); }
+
+/* File facts: one wrapped row of chips */
+.civitai-dl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 1px 0 2px;
+}
+.civitai-dl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 20px;
+  background: var(--cfy-fill-2);
+  border: 1px solid var(--cfy-line);
+  color: var(--cfy-text-dim);
+  font-size: 0.72em;
+  white-space: nowrap;
+}
+.civitai-dl-chip i { opacity: 0.6; font-size: 0.9em; }
+
+/* Progress: bar and percentage on one line */
+.civitai-dl-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+}
+.civitai-dl-progress-row .civitai-progress-container { flex: 1 1 auto; }
 .civitai-download-info p {
   margin: 0;
   font-size: 0.85em;
@@ -2673,9 +2763,13 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   gap: 4px;
 }
 .status-line-simple {
-  font-size: 0.82em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.8em;
   color: var(--cfy-text-dim);
-  margin-top: 2px;
+  margin-top: 3px;
 }
 .civitai-download-actions {
   display: flex;
@@ -2684,12 +2778,6 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   margin-left: auto;
   flex-shrink: 0;
   align-self: center;
-}
-.civitai-progress-header {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 6px;
-  margin-bottom: 2px;
 }
 .civitai-progress-pct {
   font-size: 0.75em;
@@ -3675,6 +3763,9 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
 .civitai-toast.success { background: var(--cfy-success-solid); border-color: var(--cfy-success-glow); }
 .civitai-toast.error   { background: var(--cfy-danger-solid); border-color: var(--cfy-danger-glow); }
 .civitai-toast.info    { background: var(--cfy-info-solid); border-color: var(--cfy-info-line); }
+/* Warning was reachable from code (settings save, duplicate-file notices) but
+   had no rule at all, so it rendered as a plain neutral toast. */
+.civitai-toast.warning { background: rgba(140, 96, 36, 0.96); border-color: var(--cfy-amber-line); }
 
 /* =============================================================
    TOOLTIP

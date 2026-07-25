@@ -542,6 +542,7 @@ export function setupEventListeners(ui) {
     if (ui.gallerySubfolderSelect) {
         ui.gallerySubfolderSelect.addEventListener('change', () => {
             ui._galleryPage = 1;
+            ui.saveGallerySettings();
             ui.handleGalleryLoad();
         });
     }
@@ -549,6 +550,7 @@ export function setupEventListeners(ui) {
     if (ui.gallerySortSelect) {
         ui.gallerySortSelect.addEventListener('change', () => {
             ui._galleryPage = 1;
+            ui.saveGallerySettings();
             ui.handleGalleryLoad();
         });
     }
@@ -556,6 +558,7 @@ export function setupEventListeners(ui) {
     if (ui.galleryLimitSelect) {
         ui.galleryLimitSelect.addEventListener('change', () => {
             ui._galleryPage = 1;
+            ui.saveGallerySettings();
             ui.handleGalleryLoad();
         });
     }
@@ -564,6 +567,7 @@ export function setupEventListeners(ui) {
         ui.galleryCardSizeSlider.addEventListener('input', () => {
             const val = parseInt(ui.galleryCardSizeSlider.value, 10);
             if (ui.galleryGrid) ui.galleryGrid.style.setProperty('--cfy-gallery-card-w', `${val}px`);
+            ui.saveGallerySettings();
         });
     }
 

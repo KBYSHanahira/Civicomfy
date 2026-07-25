@@ -36,8 +36,10 @@ export class Feedback {
       clearTimeout(this.toastTimeout);
       this.toastTimeout = null;
     }
+    const aliases = { warn: 'warning', danger: 'error', fail: 'error', ok: 'success' };
+    const requested = aliases[type] || type;
     const valid = ['info', 'success', 'error', 'warning'];
-    const toastType = valid.includes(type) ? type : 'info';
+    const toastType = valid.includes(requested) ? requested : 'info';
 
     this.toastElement.textContent = message;
     this.toastElement.className = 'civitai-toast';
