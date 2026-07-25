@@ -258,13 +258,15 @@ class DownloadManager:
         """Saves the current in-memory history list to the JSON file."""
         # Assumes self.lock is HELD when this is called
         history_to_save = self.history[:DOWNLOAD_HISTORY_LIMIT] # Ensure limit before saving
+        # Bound before the try: the error handler below inspects it, and raising a
+        # NameError there would kill the queue thread that called us.
+        temp_file_path = HISTORY_FILE_PATH + ".tmp"
 
         try:
             # Ensure directory exists (should already, but belt-and-suspenders)
             os.makedirs(os.path.dirname(HISTORY_FILE_PATH), exist_ok=True)
 
             # Write atomically (write to temp then rename) to reduce corruption risk
-            temp_file_path = HISTORY_FILE_PATH + ".tmp"
             with open(temp_file_path, 'w', encoding='utf-8') as f:
                 json.dump(history_to_save, f, indent=2, ensure_ascii=False) # Pretty print
 
@@ -626,13 +628,21 @@ class DownloadManager:
                 known_size=download_info.get("known_size")
             )
 
+            # NOTE: never call _update_download_status() while holding self.lock;
+            # it acquires the same non-reentrant lock and would deadlock the manager.
+            cancelled_before_start = False
             with self.lock:
                   if download_id not in self.active_downloads or self.active_downloads[download_id]["status"] == "cancelled":
-                       print(f"[Downloader Wrapper {download_id}] Download was cancelled before instance could be fully linked/started.")
-                       self._update_download_status(download_id, status="cancelled", error="Cancelled before start")
-                       return
+                       cancelled_before_start = True
+                  else:
+                       self.active_downloads[download_id]["downloader_instance"] = downloader
 
-                  self.active_downloads[download_id]["downloader_instance"] = downloader
+            if cancelled_before_start:
+                 print(f"[Downloader Wrapper {download_id}] Download was cancelled before instance could be fully linked/started.")
+                 # Let the finally block publish the terminal status (outside the lock).
+                 final_status = "cancelled"
+                 error_msg = "Cancelled before start"
+                 return
 
             self._update_download_status(download_id, status="downloading")
             print(f"[Downloader Wrapper {download_id}] Starting download process for '{filename}'.")
@@ -649,7 +659,7 @@ class DownloadManager:
                 except Exception as meta_err:
                      print(f"[Downloader Wrapper {download_id}] Error during post-download metadata/preview saving: {meta_err}")
 
-            elif downloader.is_cancelled:
+            elif downloader.cancelled_by_user:
                 final_status = "cancelled"
                 error_msg = downloader.error or "Download cancelled"
                 print(f"[Downloader Wrapper {download_id}] Download cancelled for '{filename}'. Reason: {error_msg}")
@@ -666,7 +676,8 @@ class DownloadManager:
             final_status = "failed"
             error_msg = f"Unexpected wrapper error: {str(e)}"
             if downloader and not downloader.is_cancelled:
-                try: downloader.cancel()
+                # abort(), not cancel(): this is a failure, not a user cancellation.
+                try: downloader.abort(error_msg)
                 except: pass
 
         finally:

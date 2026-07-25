@@ -56,6 +56,9 @@ class ChunkDownloader:
         self.threads = []
         self.lock = threading.Lock()
         self.cancel_event = threading.Event()
+        # True only when the *user* asked to stop; internal aborts (network
+        # failures, bad ranges) also set cancel_event but must stay 'failed'.
+        self.cancelled_by_user = False
         self.part_files = []
         
         # Performance tracking
@@ -79,13 +82,26 @@ class ChunkDownloader:
         return self.cancel_event.is_set()
 
     def cancel(self):
-        """Signal the download to cancel."""
+        """Signal the download to cancel (user-initiated)."""
         if not self.is_cancelled:
             print(f"[Downloader {self.download_id or 'N/A'}] Cancellation requested by user.")
+            self.cancelled_by_user = True
             self.cancel_event.set()
             self.error = "Download cancelled by user"
             if self.manager and self.download_id:
                 self.manager._update_download_status(self.download_id, status="cancelled", error=self.error)
+
+    def abort(self, reason: str):
+        """Stop all worker threads because of a failure, preserving the cause.
+
+        Unlike cancel() this never claims the user stopped the download, so the
+        original error message survives all the way to the UI.
+        """
+        if not self.error:
+            self.error = reason
+        if not self.is_cancelled:
+            print(f"[Downloader {self.download_id or 'N/A'}] Aborting download: {self.error}")
+            self.cancel_event.set()
 
     def _cleanup_temp(self, success: bool):
         """Remove temporary directory and potentially the output file."""
@@ -182,6 +198,20 @@ class ChunkDownloader:
                         status="downloading"
                     )
 
+    def _rewind_progress(self, byte_count: int):
+        """Un-count bytes from an attempt that is about to be retried.
+
+        A retried segment rewrites its part file from scratch, so leaving the
+        failed attempt's bytes in self.downloaded would inflate the total and
+        make the final size check reject an otherwise perfect download.
+        """
+        if byte_count <= 0:
+            return
+        with self.lock:
+            self.downloaded = max(0, self.downloaded - byte_count)
+            if self._last_downloaded_bytes > self.downloaded:
+                self._last_downloaded_bytes = self.downloaded
+
     def download_segment(self, segment_index: int, start_byte: int, end_byte: int):
         """Downloads a specific segment of the file."""
         part_file_path = self.temp_dir / f"part_{segment_index}"
@@ -196,11 +226,11 @@ class ChunkDownloader:
                 return 
                 
             response = None
+            bytes_written_this_segment = 0
             try:
                 response = requests.get(self.url, headers=request_headers, stream=True, timeout=self.DOWNLOAD_TIMEOUT)
                 response.raise_for_status()
 
-                bytes_written_this_segment = 0
                 with open(part_file_path, 'wb') as f:
                     for chunk in response.iter_content(self.chunk_size):
                         if self.is_cancelled:
@@ -227,36 +257,37 @@ class ChunkDownloader:
 
             
             except (requests.exceptions.RequestException, ValueError) as e:
+                # This attempt's bytes are discarded when the part file is rewritten.
+                self._rewind_progress(bytes_written_this_segment)
+
                 # Handle HTTP status codes
                 status_code = None
                 error_msg_detail = f"{e}"
-                
+
                 if isinstance(e, requests.exceptions.RequestException) and hasattr(e, 'response') and e.response is not None:
                     status_code = e.response.status_code
-                    if status_code == 401: 
+                    if status_code == 401:
                         error_msg_detail += " (Unauthorized)"
-                    elif status_code == 403: 
+                    elif status_code == 403:
                         error_msg_detail += " (Forbidden)"
                     elif status_code == 416:
                         error_msg_detail += " (Range Not Satisfiable)"
-                        self.error = f"Segment {segment_index} failed: {error_msg_detail}"
-                        self.cancel()
+                        self.abort(f"Segment {segment_index} failed: {error_msg_detail}")
                         return
 
                 print(f"[Downloader {self.download_id}] Warning: Segment {segment_index} failed (Try {current_try+1}/{retries}): {error_msg_detail}")
-                
+
                 if current_try >= retries - 1:  # Last attempt failed
-                    self.error = f"Segment {segment_index} failed after {retries} attempts: {error_msg_detail}"
-                    self.cancel()
+                    self.abort(f"Segment {segment_index} failed after {retries} attempts: {error_msg_detail}")
                     return
-                    
+
                 # Exponential backoff before retry
                 time.sleep(min(2 ** current_try, 10))
-                
+
             except Exception as e:
-                self.error = f"Segment {segment_index} critical error: {e}"
+                self._rewind_progress(bytes_written_this_segment)
+                self.abort(f"Segment {segment_index} critical error: {e}")
                 print(f"[Downloader {self.download_id}] Error: {self.error}")
-                self.cancel()
                 return
                 
             finally:
@@ -455,19 +486,15 @@ class ChunkDownloader:
             traceback.print_exc()
             print("--- End Error ---")
             
-            if not self.error:
-                self.error = f"Unexpected download error: {str(e)}"
-            
             success = False
-            if not self.is_cancelled: 
-                self.cancel()
+            self.abort(f"Unexpected download error: {str(e)}")
 
         finally:
             # Cleanup and final status update
             self._cleanup_temp(success=success and not self.is_cancelled and not self.error)
 
             if self.manager and self.download_id:
-                final_status = "completed" if success else ("cancelled" if self.is_cancelled else "failed")
+                final_status = "completed" if success else ("cancelled" if self.cancelled_by_user else "failed")
                 final_progress = 100.0 if success else ((self.downloaded / self.total_size * 100) if self.total_size > 0 else 0)
                 
                 self.manager._update_download_status(
@@ -561,7 +588,8 @@ class ChunkDownloader:
 
         # Handle download completion
         if self.is_cancelled:
-            print(f"[Downloader {self.download_id}] Download stopped (cancelled).")
+            reason = "cancelled" if self.cancelled_by_user else f"aborted: {self.error}"
+            print(f"[Downloader {self.download_id}] Download stopped ({reason}).")
             self.error = self.error or "Download cancelled."
             return False
         elif self.error:
