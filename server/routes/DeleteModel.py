@@ -6,6 +6,7 @@ import json
 from aiohttp import web
 import server
 import folder_paths
+from ...config import METADATA_SUFFIX, PREVIEW_SUFFIX
 
 prompt_server = server.PromptServer.instance
 
@@ -42,7 +43,26 @@ async def route_delete_model(request):
 
         os.remove(target)
         print(f"[Civicomfy] Deleted model file: {target}")
-        return web.json_response({"success": True, "deleted": rel_path})
+
+        # Remove the sidecars we wrote next to it, otherwise the .cminfo.json and
+        # .preview.jpeg outlive the model: they keep taking up space and get
+        # picked up again by anything later named the same in that folder.
+        base_no_ext = os.path.splitext(target)[0]
+        removed_sidecars = []
+        for suffix in (METADATA_SUFFIX, PREVIEW_SUFFIX):
+            sidecar = base_no_ext + suffix
+            if os.path.isfile(sidecar):
+                try:
+                    os.remove(sidecar)
+                    removed_sidecars.append(os.path.basename(sidecar))
+                except OSError as e:
+                    print(f"[Civicomfy] Could not delete sidecar {sidecar}: {e}")
+
+        return web.json_response({
+            "success": True,
+            "deleted": rel_path,
+            "deleted_sidecars": removed_sidecars,
+        })
 
     except json.JSONDecodeError:
         return web.json_response({"error": "Invalid JSON body"}, status=400)

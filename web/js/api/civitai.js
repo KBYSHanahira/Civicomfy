@@ -25,8 +25,12 @@ export class CivitaiDownloaderAPI {
             details: String(detailText).substring(0, 500),
           };
         }
-        const err = new Error(errorData.error || errorData.reason || `HTTP Error: ${status} ${statusText}`);
-        err.details = errorData.details || errorData.detail || errorData.error || "No details provided.";
+        const err = new Error(errorData.error || errorData.reason || errorData.message || `HTTP Error: ${status} ${statusText}`);
+        // 'message' is last in the chain but must be there: several endpoints
+        // describe a non-OK outcome with only that field, and dropping it left
+        // the user with a bare "No details provided.".
+        err.details = errorData.details || errorData.detail || errorData.error || errorData.message
+          || `HTTP ${status} ${statusText || ""}`.trim();
         err.status = status;
         throw err;
       }

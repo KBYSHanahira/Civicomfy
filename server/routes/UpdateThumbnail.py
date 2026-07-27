@@ -129,45 +129,12 @@ def _collect_models(models_dir, model_types, force_redownload):
     return results
 
 
-@prompt_server.routes.post("/civitai/update_thumbnails")
-async def route_update_thumbnails(request):
+async def _resolve_missing_urls(models, api, loop):
+    """Fill in thumb_url for entries that only have a Civitai id.
+
+    Runs inside the tracked progress window (see maint_reset in the route) so
+    the panel keeps updating and Stop is honoured during the lookups.
     """
-    POST /civitai/update_thumbnails
-    Body: {
-        "model_types": ["checkpoint", "lora", ...],
-        "force_redownload": false,
-        "api_key": "..."
-    }
-    Downloads missing (or all when force=true) preview thumbnails for local models.
-    """
-    try:
-        data = await request.json()
-    except Exception:
-        data = {}
-
-    model_types = data.get('model_types', [])
-    force_redownload = bool(data.get('force_redownload', False))
-    api_key = data.get('api_key', '')
-
-    models_dir = _get_models_dir()
-    if not os.path.isdir(models_dir):
-        return web.json_response({'success': False, 'error': 'Models directory not found'}, status=500)
-
-    models = _collect_models(models_dir, model_types, force_redownload)
-    if not models:
-        return web.json_response({
-            'success': True,
-            'total': 0,
-            'downloaded': 0,
-            'skipped': 0,
-            'failed': 0,
-            'message': 'No models needing thumbnail updates found.',
-        })
-
-    api = CivitaiAPI(api_key or None)
-    loop = asyncio.get_event_loop()
-
-    # Resolve missing thumbnail URLs via Civitai API first
     for entry in models:
         if entry['thumb_url']:
             continue
@@ -218,11 +185,57 @@ async def route_update_thumbnails(request):
         except Exception as e:
             print(f"[UpdateThumbnail] Failed to resolve URL for {entry['filename']}: {e}")
 
+
+@prompt_server.routes.post("/civitai/update_thumbnails")
+async def route_update_thumbnails(request):
+    """
+    POST /civitai/update_thumbnails
+    Body: {
+        "model_types": ["checkpoint", "lora", ...],
+        "force_redownload": false,
+        "api_key": "..."
+    }
+    Downloads missing (or all when force=true) preview thumbnails for local models.
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    model_types = data.get('model_types', [])
+    force_redownload = bool(data.get('force_redownload', False))
+    api_key = data.get('api_key', '')
+
+    models_dir = _get_models_dir()
+    if not os.path.isdir(models_dir):
+        return web.json_response({'success': False, 'error': 'Models directory not found'}, status=500)
+
+    models = _collect_models(models_dir, model_types, force_redownload)
+    if not models:
+        return web.json_response({
+            'success': True,
+            'total': 0,
+            'downloaded': 0,
+            'skipped': 0,
+            'failed': 0,
+            'message': 'No models needing thumbnail updates found.',
+        })
+
+    api = CivitaiAPI(api_key or None)
+    loop = asyncio.get_event_loop()
+
     downloaded = 0
     skipped = 0
     failed = 0
     errors = []
     total = len(models)
+    stopped = False
+
+    # Reset up front rather than between the two phases. Resolving URLs costs
+    # up to two API calls per model, and doing it before the reset meant the
+    # progress state was inactive throughout (panel frozen at "0/?"), while a
+    # Stop pressed during it was wiped by the reset that followed - so every
+    # download ran anyway.
     maint_reset('thumbnails', total)
 
     # Download thumbnails using aiohttp async session
@@ -233,6 +246,8 @@ async def route_update_thumbnails(request):
     connector = aiohttp_lib.TCPConnector(limit=4)
     i = 0
     try:
+        await _resolve_missing_urls(models, api, loop)
+
         async with aiohttp_lib.ClientSession(connector=connector, headers=headers) as session:
             for i, entry in enumerate(models):
                 # --- Stop check ---
@@ -273,12 +288,17 @@ async def route_update_thumbnails(request):
                         failed += 1
                         errors.append(f"{entry['filename']}: {err}")
                 maint_update(i + 1, downloaded, skipped, failed)
+
+        # Must be read before the finally block: maint_finish() clears the flag,
+        # so reading it afterwards always yielded False and the caller was told
+        # "Done." however early the user stopped the run.
+        stopped = is_stop_requested()
     finally:
         maint_finish()
 
-    stopped = is_stop_requested()
+    processed = downloaded + skipped + failed
     message = (
-        f"Stopped at {i + 1}/{total}. Downloaded {downloaded} thumbnails."
+        f"Stopped at {processed}/{total}. Downloaded {downloaded} thumbnails."
         if stopped
         else f"Done. Downloaded {downloaded} thumbnails, {skipped} skipped, {failed} failed."
     )

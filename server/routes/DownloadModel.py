@@ -361,7 +361,11 @@ async def route_download_model(request):
                  # If sizes differ, report mismatch.
                  exist_reason = f"size differs (Local: {local_size} bytes, API: {api_size_bytes} bytes)" if api_size_bytes > 0 else "local file exists but API size was unknown"
                  print(f"[Server Download] File already exists but {exist_reason}. Path: {output_path}.")
-                 # Return a distinct status code or message?
+                 # HTTP 200 on purpose: this is an outcome the UI handles by name
+                 # (like the three sibling 'exists*' responses), not a transport
+                 # error. Returning 409 made the API client throw before the
+                 # handler could read 'status', so the user only saw a generic
+                 # "Download failed: No details provided." toast.
                  return web.json_response({
                      "status": "exists_size_mismatch",
                      "message": f"File already exists but {exist_reason}. Use 'Force Re-download' to overwrite.",
@@ -369,7 +373,7 @@ async def route_download_model(request):
                      "filename": final_filename,
                      "local_size": local_size,
                      "api_size_kb": api_size_kb,
-                 }, status=409) # Use 409 Conflict status
+                 })
 
         # If force_redownload is true, log it
         if file_exists and force_redownload:

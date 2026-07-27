@@ -192,6 +192,7 @@ async def route_refresh_model_info(request):
     loop = asyncio.get_event_loop()
     total = len(models)
     maint_reset('refresh', total)
+    stopped = False
 
     try:
         for i, entry in enumerate(models):
@@ -282,12 +283,17 @@ async def route_refresh_model_info(request):
                 failed += 1
 
             maint_update(i + 1, updated, skipped, failed)
+
+        # Read the flag before the finally block: maint_finish() clears it, so
+        # reading it afterwards always said False and the caller was told
+        # "Done." no matter how early the user stopped the run.
+        stopped = is_stop_requested()
     finally:
         maint_finish()
 
-    stopped = is_stop_requested()
+    processed = updated + skipped + failed
     message = (
-        f"Stopped at {i + 1}/{total}. Updated {updated} models."
+        f"Stopped at {processed}/{total}. Updated {updated} models."
         if stopped
         else f"Done. Updated {updated}/{total} models."
     )

@@ -289,6 +289,16 @@ export async function handleGalleryLoad(ui) {
             }
         }
 
+        // Deleting the last image on the last page leaves the page index past
+        // the end of the collection, and the server rightly answers with an
+        // empty slice. Drop back to the new last page instead of showing an
+        // empty grid over hundreds of remaining images. Terminates: the retry
+        // requests a page that exists.
+        if (data.images.length === 0 && data.total > 0 && page > data.total_pages) {
+            ui._galleryPage = Math.max(1, data.total_pages);
+            return handleGalleryLoad(ui);
+        }
+
         // Store images for lightbox navigation
         ui._galleryImages = data.images;
         ui._galleryTotal = data.total;
@@ -572,6 +582,11 @@ export async function deleteGalleryImage(ui, img, cardEl) {
                 setTimeout(() => {
                     cardEl.remove();
                     _renderGalleryCount(ui);
+                    // Emptying the page while images remain elsewhere: reload so
+                    // the view falls back to a page that still has content.
+                    if ((ui._galleryImages || []).length === 0 && ui._galleryTotal > 0) {
+                        handleGalleryLoad(ui);
+                    }
                 }, 300);
             }
 
