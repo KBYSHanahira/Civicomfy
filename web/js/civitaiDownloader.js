@@ -1,6 +1,7 @@
 import { app } from "../../../scripts/app.js";
 import { addCssLink } from "./utils/dom.js";
 import { CivitaiDownloaderUI } from "./ui/UI.js";
+import { Dialog } from "./ui/dialog.js";
 import { showModelDetailModal } from "./ui/handlers/myModelsHandler.js";
 
 console.log("Loading Civicomfy UI...");
@@ -78,7 +79,13 @@ function addMenuButton() {
             window.civitaiDownloaderUI.openModal();
         } else {
             console.error(`[${EXTENSION_NAME}] Cannot open modal: UI instance not available.`);
-            alert("Civicomfy failed to initialize. Please check the browser console for errors.");
+            // The UI never came up, so there is no ui.dialog to borrow: mount a
+            // standalone one on the page (the stylesheet is already loaded).
+            new Dialog(() => document.body).alert({
+                title: 'Civicomfy failed to initialize',
+                message: 'The plugin could not start. Check the browser console for the underlying error.',
+                tone: 'error',
+            });
         }
     };
 

@@ -1,4 +1,5 @@
 import { Feedback } from "./feedback.js";
+import { Dialog } from "./dialog.js";
 import { setupEventListeners } from "./handlers/eventListeners.js";
 import { handleDownloadSubmit, fetchAndDisplayDownloadPreview, debounceFetchDownloadPreview } from "./handlers/downloadHandler.js";
 import { handleBrowseLoad } from "./handlers/browseHandler.js";
@@ -41,8 +42,11 @@ export class CivitaiDownloaderUI {
         this.updateStatus();
         this.buildModalHTML();
         this.cacheDOMElements();
+        // The dialog mounts lazily, so it must exist before any listener can ask
+        // for a confirmation.
+        this.dialog = new Dialog(() => this.modal);
         this.setupEventListeners();
-        this.feedback = new Feedback(this.modal.querySelector('#civitai-toast'));
+        this.feedback = new Feedback(this.modal.querySelector('#civitai-toast'), this.dialog);
         // Ensure icon stylesheet is loaded so buttons render icons immediately
         this.ensureFontAwesome();
         // Theme is a browser-local preference, applied before the modal is shown.
@@ -112,9 +116,6 @@ export class CivitaiDownloaderUI {
         this.statusIndicator = this.modal.querySelector('#civitai-status-indicator');
         this.activeCountSpan = this.modal.querySelector('#civitai-active-count');
         this.clearHistoryButton = this.modal.querySelector('#civitai-clear-history-button');
-        this.confirmClearModal = this.modal.querySelector('#civitai-confirm-clear-modal');
-        this.confirmClearYesButton = this.modal.querySelector('#civitai-confirm-clear-yes');
-        this.confirmClearNoButton = this.modal.querySelector('#civitai-confirm-clear-no');
 
         // Settings Tab
         this.settingsForm = this.modal.querySelector('#civitai-settings-form');
@@ -699,9 +700,14 @@ export class CivitaiDownloaderUI {
         }
     }
 
-    showToast(message, type = 'info', duration = 3000) {
-        this.feedback?.show(message, type, duration);
+    showToast(message, type = 'info', duration = 3000, options) {
+        this.feedback?.show(message, type, duration, options);
     }
+
+    // --- In-app dialogs (replacing window.confirm / alert / prompt) ---
+    showConfirm = (options) => this.dialog.confirm(options);
+    showAlert = (options) => this.dialog.alert(options);
+    showPrompt = (options) => this.dialog.prompt(options);
 
     ensureFontAwesome() {
         this.feedback?.ensureFontAwesome();

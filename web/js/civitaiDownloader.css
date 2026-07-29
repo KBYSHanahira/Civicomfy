@@ -3694,47 +3694,88 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
 }
 
 /* =============================================================
-   CONFIRMATION MODAL
+   DIALOG (confirm / alert / prompt — see ui/dialog.js)
+   Replaces window.confirm/alert/prompt, which render browser chrome we do
+   not control and ignore the theme entirely.
    ============================================================= */
-.civitai-confirmation-modal {
+.civitai-dialog {
   display: none;
   position: fixed;
-  z-index: 1010;
   inset: 0;
-  background: rgba(0,0,0,0.65);
+  /* Above the gallery lightbox (9000): deleting an image is confirmed from it. */
+  z-index: 9600;
+  background: rgba(0,0,0,0.62);
+  backdrop-filter: blur(2px);
   justify-content: center;
   align-items: center;
+  font-family: var(--cfy-font);
 }
-.civitai-confirmation-modal-content {
-  background: var(--cfy-bg);
-  padding: 24px 28px;
-  border: 1px solid rgba(92,138,255,0.25);
-  border-radius: var(--cfy-radius-lg);
-  width: 80%;
-  max-width: 420px;
-  box-shadow: var(--cfy-shadow-lg);
+.civitai-dialog.open { display: flex; }
+
+.civitai-dialog-panel {
+  background: var(--cfy-panel);
   color: var(--cfy-text);
+  padding: 22px 24px 18px;
+  border: 1px solid var(--cfy-border);
+  border-top: 3px solid var(--cfy-border);
+  border-radius: var(--cfy-radius-lg);
+  width: 100%;
+  max-width: 440px;
+  margin: 16px;
+  box-shadow: var(--cfy-shadow-lg);
+  animation: cfy-modal-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.civitai-confirmation-modal-content h4 {
-  margin: 0 0 12px;
-  border-bottom: 1px solid var(--cfy-border);
-  padding-bottom: 10px;
+.civitai-dialog-panel--question { border-top-color: var(--cfy-accent); }
+.civitai-dialog-panel--info     { border-top-color: var(--cfy-info-line); }
+.civitai-dialog-panel--success  { border-top-color: var(--cfy-success-glow); }
+.civitai-dialog-panel--warning  { border-top-color: var(--cfy-amber-line); }
+.civitai-dialog-panel--error    { border-top-color: var(--cfy-danger-glow); }
+
+.civitai-dialog-title {
+  margin: 0 0 10px;
+  font-size: 1.05em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
+  line-height: 1.35;
 }
-.civitai-confirmation-modal-content p {
-  margin-bottom: 24px;
+.civitai-dialog-panel--question .civitai-dialog-title i { color: var(--cfy-accent); }
+.civitai-dialog-panel--info     .civitai-dialog-title i { color: var(--cfy-info-solid); }
+.civitai-dialog-panel--success  .civitai-dialog-title i { color: var(--cfy-success-solid); }
+.civitai-dialog-panel--warning  .civitai-dialog-title i { color: var(--cfy-amber-line); }
+.civitai-dialog-panel--error    .civitai-dialog-title i { color: var(--cfy-danger-solid); }
+
+.civitai-dialog-message {
+  margin: 0 0 18px;
   line-height: 1.6;
-  font-size: 0.95em;
+  font-size: 0.92em;
   color: var(--cfy-text-dim);
+  /* Messages are set with textContent and may contain newlines. */
+  white-space: pre-line;
+  /* Long filenames and server errors must not widen the panel. */
+  overflow-wrap: anywhere;
+  max-height: 46vh;
+  overflow-y: auto;
 }
-.civitai-confirmation-modal-actions {
+
+/* Layout only — appearance comes from the shared .civitai-input rules. */
+.civitai-dialog-input { margin: 0 0 18px; }
+
+.civitai-dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
-.civitai-confirmation-modal-actions .civitai-button { min-width: 90px; }
+.civitai-dialog-actions .civitai-button { min-width: 92px; }
+.civitai-dialog-actions .civitai-button:focus-visible {
+  outline: 2px solid var(--cfy-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .civitai-dialog-actions { flex-direction: column-reverse; }
+  .civitai-dialog-actions .civitai-button { width: 100%; }
+}
 
 /* =============================================================
    TOAST

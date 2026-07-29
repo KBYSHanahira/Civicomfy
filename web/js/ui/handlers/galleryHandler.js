@@ -555,7 +555,13 @@ export function updateGallerySelectionBar(ui) {
 
 export async function deleteGalleryImage(ui, img, cardEl) {
     const name = img.subfolder ? `${img.subfolder}/${img.filename}` : img.filename;
-    if (!confirm(`Delete "${name}"?\n\nThis cannot be undone.`)) return;
+    const ok = await ui.showConfirm({
+        title: 'Delete image?',
+        message: `"${name}" will be removed from the output folder. This cannot be undone.`,
+        tone: 'warning',
+        confirmLabel: 'Delete',
+    });
+    if (!ok) return;
 
     try {
         const result = await CivitaiDownloaderAPI.deleteOutputImages([
@@ -607,7 +613,13 @@ export async function deleteSelectedGallery(ui) {
     const count = ui._gallerySelected ? ui._gallerySelected.size : 0;
     if (count === 0) return;
 
-    if (!confirm(`Delete ${count} selected image${count !== 1 ? 's' : ''}?\n\nThis cannot be undone.`)) return;
+    const ok = await ui.showConfirm({
+        title: `Delete ${count} image${count !== 1 ? 's' : ''}?`,
+        message: `${count} selected image${count !== 1 ? 's' : ''} will be removed from the output folder. This cannot be undone.`,
+        tone: 'warning',
+        confirmLabel: `Delete ${count}`,
+    });
+    if (!ok) return;
 
     const images = _resolveSelectedImages(ui);
     if (images.length === 0) return;

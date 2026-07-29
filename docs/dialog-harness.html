@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Civicomfy — dialog harness</title>
+  <link rel="stylesheet" href="../web/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="../web/js/civitaiDownloader.css">
+  <style>
+    html, body { margin: 0; min-height: 100%; font-family: system-ui, sans-serif; }
+    body { background: #211f1e; color: #eee; padding: 24px; }
+    body.cfy-theme-light { background: #d9d5c9; color: #222; }
+    #log { margin-top: 18px; font: 12px/1.7 ui-monospace, monospace; white-space: pre-wrap; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    button.h { padding: 7px 12px; cursor: pointer; }
+  </style>
+</head>
+<body>
+<h3>Dialog harness <small>(ui/dialog.js)</small></h3>
+<div class="row">
+  <button class="h" id="b-confirm">confirm (warning)</button>
+  <button class="h" id="b-alert">alert (error)</button>
+  <button class="h" id="b-prompt">prompt</button>
+  <button class="h" id="b-long">long message + long word</button>
+  <button class="h" id="b-queue">queue 3 alerts</button>
+  <button class="h" id="b-dupe">3 identical alerts</button>
+  <button class="h" id="b-toast">toast via Feedback (success)</button>
+  <button class="h" id="b-feedback-error">Feedback error → should be modal</button>
+  <button class="h" id="b-theme">toggle theme</button>
+</div>
+<div id="log">ready.</div>
+
+<script type="module">
+import { Dialog } from '../web/js/ui/dialog.js';
+import { Feedback } from '../web/js/ui/feedback.js';
+
+const params = new URLSearchParams(location.hash.slice(1));
+if (params.get('theme') === 'light') document.body.classList.add('cfy-theme-light');
+
+// Mount like the real UI does: a sibling of the content box inside the wrapper.
+const wrapper = document.createElement('div');
+wrapper.className = 'civitai-downloader-modal open';
+wrapper.style.cssText = 'position:static;background:none;backdrop-filter:none;opacity:1;visibility:visible;';
+const toastEl = document.createElement('div');
+toastEl.id = 'civitai-toast';
+toastEl.className = 'civitai-toast';
+wrapper.appendChild(toastEl);
+document.body.appendChild(wrapper);
+
+const dialog = new Dialog(() => wrapper);
+const feedback = new Feedback(toastEl, dialog);
+const log = (m) => { document.getElementById('log').textContent += `\n${m}`; };
+window.__dialog = dialog;
+window.__feedback = feedback;
+window.__log = log;
+
+document.getElementById('b-confirm').onclick = async () => {
+  log(`confirm -> ${await dialog.confirm({
+    title: 'Delete model?',
+    message: '"Chise Umenomori - Mayoi Neko Overrun.safetensors" will be permanently removed from disk, along with its Civicomfy metadata and preview image.',
+    tone: 'warning', confirmLabel: 'Delete',
+  })}`);
+};
+document.getElementById('b-alert').onclick = async () => {
+  await dialog.alert({ title: 'Something went wrong', message: 'Download failed: HTTP 401 (Unauthorized - Check API Key?)', tone: 'error' });
+  log('alert dismissed');
+};
+document.getElementById('b-prompt').onclick = async () => {
+  log(`prompt -> ${JSON.stringify(await dialog.prompt({
+    title: 'New subfolder', message: 'Created under loras. Nested paths like A/B are allowed.',
+    placeholder: 'e.g. characters/anime', confirmLabel: 'Create folder',
+  }))}`);
+};
+document.getElementById('b-long').onclick = async () => {
+  await dialog.alert({
+    title: 'A rather long title that should wrap instead of overflowing the panel edge',
+    message: ('Segment 3 failed after 3 attempts: ' + 'x'.repeat(160) + '\n\n') + 'Line after a blank line.\n'
+      + Array.from({ length: 30 }, (_, i) => `detail line ${i + 1}`).join('\n'),
+    tone: 'error',
+  });
+  log('long alert dismissed');
+};
+document.getElementById('b-queue').onclick = () => {
+  dialog.alert({ title: 'First', message: 'one', tone: 'warning' }).then(() => log('q1 done'));
+  dialog.alert({ title: 'Second', message: 'two', tone: 'error' }).then(() => log('q2 done'));
+  dialog.alert({ title: 'Third', message: 'three', tone: 'info' }).then(() => log('q3 done'));
+};
+document.getElementById('b-dupe').onclick = () => {
+  for (let i = 0; i < 3; i++) dialog.alert({ title: 'Same', message: 'identical', tone: 'error' }).then(() => log('dupe resolved'));
+};
+document.getElementById('b-toast').onclick = () => feedback.show('Download queued: mio.safetensors', 'success');
+document.getElementById('b-feedback-error').onclick = () => feedback.show('Clear history failed: connection refused', 'error', 5000);
+document.getElementById('b-theme').onclick = () => document.body.classList.toggle('cfy-theme-light');
+</script>
+</body>
+</html>

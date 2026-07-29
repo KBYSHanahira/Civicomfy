@@ -45,8 +45,10 @@ export function setupEventListeners(ui) {
         if (!ui.modal?.classList.contains('open')) return;
         if (document.querySelector('.civitai-mymodel-detail-overlay, .civitai-browse-info-overlay, .civitai-lightbox')) return;
         if (ui.galleryLightbox && ui.galleryLightbox.style.display !== 'none') return;
-        if (ui.confirmClearModal && ui.confirmClearModal.style.display === 'flex') {
-            ui.confirmClearModal.style.display = 'none';
+        // A dialog handles Esc itself and stops propagation; this is the belt to
+        // that braces, in case the key was pressed with focus outside the panel.
+        if (ui.dialog?.isOpen) {
+            ui.dialog.cancelTop();
             return;
         }
         ui.closeModal();
@@ -65,7 +67,12 @@ export function setupEventListeners(ui) {
 
     // Create new model type folder (first-level under models/)
     ui.createModelTypeButton.addEventListener('click', async () => {
-        const name = prompt('Enter new model type folder name (will be created under models/)');
+        const name = await ui.showPrompt({
+            title: 'New model type folder',
+            message: 'Created as a first-level folder under models/.',
+            placeholder: 'e.g. loras_experimental',
+            confirmLabel: 'Create folder',
+        });
         if (!name) return;
         try {
             const res = await CivitaiDownloaderAPI.createModelType(name);
@@ -85,7 +92,12 @@ export function setupEventListeners(ui) {
     // Create new subfolder under current model type
     ui.createSubdirButton.addEventListener('click', async () => {
         const type = ui.downloadModelTypeSelect.value;
-        const name = prompt('Enter new subfolder name (you can include nested paths like A/B):');
+        const name = await ui.showPrompt({
+            title: 'New subfolder',
+            message: `Created under ${type}. Nested paths like A/B are allowed.`,
+            placeholder: 'e.g. characters/anime',
+            confirmLabel: 'Create folder',
+        });
         if (!name) return;
         try {
             const res = await CivitaiDownloaderAPI.createModelDir(type, name);
@@ -114,7 +126,7 @@ export function setupEventListeners(ui) {
     // --- DYNAMIC CONTENT LISTENERS (Event Delegation) ---
 
     // Status tab actions (Cancel/Retry/Open/Clear) and click-to-toggle blur on thumbs
-    ui.statusContent.addEventListener('click', (event) => {
+    ui.statusContent.addEventListener('click', async (event) => {
         const thumbContainer = event.target.closest('.civitai-thumbnail-container');
         if (thumbContainer) {
             const nsfwLevel = Number(thumbContainer.dataset.nsfwLevel ?? thumbContainer.getAttribute('data-nsfw-level'));
@@ -148,7 +160,13 @@ export function setupEventListeners(ui) {
             else if (button.classList.contains('civitai-retry-button')) ui.handleRetryDownload(downloadId, button);
             else if (button.classList.contains('civitai-openpath-button')) ui.handleOpenPath(downloadId, button);
         } else if (button.id === 'civitai-clear-history-button') {
-            ui.confirmClearModal.style.display = 'flex';
+            const ok = await ui.showConfirm({
+                title: 'Clear history?',
+                message: 'This removes every entry from the download history. It cannot be undone.',
+                tone: 'warning',
+                confirmLabel: 'Clear history',
+            });
+            if (ok) ui.handleClearHistory();
         }
     });
 
@@ -379,17 +397,6 @@ export function setupEventListeners(ui) {
             }
         });
     }
-
-    // Confirmation Modal
-    ui.confirmClearYesButton.addEventListener('click', () => ui.handleClearHistory());
-    ui.confirmClearNoButton.addEventListener('click', () => {
-        ui.confirmClearModal.style.display = 'none';
-    });
-    ui.confirmClearModal.addEventListener('click', (event) => {
-        if (event.target === ui.confirmClearModal) {
-            ui.confirmClearModal.style.display = 'none';
-        }
-    });
 
     // --- My Models Tab ---
     if (ui.myModelsLimitSelect) {

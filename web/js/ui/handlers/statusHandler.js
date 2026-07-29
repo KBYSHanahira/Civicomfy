@@ -137,9 +137,14 @@ export async function handleOpenPath(ui, downloadId, button) {
 }
 
 export async function handleClearHistory(ui) {
-    ui.confirmClearYesButton.disabled = true;
-    ui.confirmClearNoButton.disabled = true;
-    ui.confirmClearYesButton.textContent = 'Clearing...';
+    // The caller confirms first (ui.showConfirm), so by the time we get here the
+    // dialog has already closed - there are no buttons left to disable.
+    const button = ui.clearHistoryButton;
+    const originalHtml = button?.innerHTML;
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing…';
+    }
 
     try {
         const result = await CivitaiDownloaderAPI.clearHistory();
@@ -147,7 +152,6 @@ export async function handleClearHistory(ui) {
             ui.showToast(result.message || 'History cleared successfully!', 'success');
             ui.statusData.history = [];
             ui.renderDownloadList(ui.statusData.history, ui.historyListContainer, 'No download history yet.');
-            ui.confirmClearModal.style.display = 'none';
         } else {
             ui.showToast(`Clear history failed: ${result.details || result.error}`, 'error', 5000);
         }
@@ -156,8 +160,9 @@ export async function handleClearHistory(ui) {
         console.error("Clear History UI Error:", error);
         ui.showToast(message, 'error', 5000);
     } finally {
-        ui.confirmClearYesButton.disabled = false;
-        ui.confirmClearNoButton.disabled = false;
-        ui.confirmClearYesButton.textContent = 'Confirm Clear';
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        }
     }
 }

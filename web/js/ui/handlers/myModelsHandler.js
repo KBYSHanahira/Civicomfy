@@ -841,7 +841,13 @@ export function showModelDetailModal(model, opts = {}) {
     attachTo.appendChild(overlay);
 }
 export async function handleMyModelDelete(ui, relPath, name, btn) {
-    if (!confirm(`Delete "${name}"?\n\nThis permanently removes the file from disk, along with its Civicomfy metadata and preview image.`)) return;
+    const ok = await ui.showConfirm({
+        title: 'Delete model?',
+        message: `"${name}" will be permanently removed from disk, along with its Civicomfy metadata and preview image.`,
+        tone: 'warning',
+        confirmLabel: 'Delete',
+    });
+    if (!ok) return;
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
