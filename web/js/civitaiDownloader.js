@@ -30,7 +30,10 @@ function showCivicomfyNodeInfo(props = {}) {
         example_prompts:    Array.isArray(p.examplePrompts) ? p.examplePrompts : [],
         description:        p.description || "",
         rel_path:           p.filePath || "",
-        has_preview:        false,
+        // With a file path the modal can resolve previews itself — thumbnail for
+        // the inline image, full-size sidecar only on zoom. Without one, fall
+        // back to whatever URL the node carries.
+        has_preview:        !!p.filePath,
         preview_url:        p.imageUrl || "",
     };
     showModelDetailModal(model, {

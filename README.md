@@ -225,6 +225,37 @@ If you store models on an external drive and link them in with `mklink /D` or `m
 
 ---
 
+## Changelog
+
+### 2.1.0
+
+A performance release. Both image grids were sending full-resolution originals to the browser to draw thumbnails a few hundred pixels wide, which is what made them stutter.
+
+**Thumbnails**
+
+- **New cached thumbnail service** (`server/routes/Thumbnails.py`). Images are downscaled once to WebP, cached on disk, and served with an immutable cache header. The source file's mtime is part of the URL, so a regenerated image gets a new URL instead of a stale hit.
+  - Gallery: a page of 50 dropped from **276 MB to ~1.1 MB**.
+  - My Models: a page of 50 dropped from **134 MB to ~1.8 MB**.
+  - Decoding runs on a small bounded thread pool, off the event loop, so browsing never blocks the ComfyUI server or steals CPU from a running generation. Concurrent requests for the same image collapse into one decode.
+  - Cache is capped at 4000 files and prunes oldest-first. First visit after upgrading generates the initial set (~100 ms per image); everything after that is served from disk.
+- **Lightboxes open instantly** — the cached thumbnail paints first, then the full-size image swaps in once it arrives. Gallery lightbox also preloads the neighbouring images so arrow-key navigation doesn't stall.
+- **Send to Workflow** now puts a thumbnail URL on the node instead of the full preview. The node draws into a 580 px box and keeps its bitmap alive for as long as it's in the workflow, so this was costing multiple MB of canvas memory per node.
+- **Download tab** asks Civitai's CDN for display-sized images. Preview URLs previously came through as `original=true` — the full upload — and were scaled down in the browser.
+
+**Scrolling**
+
+- My Models cards now use `content-visibility`, so cards scrolled out of view skip layout and paint. The Gallery grid already did this, which is why only My Models stuttered.
+- The hover-overlay blur on both grids is now scoped to `:hover`. It was declared unconditionally, giving every card three permanently-composited layers — **151 across a page, now 1**.
+- My Models builds its cards in a document fragment instead of appending 50 times into the live grid.
+
+**Fixes**
+
+- The **base-model filter selection is now remembered** between sessions. It was never written to the saved settings, so it reset on every reload.
+- Cancelling or failing a **multi-connection download** no longer abandons its worker threads. They were left running while the temp directory was deleted underneath them, which on Windows strands a `.<name>.parts_<id>` folder in your model directory. Threads are now joined with a bound, and cleanup retries before giving up.
+- The output-folder scan is cached briefly instead of re-walking every image on each page click, sort change, and subfolder switch. Deleting an image invalidates it, and **Refresh** forces a fresh scan.
+
+---
+
 ## Contributing
 
 PRs welcome.

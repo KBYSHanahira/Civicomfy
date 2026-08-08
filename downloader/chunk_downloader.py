@@ -25,6 +25,10 @@ class ChunkDownloader:
     HEAD_REQUEST_TIMEOUT = HEAD_REQUEST_TIMEOUT
     DOWNLOAD_TIMEOUT = DOWNLOAD_TIMEOUT
     MIN_SIZE_FOR_MULTI_MB = 100  # Minimum file size for multi-connection download
+    # How long to wait for segment threads to notice a cancel/abort before giving
+    # up on them. Bounded because a worker blocked in a socket read cannot react
+    # until its own request times out, and the UI must not hang that long.
+    THREAD_JOIN_TIMEOUT = 10.0
 
     def __init__(self, url: str, output_path: str, num_connections: int = 4,
                  chunk_size: int = DEFAULT_CHUNK_SIZE, manager: 'DownloadManager' = None,
@@ -105,12 +109,20 @@ class ChunkDownloader:
 
     def _cleanup_temp(self, success: bool):
         """Remove temporary directory and potentially the output file."""
-        # Clean up temp directory
+        # Clean up temp directory. A straggler thread that outlived the join
+        # bound may still hold a part file open, which on Windows makes rmtree
+        # raise rather than skip, so retry briefly before giving up — otherwise
+        # the .parts_ directory is stranded in the user's model folder.
         if self.temp_dir.exists():
-            try:
-                shutil.rmtree(self.temp_dir)
-            except Exception as e:
-                print(f"[Downloader {self.download_id}] Warning: Could not remove temp directory {self.temp_dir}: {e}")
+            for attempt in range(3):
+                try:
+                    shutil.rmtree(self.temp_dir)
+                    break
+                except Exception as e:
+                    if attempt == 2:
+                        print(f"[Downloader {self.download_id}] Warning: Could not remove temp directory {self.temp_dir}: {e}")
+                    else:
+                        time.sleep(0.5)
 
         # Remove output file if download failed
         if not success and self.output_path.exists():
@@ -575,16 +587,24 @@ class ChunkDownloader:
             self.threads.append(thread)
             thread.start()
 
-        # Wait for threads to complete
-        active_threads = list(self.threads)
-        while active_threads and not self.is_cancelled:
-            joined_threads = []
-            for t in active_threads:
-                t.join(timeout=0.2)
-                if not t.is_alive():
-                    joined_threads.append(t)
-            
-            active_threads = [t for t in active_threads if t not in joined_threads]
+        # Wait for threads to complete.
+        #
+        # This used to bail out of the wait the instant is_cancelled went true,
+        # leaving the remaining workers running. download() then deleted temp_dir
+        # in its finally block while those threads were still writing part files
+        # into it — on Windows rmtree fails outright against a file another
+        # thread holds open, stranding a ".<name>.parts_<id>" directory in the
+        # user's model folder. So we always join, just with a bound: workers
+        # check is_cancelled between chunks and exit promptly, but one blocked in
+        # a socket read cannot react until its own request times out.
+        deadline = time.monotonic() + self.THREAD_JOIN_TIMEOUT
+        for t in self.threads:
+            t.join(timeout=max(0.0, deadline - time.monotonic()))
+
+        stragglers = [t for t in self.threads if t.is_alive()]
+        if stragglers:
+            print(f"[Downloader {self.download_id}] Warning: {len(stragglers)} segment thread(s) still running after "
+                  f"{self.THREAD_JOIN_TIMEOUT}s; temporary files may be left behind.")
 
         # Handle download completion
         if self.is_cancelled:

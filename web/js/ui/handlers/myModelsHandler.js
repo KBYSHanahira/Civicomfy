@@ -7,6 +7,43 @@ import { typeColor } from "../typeColors.js";
 
 const civitaiBase = () => `https://${getCivitaiDomain()}/models/`;
 
+/** Full-size preview sidecar — only worth fetching for the zoom lightbox. */
+function _modelPreviewUrl(model) {
+    return `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`;
+}
+
+/**
+ * Downscaled, server-cached preview for cards and the detail panel.
+ *
+ * The .preview.jpeg sidecars are whatever Civitai served — a 2.6 MB median and
+ * 15 MB at the top end — so pointing a ~200px card at the full file meant the
+ * browser downloading and decoding hundreds of MB to draw a grid of thumbnails.
+ * `preview_mtime` busts the cache when a preview is re-fetched.
+ */
+function _modelThumbUrl(model, size = 512) {
+    const params = new URLSearchParams({ rel_path: model.rel_path, size: String(size) });
+    if (model.preview_mtime) params.set('t', String(Math.floor(model.preview_mtime)));
+    return `/civitai/model_thumb?${params.toString()}`;
+}
+
+/**
+ * Point an <img> at the thumbnail, falling back to the full-size sidecar once if
+ * the thumbnail cannot be produced (unreadable source, Pillow missing) before
+ * letting the caller's own error handling take over.
+ */
+function _attachThumbWithFallback(img, model, size) {
+    const onFail = img.onerror;
+    img.onerror = () => {
+        if (!img.dataset.fellBack && img.src.includes('/civitai/model_thumb')) {
+            img.dataset.fellBack = '1';
+            img.src = _modelPreviewUrl(model);
+            return;
+        }
+        if (typeof onFail === 'function') onFail();
+    };
+    img.src = _modelThumbUrl(model, size);
+}
+
 // Track the CiviComfyModelInfo node added to workflow so it can be updated
 let _workflowNodeId = null;
 
@@ -67,7 +104,14 @@ function _populateBaseFilter(ui) {
     if (!container) return;
 
     // Preserve the current selection across rebuilds (e.g. after a type reload).
-    const checked = new Set(ui.getMyModelsSelectedBaseModels?.() || []);
+    // On the first populate of a session there is nothing in the DOM yet, so fall
+    // back to whatever was restored from the cookie. Consumed once: later rebuilds
+    // must reflect what the user actually has ticked, including "nothing".
+    let checked = new Set(ui.getMyModelsSelectedBaseModels?.() || []);
+    if (ui._savedMyModelsBaseModels !== undefined) {
+        if (checked.size === 0) checked = new Set(ui._savedMyModelsBaseModels);
+        ui._savedMyModelsBaseModels = undefined;
+    }
 
     // Base models actually present in the loaded set (these filter to real results).
     const localBases = Array.from(new Set(
@@ -174,10 +218,14 @@ export function renderMyModels(ui) {
         return;
     }
 
+    // Built into a fragment first: appending each card straight to the live grid
+    // made the browser re-run layout 50 times over a growing grid.
     listEl.innerHTML = '';
+    const frag = document.createDocumentFragment();
     pageItems.forEach(model => {
-        listEl.appendChild(_buildModelRow(model));
+        frag.appendChild(_buildModelRow(model));
     });
+    listEl.appendChild(frag);
 
     _renderMyModelsPagination(ui, currentPage, totalPages);
 }
@@ -248,9 +296,9 @@ function _buildModelRow(model) {
     previewWrap.className = 'civitai-mymodel-card-preview';
     if (model.has_preview) {
         const img = document.createElement('img');
-        img.src = `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`;
         img.alt = model.name;
         img.loading = 'lazy';
+        img.decoding = 'async';
         img.onerror = () => {
             previewWrap.classList.add('no-preview');
             img.remove();
@@ -260,6 +308,7 @@ function _buildModelRow(model) {
                 previewWrap.prepend(fallback);
             }
         };
+        _attachThumbWithFallback(img, model, 512);
         previewWrap.appendChild(img);
     } else {
         previewWrap.classList.add('no-preview');
@@ -510,14 +559,13 @@ export function showModelDetailModal(model, opts = {}) {
     const previewWrap = document.createElement('div');
     previewWrap.className = 'civitai-mymodel-detail-preview-wrap';
 
-    const previewUrl = model.has_preview
-        ? `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`
-        : (model.preview_url || '');
-    if (previewUrl) {
-        const imgUrl = previewUrl;
+    // The zoom lightbox is the only place worth paying for the full-size file;
+    // the inline preview is 210px wide and gets the cached thumbnail.
+    const imgUrl = model.has_preview ? _modelPreviewUrl(model) : (model.preview_url || '');
+    if (imgUrl) {
         const img = document.createElement('img');
-        img.src = imgUrl;
         img.alt = model.name;
+        img.decoding = 'async';
         img.className = 'civitai-mymodel-detail-preview civitai-zoomable';
         img.title = 'Click to zoom';
         img.onerror = () => {
@@ -525,6 +573,11 @@ export function showModelDetailModal(model, opts = {}) {
             img.remove();
             previewWrap.innerHTML = '<i class="fas fa-image"></i>';
         };
+        if (model.has_preview) {
+            _attachThumbWithFallback(img, model, 512);
+        } else {
+            img.src = imgUrl;
+        }
         img.addEventListener('click', () => {
             const lb = document.createElement('div');
             lb.id = 'civitai-lightbox';
@@ -542,8 +595,20 @@ export function showModelDetailModal(model, opts = {}) {
             closeX.innerHTML = '&times;';
             closeX.addEventListener('click', (e) => { e.stopPropagation(); closeLb(); });
             const zoomImg = document.createElement('img');
-            zoomImg.src = imgUrl;
             zoomImg.className = 'civitai-lightbox-media';
+            zoomImg.decoding = 'async';
+            if (model.has_preview) {
+                // Open on the thumbnail already sitting in the browser cache,
+                // then swap in the full-size file once it lands, so the lightbox
+                // never starts as an empty box.
+                zoomImg.src = _modelThumbUrl(model, 768);
+                const full = new Image();
+                full.decoding = 'async';
+                full.onload = () => { if (zoomImg.isConnected) zoomImg.src = imgUrl; };
+                full.src = imgUrl;
+            } else {
+                zoomImg.src = imgUrl;
+            }
             zoomImg.addEventListener('click', (e) => e.stopPropagation());
             lb.appendChild(closeX);
             lb.appendChild(zoomImg);
@@ -745,9 +810,13 @@ export function showModelDetailModal(model, opts = {}) {
             const LG = window.LiteGraph;
             if (!LG || !app.graph) { ui.showToast('ComfyUI graph not available.', 'error'); return; }
 
-            const imageUrl = model.has_preview
-                ? `/civitai/model_preview_image?rel_path=${encodeURIComponent(model.rel_path)}`
-                : '';
+            // The node draws this into a 580px-wide box on the graph canvas and
+            // keeps the decoded bitmap alive for as long as it is in the
+            // workflow, so it gets the thumbnail rather than the full sidecar.
+            // The `t` cache-buster is inert server-side (the route derives the
+            // real mtime itself), so a stale one in a saved workflow still
+            // resolves.
+            const imageUrl = model.has_preview ? _modelThumbUrl(model, 768) : '';
             const civitaiUrl = model.civitai_model_id
                 ? buildCivitaiModelUrl(model.civitai_model_id, model.civitai_version_id)
                 : '';

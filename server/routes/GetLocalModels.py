@@ -91,7 +91,16 @@ async def route_get_local_models(request):
 
                 base_no_ext = os.path.splitext(full_path)[0]
                 sidecar = _read_sidecar(base_no_ext)
-                has_preview = os.path.isfile(base_no_ext + PREVIEW_SUFFIX)
+
+                # The preview's own mtime rides along so the client can build a
+                # cache-busting thumbnail URL: re-fetching a model's preview
+                # must not keep serving the thumbnail built from the old one.
+                try:
+                    preview_mtime = os.path.getmtime(base_no_ext + PREVIEW_SUFFIX)
+                    has_preview = True
+                except OSError:
+                    preview_mtime = 0
+                    has_preview = False
 
                 entry = {
                     "name": filename,
@@ -100,6 +109,7 @@ async def route_get_local_models(request):
                     "size_bytes": size_bytes,
                     "modified": mtime,
                     "has_preview": has_preview,
+                    "preview_mtime": preview_mtime,
                 }
                 entry.update(sidecar)
                 models.append(entry)

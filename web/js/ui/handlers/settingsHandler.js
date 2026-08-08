@@ -417,6 +417,7 @@ export function saveMyModelsSettings(ui) {
         const data = {
             sort: ui.myModelsSortSelect?.value || 'time_desc',
             typeFilter: ui.myModelsTypeFilter?.value || '',
+            baseModels: ui.getMyModelsSelectedBaseModels?.() || [],
             limit: ui.myModelsPagination?.limit || 50,
             cardSize: parseInt(ui.myModelsCardSizeSlider?.value, 10) || 148,
         };
@@ -438,6 +439,12 @@ export function loadMyModelsSettings(ui) {
         // Store saved typeFilter so handleMyModelsLoad can restore it after populating options
         if (data.typeFilter !== undefined) {
             ui._savedMyModelsTypeFilter = data.typeFilter;
+        }
+        // Same deal for the base-model picker: its checkboxes are built from the
+        // loaded model list, so there is nothing to tick until _populateBaseFilter
+        // has run. Park the selection and let it apply them.
+        if (Array.isArray(data.baseModels)) {
+            ui._savedMyModelsBaseModels = data.baseModels;
         }
         if (data.limit && ui.myModelsLimitSelect) {
             const validLimits = ['25', '50', '75', '100'];

@@ -3002,6 +3002,14 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   border: 1px solid var(--cfy-border);
   border-radius: var(--cfy-radius-lg);
   overflow: hidden;
+  /* Skip layout and paint for cards scrolled out of view. Without this every
+     card in the page stays live — including the three blurred overlay buttons
+     each one owns — and scrolling repaints all 50. The gallery grid has carried
+     this since it was written, which is why it scrolls smoothly and this did
+     not. The height is the measured uniform card height, so the scrollbar does
+     not jump as cards are realised. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 298px;
   transition: border-color var(--cfy-transition), transform var(--cfy-transition), box-shadow var(--cfy-transition);
   cursor: default;
 }
@@ -3080,12 +3088,18 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   padding: 7px 11px;
   font-size: 0.88em;
   border-radius: var(--cfy-radius);
-  backdrop-filter: blur(4px);
   background: var(--cfy-glass);
   border-color: var(--cfy-glass-line);
   color: #f5f4ef;
   box-shadow: none;
   transform: none;
+}
+/* The overlay sits at opacity 0 until the card is hovered, so the blur is never
+   visible before then — but declaring it unconditionally still gave every card
+   three permanently-composited layers, 150 across a page. Scoping it to hover
+   is visually identical and leaves at most three alive at a time. */
+.civitai-mymodel-card:hover .civitai-mymodel-card-overlay .civitai-button {
+  backdrop-filter: blur(4px);
 }
 .civitai-mymodel-card-overlay .civitai-button:hover:not(:disabled) {
   background: var(--cfy-accent-strong);
@@ -4151,12 +4165,15 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   padding: 7px 11px;
   font-size: 0.88em;
   border-radius: var(--cfy-radius);
-  backdrop-filter: blur(4px);
   background: var(--cfy-glass);
   border-color: var(--cfy-glass-line);
   color: #f5f4ef;
   box-shadow: none;
   transform: none;
+}
+/* Hover-scoped for the same reason as the My Models overlay above. */
+.civitai-gallery-card:hover .civitai-gallery-card-overlay .civitai-button {
+  backdrop-filter: blur(4px);
 }
 .civitai-gallery-card-overlay .civitai-button:hover:not(:disabled) {
   background: var(--cfy-accent-strong);

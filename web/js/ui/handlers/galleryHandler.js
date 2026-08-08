@@ -9,6 +9,30 @@ function _imageViewUrl(filename, subfolder) {
     return `/view?${params.toString()}`;
 }
 
+// Server-side sizes the thumbnail endpoint will produce. Requests are snapped
+// to this ladder so dragging the card-size slider cannot spray the disk cache
+// with a hundred near-identical widths.
+const THUMB_SIZES = [256, 384, 512, 768];
+
+function _thumbSizeFor(cardWidthPx) {
+    const needed = (cardWidthPx || 148) * (window.devicePixelRatio || 1);
+    return THUMB_SIZES.find(s => s >= needed) ?? THUMB_SIZES[THUMB_SIZES.length - 1];
+}
+
+/**
+ * Cards render at ~150px but the source files are multi-megabyte PNGs; pointing
+ * <img> at /view meant downloading and decoding the full originals just to draw
+ * postage stamps, which is what made the grid crawl. This asks the server for a
+ * cached downscale instead. The mtime rides along so a regenerated image busts
+ * the browser cache rather than serving a stale thumbnail.
+ */
+function _thumbUrl(img, size) {
+    const params = new URLSearchParams({ filename: img.filename, size: String(size) });
+    if (img.subfolder) params.set('subfolder', img.subfolder);
+    if (img.mtime) params.set('t', String(Math.floor(img.mtime)));
+    return `/civitai/output_thumb?${params.toString()}`;
+}
+
 function _formatBytes(bytes) {
     if (!bytes) return '';
     if (bytes < 1024) return `${bytes} B`;
@@ -45,7 +69,7 @@ function _triggerDownload(url, filename) {
 
 // ---- Build card element ----
 
-function _buildGalleryCard(img, idx, ui) {
+function _buildGalleryCard(img, idx, ui, thumbSize) {
     const key = _selKey(img);
     const url = _imageViewUrl(img.filename, img.subfolder);
     const isSelected = ui._gallerySelected.has(key);
@@ -63,9 +87,17 @@ function _buildGalleryCard(img, idx, ui) {
     imgEl.loading = 'lazy';
     imgEl.decoding = 'async';
     // Use data-src for IntersectionObserver lazy loading; src set when visible
-    imgEl.dataset.src = url;
+    imgEl.dataset.src = _thumbUrl(img, thumbSize);
     imgEl.alt = img.filename;
     imgEl.onerror = () => {
+        // A thumbnail can fail on its own (unreadable source, Pillow missing)
+        // while the original is perfectly servable, so fall back to /view once
+        // before declaring the card broken.
+        if (!imgEl.dataset.fellBack && imgEl.src.includes('/civitai/output_thumb')) {
+            imgEl.dataset.fellBack = '1';
+            imgEl.src = url;
+            return;
+        }
         // Only drop the image — replacing preview.innerHTML here used to wipe the
         // date badge, the selection checkbox and the whole action overlay, leaving
         // broken thumbnails unselectable and undeletable.
@@ -258,7 +290,12 @@ export async function handleGalleryLoad(ui) {
         const limit = parseInt(ui.galleryLimitSelect?.value ?? '30', 10);
         const page = ui._galleryPage ?? 1;
 
-        const data = await CivitaiDownloaderAPI.getOutputImages({ page, limit, subfolder, sort });
+        // Consumed once: an explicit Refresh forces a fresh directory scan, but
+        // the internal reloads below (subfolder restore, page clamp) should not.
+        const refresh = !!ui._galleryForceRefresh;
+        ui._galleryForceRefresh = false;
+
+        const data = await CivitaiDownloaderAPI.getOutputImages({ page, limit, subfolder, sort, refresh });
 
         if (!data || !Array.isArray(data.images)) {
             throw new Error("Invalid response from server.");
@@ -371,6 +408,7 @@ export function renderGalleryGrid(ui, images) {
 
     grid.innerHTML = '';
     const observer = _ensureLazyObserver(ui);
+    const thumbSize = _thumbSizeFor(cardSize);
 
     // Bump a render token so any in-flight chunk chain from a previous render
     // (e.g. user changed page/sort/subfolder quickly) aborts instead of
@@ -382,7 +420,7 @@ export function renderGalleryGrid(ui, images) {
     const firstChunk = images.slice(0, GALLERY_CHUNK_SIZE);
     const frag = document.createDocumentFragment();
     firstChunk.forEach((img, idx) => {
-        const card = _buildGalleryCard(img, idx, ui);
+        const card = _buildGalleryCard(img, idx, ui, thumbSize);
         const imgEl = card.querySelector('img[data-src]');
         if (imgEl) observer.observe(imgEl);
         frag.appendChild(card);
@@ -399,7 +437,7 @@ export function renderGalleryGrid(ui, images) {
             const chunk = images.slice(offset, offset + GALLERY_CHUNK_SIZE);
             const f = document.createDocumentFragment();
             chunk.forEach((img, i) => {
-                const card = _buildGalleryCard(img, offset + i, ui);
+                const card = _buildGalleryCard(img, offset + i, ui, thumbSize);
                 const imgEl = card.querySelector('img[data-src]');
                 if (imgEl) observer.observe(imgEl);
                 f.appendChild(card);
@@ -478,9 +516,25 @@ function _renderLightboxImage(ui) {
 
     const imgEl = ui.galleryLightboxImg;
     if (imgEl) {
+        // Bump a token so a slow full-res load from a previously-viewed image
+        // cannot land after the user has already arrowed on to another one.
+        const token = (ui._lightboxToken || 0) + 1;
+        ui._lightboxToken = token;
+
         imgEl.decoding = 'async';
-        imgEl.src = url;
         imgEl.alt = img.filename;
+
+        // Paint the cached thumbnail first — it is usually already in the browser
+        // cache from the grid, so the lightbox fills immediately instead of
+        // sitting blank for the second or two a multi-megabyte PNG needs.
+        imgEl.src = _thumbUrl(img, 768);
+
+        const full = new Image();
+        full.decoding = 'async';
+        full.onload = () => {
+            if (ui._lightboxToken === token) imgEl.src = url;
+        };
+        full.src = url;
     }
 
     // Reset zoom when switching images
@@ -502,11 +556,40 @@ function _renderLightboxImage(ui) {
     // Prev/Next visibility
     if (ui.galleryLightboxPrev) ui.galleryLightboxPrev.style.visibility = idx > 0 ? 'visible' : 'hidden';
     if (ui.galleryLightboxNext) ui.galleryLightboxNext.style.visibility = idx < images.length - 1 ? 'visible' : 'hidden';
+
+    _preloadLightboxNeighbours(ui);
+}
+
+/**
+ * Warm the browser cache for the images either side of the current one so
+ * arrowing through the lightbox does not re-stall on every step. The handles
+ * are parked on `ui` because a detached Image() with no reference can be
+ * collected before it finishes fetching.
+ */
+function _preloadLightboxNeighbours(ui) {
+    const images = ui._galleryImages || [];
+    const idx = ui._lightboxIndex;
+    const preloads = [];
+
+    [idx - 1, idx + 1].forEach(i => {
+        if (i < 0 || i >= images.length) return;
+        const neighbour = images[i];
+        const el = new Image();
+        el.decoding = 'async';
+        el.src = _imageViewUrl(neighbour.filename, neighbour.subfolder);
+        preloads.push(el);
+    });
+
+    ui._lightboxPreloads = preloads;
 }
 
 export function closeGalleryLightbox(ui) {
     const lb = ui.galleryLightbox;
     if (lb) lb.style.display = 'none';
+    // Invalidate any in-flight full-res load so it cannot re-populate the
+    // lightbox after it has been dismissed.
+    ui._lightboxToken = (ui._lightboxToken || 0) + 1;
+    ui._lightboxPreloads = null;
     if (ui.galleryLightboxImg) ui.galleryLightboxImg.src = '';
     if (ui._lightboxZoom) ui._lightboxZoom.reset();
 }

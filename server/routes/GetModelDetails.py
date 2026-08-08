@@ -2,6 +2,7 @@
 # File: server/routes/GetModelDetails.py
 # ================================================
 import os
+import re
 import json
 import traceback
 from aiohttp import web
@@ -12,6 +13,42 @@ from ...api.civitai import CivitaiAPI
 from ...config import PLACEHOLDER_IMAGE_PATH
 
 prompt_server = server.PromptServer.instance
+
+# Preview images are displayed at a few hundred pixels at most, so there is no
+# reason to pull the originals.
+PREVIEW_IMAGE_WIDTH = 640
+
+_CIVITAI_IMAGE_HOST = "image.civitai.com"
+# Civitai's CDN takes transforms as path segments — "/width=450/" or
+# "/original=true/", sometimes combined as "/anim=false,width=450/".
+_WIDTH_RE = re.compile(r"(?<=[/,])width=\d+")
+_ORIGINAL_RE = re.compile(r"(?<=[/,])original=true")
+
+
+def _clamp_civitai_image_width(url, max_width=PREVIEW_IMAGE_WIDTH):
+    """Ask Civitai's CDN for a display-sized image rather than the original.
+
+    The model API returns whatever transform the source URL carried, frequently
+    `original=true` — a multi-megabyte file that the browser then scales down to
+    a thumbnail. Rewriting the transform segment costs nothing and the CDN serves
+    the smaller variant directly. URLs with no transform segment are left alone:
+    guessing at one risks producing a 404 in place of a working image.
+    """
+    if not url or not isinstance(url, str) or _CIVITAI_IMAGE_HOST not in url:
+        return url
+
+    existing = _WIDTH_RE.search(url)
+    if existing:
+        # Already at or below our budget — leave it be.
+        current = int(existing.group(0).split('=')[1])
+        if current <= max_width:
+            return url
+        return _WIDTH_RE.sub(f"width={max_width}", url)
+
+    if _ORIGINAL_RE.search(url):
+        return _ORIGINAL_RE.sub(f"width={max_width}", url)
+
+    return url
 
 @prompt_server.routes.post("/civitai/get_model_details")
 async def route_get_model_details(request):
@@ -105,7 +142,7 @@ async def route_get_model_details(request):
            isinstance(images[0], dict) and images[0].get("url"):
             # Use the URL of the very first image directly
             first_image = images[0]
-            thumbnail_url = first_image["url"]
+            thumbnail_url = _clamp_civitai_image_width(first_image["url"])
             try:
                 lvl = first_image.get("nsfwLevel")
                 nsfw_level = int(lvl) if lvl is not None else None
@@ -134,7 +171,7 @@ async def route_get_model_details(request):
                     except Exception:
                         lvl = 0
                     preview_images.append({
-                        "url": img["url"],
+                        "url": _clamp_civitai_image_width(img["url"]),
                         "nsfwLevel": lvl,
                         "type": img.get("type", "image"),
                         "width": img.get("width"),

@@ -452,6 +452,7 @@ export function setupEventListeners(ui) {
         ui.myModelsBaseModelPickerOptions.addEventListener('change', () => {
             ui.updateMyModelsBaseModelLabel();
             if (ui.myModelsPagination) ui.myModelsPagination.currentPage = 1;
+            ui.saveMyModelsSettings();
             ui.renderMyModels();
         });
     }
@@ -461,6 +462,7 @@ export function setupEventListeners(ui) {
             ui.myModelsBaseModelPickerOptions.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
             ui.updateMyModelsBaseModelLabel();
             if (ui.myModelsPagination) ui.myModelsPagination.currentPage = 1;
+            ui.saveMyModelsSettings();
             ui.renderMyModels();
         });
     }
@@ -542,6 +544,7 @@ export function setupEventListeners(ui) {
     // --- Gallery Tab ---
     if (ui.galleryRefreshButton) {
         ui.galleryRefreshButton.addEventListener('click', () => {
+            ui._galleryForceRefresh = true;
             ui.handleGalleryLoad();
         });
     }

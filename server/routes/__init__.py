@@ -25,6 +25,7 @@ from . import SearchModels
 from . import DownloadModelHF
 from . import MaintenanceProgress
 from . import GetOutputImages
+from . import Thumbnails
 from . import DeleteOutputImage
 
 print("[Civicomfy] All server route modules loaded.")

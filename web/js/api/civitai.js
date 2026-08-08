@@ -224,6 +224,9 @@ export class CivitaiDownloaderAPI {
     if (params.subfolder !== undefined && params.subfolder !== null)
                          query.set('subfolder', params.subfolder);
     if (params.sort)     query.set('sort',     params.sort);
+    // Skips the server-side directory-scan cache — used by the Refresh button so
+    // images added since the last scan show up immediately.
+    if (params.refresh)  query.set('refresh',  '1');
     const qs = query.toString();
     return await this._request(`/civitai/output_images${qs ? '?' + qs : ''}`);
   }

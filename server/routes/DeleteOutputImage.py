@@ -6,6 +6,8 @@ from aiohttp import web
 import server
 import folder_paths
 
+from .GetOutputImages import invalidate_scan_cache
+
 prompt_server = server.PromptServer.instance
 
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
@@ -62,6 +64,11 @@ async def route_delete_output_image(request):
                 deleted += 1
             except OSError as e:
                 errors.append(f"Failed to delete {filename}: {e}")
+
+        # The listing cache would otherwise keep serving the deleted entries for
+        # up to its TTL, so the grid would reload showing images that are gone.
+        if deleted:
+            invalidate_scan_cache()
 
         return web.json_response({
             "success": True,

@@ -166,3 +166,4 @@ directory_overrides.json
 CLAUDE.md
 web/.DS_Store
 /tests
+.cache/
