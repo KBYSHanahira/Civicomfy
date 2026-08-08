@@ -183,20 +183,27 @@ function _buildGalleryCard(img, idx, ui, thumbSize) {
 
     // ---- Click handlers ----
 
+    // Read the position from the DOM at click time rather than closing over the
+    // build-time `idx`. Deleting a card shifts every later image down one slot in
+    // ui._galleryImages; a captured index would then point at its neighbour, so
+    // clicking a card after a delete opened the wrong image. _reindexGalleryCards
+    // rewrites dataset.index, and this makes the handlers honour it.
+    const cardIndex = () => parseInt(card.dataset.index, 10);
+
     selectWrap.addEventListener('click', (e) => {
         e.stopPropagation();
         if (e.shiftKey && ui._galleryAnchorIdx !== undefined && ui._gallerySelected.size > 0) {
-            _selectRange(ui, ui._galleryAnchorIdx, idx);
+            _selectRange(ui, ui._galleryAnchorIdx, cardIndex());
         } else {
             toggleGallerySelect(ui, key);
             _syncCardSelection(card, ui._gallerySelected.has(key));
-            ui._galleryAnchorIdx = idx;
+            ui._galleryAnchorIdx = cardIndex();
         }
     });
 
     viewBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        openGalleryLightbox(ui, idx);
+        openGalleryLightbox(ui, cardIndex());
     });
 
     dlBtn.addEventListener('click', (e) => {
@@ -213,18 +220,30 @@ function _buildGalleryCard(img, idx, ui, thumbSize) {
     card.addEventListener('click', (e) => {
         if (ui._gallerySelected.size > 0) {
             if (e.shiftKey && ui._galleryAnchorIdx !== undefined) {
-                _selectRange(ui, ui._galleryAnchorIdx, idx);
+                _selectRange(ui, ui._galleryAnchorIdx, cardIndex());
             } else {
                 toggleGallerySelect(ui, key);
                 _syncCardSelection(card, ui._gallerySelected.has(key));
-                ui._galleryAnchorIdx = idx;
+                ui._galleryAnchorIdx = cardIndex();
             }
         } else {
-            openGalleryLightbox(ui, idx);
+            openGalleryLightbox(ui, cardIndex());
         }
     });
 
     return card;
+}
+
+/**
+ * Renumber the remaining cards so dataset.index matches their position in
+ * ui._galleryImages again. Must run after any card is removed from the grid.
+ */
+function _reindexGalleryCards(ui) {
+    const grid = ui.galleryGrid;
+    if (!grid) return;
+    grid.querySelectorAll('.civitai-gallery-card').forEach((card, i) => {
+        card.dataset.index = i;
+    });
 }
 
 function _syncCardSelection(card, selected) {
@@ -594,6 +613,72 @@ export function closeGalleryLightbox(ui) {
     if (ui._lightboxZoom) ui._lightboxZoom.reset();
 }
 
+/** Save the image currently shown in the lightbox. */
+export function downloadCurrentLightboxImage(ui) {
+    const img = (ui._galleryImages || [])[ui._lightboxIndex];
+    if (!img) return;
+    _triggerDownload(_imageViewUrl(img.filename, img.subfolder), img.filename);
+}
+
+/**
+ * Delete the image currently shown in the lightbox, then move to the next one so
+ * the user can keep culling without reopening. Closes when nothing is left.
+ */
+export async function deleteCurrentLightboxImage(ui) {
+    const images = ui._galleryImages || [];
+    const idx = ui._lightboxIndex;
+    const img = images[idx];
+    if (!img) return;
+
+    const name = img.subfolder ? `${img.subfolder}/${img.filename}` : img.filename;
+    const ok = await ui.showConfirm({
+        title: 'Delete image?',
+        message: `"${name}" will be removed from the output folder. This cannot be undone.`,
+        tone: 'warning',
+        confirmLabel: 'Delete',
+    });
+    if (!ok) return;
+
+    try {
+        const result = await CivitaiDownloaderAPI.deleteOutputImages([
+            { filename: img.filename, subfolder: img.subfolder ?? '' }
+        ]);
+
+        if (!result || !result.deleted) {
+            const errMsg = result?.errors?.join(', ') || 'Unknown error';
+            if (ui.feedback) ui.feedback.show(`Delete failed: ${errMsg}`, 'error');
+            return;
+        }
+
+        // Drop the matching card and keep the model in step with the grid.
+        const card = ui.galleryGrid?.querySelector(`.civitai-gallery-card[data-key="${CSS.escape(_selKey(img))}"]`);
+        if (card) card.remove();
+        ui._gallerySelected?.delete(_selKey(img));
+        updateGallerySelectionBar(ui);
+
+        images.splice(idx, 1);
+        if (Number.isFinite(ui._galleryTotal)) ui._galleryTotal = Math.max(0, ui._galleryTotal - 1);
+        _reindexGalleryCards(ui);
+        _renderGalleryCount(ui);
+
+        if (ui.feedback) ui.feedback.show('Image deleted.', 'success');
+
+        if (images.length === 0) {
+            closeGalleryLightbox(ui);
+            // Other pages may still have images; reload so the grid is not left empty.
+            if (ui._galleryTotal > 0) handleGalleryLoad(ui);
+            return;
+        }
+
+        // Deleting the last image in the set leaves the index past the end.
+        ui._lightboxIndex = Math.min(idx, images.length - 1);
+        _renderLightboxImage(ui);
+    } catch (err) {
+        console.error('[Civicomfy] deleteCurrentLightboxImage error:', err);
+        if (ui.feedback) ui.feedback.show(`Delete failed: ${err.message}`, 'error');
+    }
+}
+
 export function lightboxPrev(ui) {
     if (ui._lightboxIndex > 0) {
         ui._lightboxIndex--;
@@ -670,6 +755,7 @@ export async function deleteGalleryImage(ui, img, cardEl) {
                 cardEl.style.transform = 'scale(0.85)';
                 setTimeout(() => {
                     cardEl.remove();
+                    _reindexGalleryCards(ui);
                     _renderGalleryCount(ui);
                     // Emptying the page while images remain elsewhere: reload so
                     // the view falls back to a page that still has content.

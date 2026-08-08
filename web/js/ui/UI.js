@@ -6,7 +6,7 @@ import { handleBrowseLoad } from "./handlers/browseHandler.js";
 import { handleSettingsSave, loadAndApplySettings, loadSettingsFromCookie, saveSettingsToCookie, applySettings, getDefaultSettings, saveBrowseSettings, loadBrowseSettings, saveMyModelsSettings, loadMyModelsSettings, loadDirectorySettings, saveDirectorySettings, loadThemePreference, saveThemePreference, saveGallerySettings, loadGallerySettings } from "./handlers/settingsHandler.js";
 import { startStatusUpdates, stopStatusUpdates, updateStatus, handleCancelDownload, handleRetryDownload, handleOpenPath, handleClearHistory } from "./handlers/statusHandler.js";
 import { handleMyModelsLoad, renderMyModels, handleMyModelOpenOnCivit, handleMyModelViewDetail, handleMyModelDelete } from "./handlers/myModelsHandler.js";
-import { handleGalleryLoad, renderGalleryGrid, openGalleryLightbox, closeGalleryLightbox, lightboxPrev, lightboxNext, toggleGallerySelect, updateGallerySelectionBar, deleteSelectedGallery, downloadSelectedGallery, deleteGalleryImage } from "./handlers/galleryHandler.js";
+import { handleGalleryLoad, renderGalleryGrid, openGalleryLightbox, closeGalleryLightbox, lightboxPrev, lightboxNext, toggleGallerySelect, updateGallerySelectionBar, deleteSelectedGallery, downloadSelectedGallery, deleteGalleryImage, downloadCurrentLightboxImage, deleteCurrentLightboxImage } from "./handlers/galleryHandler.js";
 import { renderDownloadList } from "./statusRenderer.js";
 import { renderSearchResults, renderBrowseCards, showBrowseCardInfo } from "./searchRenderer.js";
 import { renderDownloadPreview } from "./previewRenderer.js";
@@ -183,6 +183,8 @@ export class CivitaiDownloaderUI {
         this.galleryLightboxName = this.modal.querySelector('#civitai-gallery-lightbox-name');
         this.galleryLightboxMeta = this.modal.querySelector('#civitai-gallery-lightbox-meta');
         this.galleryLightboxClose = this.modal.querySelector('#civitai-gallery-lightbox-close');
+        this.galleryLightboxDownload = this.modal.querySelector('#civitai-gallery-lightbox-download');
+        this.galleryLightboxDelete = this.modal.querySelector('#civitai-gallery-lightbox-delete');
         this.galleryLightboxPrev = this.modal.querySelector('#civitai-gallery-lightbox-prev');
         this.galleryLightboxNext = this.modal.querySelector('#civitai-gallery-lightbox-next');
 
@@ -898,6 +900,8 @@ export class CivitaiDownloaderUI {
     closeGalleryLightbox = () => closeGalleryLightbox(this);
     lightboxPrev = () => lightboxPrev(this);
     lightboxNext = () => lightboxNext(this);
+    downloadCurrentLightboxImage = () => downloadCurrentLightboxImage(this);
+    deleteCurrentLightboxImage = () => deleteCurrentLightboxImage(this);
     toggleGallerySelect = (key) => toggleGallerySelect(this, key);
     updateGallerySelectionBar = () => updateGallerySelectionBar(this);
     deleteSelectedGallery = () => deleteSelectedGallery(this);

@@ -227,6 +227,12 @@ If you store models on an external drive and link them in with `mklink /D` or `m
 
 ## Changelog
 
+### 2.2.0
+
+- **Download and Delete buttons in the Gallery lightbox.** Previously the only actions were previous / next / close, so saving or removing an image meant closing the viewer and finding its card again. Delete asks for confirmation, then advances to the next image so you can keep culling without reopening; it closes the viewer when nothing is left. Download always fetches the full-resolution original, not the thumbnail.
+- **Fixed: clicking a Gallery card after deleting one opened the wrong image.** Cards captured their grid position when built, but deleting an image shifts every later one down a slot, so the stored positions silently pointed at a neighbour. Cards now read their position at click time and are renumbered whenever one is removed. This affected the existing per-card delete too, not just the new lightbox button.
+- **Fixed: arrow keys changed the image behind the delete confirmation.** The dialog swallows Escape and Enter but not the arrows, so the lightbox kept navigating underneath it while the prompt was open.
+
 ### 2.1.0
 
 A performance release. Both image grids were sending full-resolution originals to the browser to draw thumbnails a few hundred pixels wide, which is what made them stutter.

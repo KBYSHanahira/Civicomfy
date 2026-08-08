@@ -327,6 +327,14 @@ export function modalTemplate(settings = {}) {
             <div class="civitai-gallery-lightbox-info">
               <span id="civitai-gallery-lightbox-name" class="civitai-gallery-lightbox-name"></span>
               <span id="civitai-gallery-lightbox-meta" class="civitai-gallery-lightbox-meta"></span>
+              <div class="civitai-gallery-lightbox-actions">
+                <button type="button" class="civitai-button small" id="civitai-gallery-lightbox-download" title="Download image">
+                  <i class="fas fa-download"></i> Download
+                </button>
+                <button type="button" class="civitai-button small danger" id="civitai-gallery-lightbox-delete" title="Delete image">
+                  <i class="fas fa-trash-alt"></i> Delete
+                </button>
+              </div>
             </div>
           </div>
         </div>

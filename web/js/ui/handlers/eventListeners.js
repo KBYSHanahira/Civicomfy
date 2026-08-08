@@ -594,6 +594,18 @@ export function setupEventListeners(ui) {
     if (ui.galleryLightboxNext) {
         ui.galleryLightboxNext.addEventListener('click', () => ui.lightboxNext());
     }
+    if (ui.galleryLightboxDownload) {
+        ui.galleryLightboxDownload.addEventListener('click', (event) => {
+            event.stopPropagation();
+            ui.downloadCurrentLightboxImage();
+        });
+    }
+    if (ui.galleryLightboxDelete) {
+        ui.galleryLightboxDelete.addEventListener('click', (event) => {
+            event.stopPropagation();
+            ui.deleteCurrentLightboxImage();
+        });
+    }
     if (ui.galleryLightbox) {
         // Close on backdrop click
         ui.galleryLightbox.addEventListener('click', (event) => {
@@ -648,6 +660,10 @@ export function setupEventListeners(ui) {
     // Keyboard navigation for lightbox
     document.addEventListener('keydown', (event) => {
         if (!ui.galleryLightbox || ui.galleryLightbox.style.display === 'none') return;
+        // The delete confirmation opens on top of the lightbox. Its own handler
+        // swallows Esc and Enter, but not the arrows — without this the image
+        // behind the dialog would change while the user is answering it.
+        if (ui.dialog?.isOpen) return;
         if (event.key === 'ArrowLeft')  { ui.lightboxPrev(); event.preventDefault(); }
         if (event.key === 'ArrowRight') { ui.lightboxNext(); event.preventDefault(); }
         if (event.key === 'Escape')     { ui.closeGalleryLightbox(); event.preventDefault(); }

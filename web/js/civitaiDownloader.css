@@ -4360,3 +4360,8 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   font-size: 0.78em;
   color: var(--cfy-text-dim);
 }
+.civitai-gallery-lightbox-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
