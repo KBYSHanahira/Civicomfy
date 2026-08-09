@@ -11,6 +11,11 @@ from .GetOutputImages import invalidate_scan_cache
 prompt_server = server.PromptServer.instance
 
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
+VIDEO_EXTENSIONS = {'.mp4', '.webm', '.mov', '.m4v'}
+# The gallery lists images and videos, so both must be deletable. Kept as an
+# allow-list (rather than deleting whatever is named) so a crafted request still
+# cannot remove arbitrary non-media files from the output tree.
+DELETABLE_EXTENSIONS = IMAGE_EXTENSIONS | VIDEO_EXTENSIONS
 
 
 def _get_output_dir():
@@ -51,8 +56,8 @@ async def route_delete_output_image(request):
                 continue
 
             ext = os.path.splitext(target)[1].lower()
-            if ext not in IMAGE_EXTENSIONS:
-                errors.append(f"Refused to delete non-image file: {filename}")
+            if ext not in DELETABLE_EXTENSIONS:
+                errors.append(f"Refused to delete unsupported file type: {filename}")
                 continue
 
             if not os.path.isfile(target):

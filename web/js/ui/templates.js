@@ -324,6 +324,7 @@ export function modalTemplate(settings = {}) {
           <div class="civitai-gallery-lightbox-content">
             <button class="civitai-gallery-lightbox-close" id="civitai-gallery-lightbox-close" title="Close"><i class="fas fa-times"></i></button>
             <img id="civitai-gallery-lightbox-img" src="" alt="" class="civitai-gallery-lightbox-img">
+            <video id="civitai-gallery-lightbox-video" class="civitai-gallery-lightbox-video" controls loop playsinline preload="metadata" style="display:none;"></video>
             <div class="civitai-gallery-lightbox-info">
               <span id="civitai-gallery-lightbox-name" class="civitai-gallery-lightbox-name"></span>
               <span id="civitai-gallery-lightbox-meta" class="civitai-gallery-lightbox-meta"></span>

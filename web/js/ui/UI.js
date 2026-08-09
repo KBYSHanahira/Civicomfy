@@ -180,6 +180,7 @@ export class CivitaiDownloaderUI {
         this.galleryDeleteSelectedBtn = this.modal.querySelector('#civitai-gallery-delete-selected');
         this.galleryLightbox = this.modal.querySelector('#civitai-gallery-lightbox');
         this.galleryLightboxImg = this.modal.querySelector('#civitai-gallery-lightbox-img');
+        this.galleryLightboxVideo = this.modal.querySelector('#civitai-gallery-lightbox-video');
         this.galleryLightboxName = this.modal.querySelector('#civitai-gallery-lightbox-name');
         this.galleryLightboxMeta = this.modal.querySelector('#civitai-gallery-lightbox-meta');
         this.galleryLightboxClose = this.modal.querySelector('#civitai-gallery-lightbox-close');

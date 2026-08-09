@@ -11,6 +11,11 @@ import folder_paths
 prompt_server = server.PromptServer.instance
 
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
+# Browser-playable video containers. ComfyUI video nodes (VideoHelperSuite, the
+# native SaveVideo, API nodes such as MiniMax) write these into the output tree;
+# the gallery now lists them alongside images so they can be previewed in place.
+VIDEO_EXTENSIONS = {'.mp4', '.webm', '.mov', '.m4v'}
+MEDIA_EXTENSIONS = IMAGE_EXTENSIONS | VIDEO_EXTENSIONS
 
 # Walking a large output folder means an os.stat per file — several hundred
 # milliseconds on a spinning disk with a few thousand images, and it used to run
@@ -43,7 +48,7 @@ def _scan_output_dir(output_dir):
 
         for filename in filenames:
             ext = os.path.splitext(filename)[1].lower()
-            if ext not in IMAGE_EXTENSIONS:
+            if ext not in MEDIA_EXTENSIONS:
                 continue
 
             full_path = os.path.join(dirpath, filename)
@@ -56,6 +61,9 @@ def _scan_output_dir(output_dir):
                 "subfolder": rel_dir,
                 "size_bytes": stat.st_size,
                 "mtime": stat.st_mtime,
+                # Lets the client pick an <img> vs a <video> without re-parsing
+                # the extension, and drives which card/lightbox path it renders.
+                "media_type": "video" if ext in VIDEO_EXTENSIONS else "image",
             })
 
     return all_images, sorted(subfolders)

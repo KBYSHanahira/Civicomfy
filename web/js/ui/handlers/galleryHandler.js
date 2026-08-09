@@ -67,12 +67,53 @@ function _triggerDownload(url, filename) {
     document.body.removeChild(a);
 }
 
+// Kept in sync with VIDEO_EXTENSIONS on the server. media_type from the listing
+// is authoritative; the extension check is only a fallback for entries that
+// predate the field (e.g. a cached response from an older build).
+const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.m4v'];
+
+function _isVideo(img) {
+    if (!img) return false;
+    if (img.media_type) return img.media_type === 'video';
+    const name = (img.filename || '').toLowerCase();
+    return VIDEO_EXTENSIONS.some(ext => name.endsWith(ext));
+}
+
+function _mediaNoun(img) {
+    return _isVideo(img) ? 'video' : 'image';
+}
+
+/**
+ * A video has no server-side thumbnail (Pillow can't decode a container), so the
+ * card and lightbox point straight at /view. The #t=0.1 media fragment nudges the
+ * browser to paint a frame at 0.1s as the poster instead of an empty black box.
+ */
+function _videoPosterUrl(img) {
+    return _imageViewUrl(img.filename, img.subfolder) + '#t=0.1';
+}
+
+/**
+ * Drop a broken preview element and leave the card's badges/overlay intact, so a
+ * thumbnail that fails to decode is still selectable and deletable. Shared by the
+ * image (`fa-image`) and video (`fa-film`) paths.
+ */
+function _markPreviewBroken(preview, mediaEl, iconClass) {
+    if (mediaEl) mediaEl.remove();
+    preview.classList.add('no-preview');
+    if (!preview.querySelector('.civitai-card-fallback-icon')) {
+        const fallback = document.createElement('i');
+        fallback.className = `fas ${iconClass} civitai-card-fallback-icon`;
+        preview.prepend(fallback);
+    }
+}
+
 // ---- Build card element ----
 
 function _buildGalleryCard(img, idx, ui, thumbSize) {
     const key = _selKey(img);
     const url = _imageViewUrl(img.filename, img.subfolder);
     const isSelected = ui._gallerySelected.has(key);
+    const isVideo = _isVideo(img);
 
     const card = document.createElement('div');
     card.className = 'civitai-gallery-card' + (isSelected ? ' selected' : '');
@@ -83,32 +124,44 @@ function _buildGalleryCard(img, idx, ui, thumbSize) {
     const preview = document.createElement('div');
     preview.className = 'civitai-gallery-card-preview';
 
-    const imgEl = document.createElement('img');
-    imgEl.loading = 'lazy';
-    imgEl.decoding = 'async';
-    // Use data-src for IntersectionObserver lazy loading; src set when visible
-    imgEl.dataset.src = _thumbUrl(img, thumbSize);
-    imgEl.alt = img.filename;
-    imgEl.onerror = () => {
-        // A thumbnail can fail on its own (unreadable source, Pillow missing)
-        // while the original is perfectly servable, so fall back to /view once
-        // before declaring the card broken.
-        if (!imgEl.dataset.fellBack && imgEl.src.includes('/civitai/output_thumb')) {
-            imgEl.dataset.fellBack = '1';
-            imgEl.src = url;
-            return;
-        }
-        // Only drop the image — replacing preview.innerHTML here used to wipe the
-        // date badge, the selection checkbox and the whole action overlay, leaving
-        // broken thumbnails unselectable and undeletable.
-        imgEl.remove();
-        preview.classList.add('no-preview');
-        if (!preview.querySelector('.civitai-card-fallback-icon')) {
-            const fallback = document.createElement('i');
-            fallback.className = 'fas fa-image civitai-card-fallback-icon';
-            preview.prepend(fallback);
-        }
-    };
+    // Both branches expose data-src so the one IntersectionObserver below lazily
+    // applies the real src only once the card scrolls into view — a page of
+    // videos must not fetch every file's metadata up front.
+    let mediaEl;
+    let playBadge = null;
+    if (isVideo) {
+        mediaEl = document.createElement('video');
+        mediaEl.muted = true;            // required for the poster frame to load unattended
+        mediaEl.loop = true;
+        mediaEl.preload = 'metadata';
+        mediaEl.setAttribute('playsinline', '');
+        mediaEl.dataset.src = _videoPosterUrl(img);
+        mediaEl.onerror = () => _markPreviewBroken(preview, mediaEl, 'fa-film');
+        // A play glyph so a still poster frame still reads as a video at a glance.
+        playBadge = document.createElement('div');
+        playBadge.className = 'civitai-gallery-card-play-badge';
+        playBadge.innerHTML = '<i class="fas fa-play"></i>';
+    } else {
+        mediaEl = document.createElement('img');
+        mediaEl.loading = 'lazy';
+        mediaEl.decoding = 'async';
+        mediaEl.dataset.src = _thumbUrl(img, thumbSize);
+        mediaEl.alt = img.filename;
+        mediaEl.onerror = () => {
+            // A thumbnail can fail on its own (unreadable source, Pillow missing)
+            // while the original is perfectly servable, so fall back to /view once
+            // before declaring the card broken.
+            if (!mediaEl.dataset.fellBack && mediaEl.src.includes('/civitai/output_thumb')) {
+                mediaEl.dataset.fellBack = '1';
+                mediaEl.src = url;
+                return;
+            }
+            // Only drop the media element — wiping preview.innerHTML here used to
+            // take the date badge, the selection checkbox and the whole action
+            // overlay with it, leaving broken thumbnails unselectable.
+            _markPreviewBroken(preview, mediaEl, 'fa-image');
+        };
+    }
 
     // Date badge (top-right)
     if (img.mtime) {
@@ -132,24 +185,25 @@ function _buildGalleryCard(img, idx, ui, thumbSize) {
 
     const viewBtn = document.createElement('button');
     viewBtn.className = 'civitai-button small civitai-gallery-view-btn';
-    viewBtn.title = 'View full size';
-    viewBtn.innerHTML = '<i class="fas fa-search-plus"></i>';
+    viewBtn.title = isVideo ? 'Play video' : 'View full size';
+    viewBtn.innerHTML = isVideo ? '<i class="fas fa-play"></i>' : '<i class="fas fa-search-plus"></i>';
 
     const dlBtn = document.createElement('button');
     dlBtn.className = 'civitai-button small civitai-gallery-download-btn';
-    dlBtn.title = 'Download image';
+    dlBtn.title = `Download ${_mediaNoun(img)}`;
     dlBtn.innerHTML = '<i class="fas fa-download"></i>';
 
     const delBtn = document.createElement('button');
     delBtn.className = 'civitai-button small danger civitai-gallery-delete-single-btn';
-    delBtn.title = 'Delete image';
+    delBtn.title = `Delete ${_mediaNoun(img)}`;
     delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
 
     overlay.appendChild(viewBtn);
     overlay.appendChild(dlBtn);
     overlay.appendChild(delBtn);
 
-    preview.appendChild(imgEl);
+    preview.appendChild(mediaEl);
+    if (playBadge) preview.appendChild(playBadge);
     preview.appendChild(selectWrap);
     preview.appendChild(overlay);
 
@@ -292,7 +346,7 @@ export async function handleGalleryLoad(ui) {
     }
     ui._galleryAnchorIdx = undefined;
 
-    grid.innerHTML = '<p class="civitai-empty-state"><i class="fas fa-spinner fa-spin"></i> Loading images…</p>';
+    grid.innerHTML = '<p class="civitai-empty-state"><i class="fas fa-spinner fa-spin"></i> Loading…</p>';
     if (countEl) countEl.textContent = '';
 
     try {
@@ -377,11 +431,11 @@ function _renderGalleryCount(ui) {
     const countEl = ui.galleryCountEl;
     if (!countEl) return;
     const total = Number.isFinite(ui._galleryTotal) ? ui._galleryTotal : (ui._galleryImages || []).length;
-    if (total === 0) { countEl.textContent = 'No images found'; return; }
+    if (total === 0) { countEl.textContent = 'No items found'; return; }
     const shown = (ui._galleryImages || []).length;
     countEl.textContent = shown < total
-        ? `${shown} of ${total} images`
-        : `${total} image${total !== 1 ? 's' : ''}`;
+        ? `${shown} of ${total} items`
+        : `${total} item${total !== 1 ? 's' : ''}`;
 }
 
 // ---- Lazy-load observer (one per grid instance) ----
@@ -421,7 +475,7 @@ export function renderGalleryGrid(ui, images) {
     grid.style.setProperty('--cfy-gallery-card-w', `${cardSize}px`);
 
     if (!images || images.length === 0) {
-        grid.innerHTML = '<p class="civitai-empty-state"><i class="fas fa-images"></i> No images in your ComfyUI output folder yet.</p>';
+        grid.innerHTML = '<p class="civitai-empty-state"><i class="fas fa-images"></i> No images or videos in your ComfyUI output folder yet.</p>';
         return;
     }
 
@@ -440,8 +494,8 @@ export function renderGalleryGrid(ui, images) {
     const frag = document.createDocumentFragment();
     firstChunk.forEach((img, idx) => {
         const card = _buildGalleryCard(img, idx, ui, thumbSize);
-        const imgEl = card.querySelector('img[data-src]');
-        if (imgEl) observer.observe(imgEl);
+        const mediaEl = card.querySelector('[data-src]');
+        if (mediaEl) observer.observe(mediaEl);
         frag.appendChild(card);
     });
     grid.appendChild(frag);
@@ -457,8 +511,8 @@ export function renderGalleryGrid(ui, images) {
             const f = document.createDocumentFragment();
             chunk.forEach((img, i) => {
                 const card = _buildGalleryCard(img, offset + i, ui, thumbSize);
-                const imgEl = card.querySelector('img[data-src]');
-                if (imgEl) observer.observe(imgEl);
+                const mediaEl = card.querySelector('[data-src]');
+                if (mediaEl) observer.observe(mediaEl);
                 f.appendChild(card);
             });
             grid.appendChild(f);
@@ -532,32 +586,58 @@ function _renderLightboxImage(ui) {
 
     const img = images[idx];
     const url = _imageViewUrl(img.filename, img.subfolder);
+    const isVideo = _isVideo(img);
 
     const imgEl = ui.galleryLightboxImg;
-    if (imgEl) {
-        // Bump a token so a slow full-res load from a previously-viewed image
-        // cannot land after the user has already arrowed on to another one.
-        const token = (ui._lightboxToken || 0) + 1;
-        ui._lightboxToken = token;
+    const videoEl = ui.galleryLightboxVideo;
 
-        imgEl.decoding = 'async';
-        imgEl.alt = img.filename;
+    // Bump a token so a slow full-res image load from a previously-viewed item
+    // cannot land after the user has already arrowed on to another one.
+    const token = (ui._lightboxToken || 0) + 1;
+    ui._lightboxToken = token;
 
-        // Paint the cached thumbnail first — it is usually already in the browser
-        // cache from the grid, so the lightbox fills immediately instead of
-        // sitting blank for the second or two a multi-megabyte PNG needs.
-        imgEl.src = _thumbUrl(img, 768);
+    if (isVideo) {
+        // Hand the stage to the <video>: hide the image and drop any zoom state,
+        // which only ever applies to the image element.
+        if (ui._lightboxZoom) ui._lightboxZoom.reset();
+        if (imgEl) { imgEl.style.display = 'none'; imgEl.src = ''; }
+        if (videoEl) {
+            videoEl.style.display = '';
+            videoEl.src = url;
+            // Opening the lightbox / arrowing is a user gesture, so autoplay with
+            // sound is permitted; if a browser still blocks it the controls remain.
+            const p = videoEl.play();
+            if (p && p.catch) p.catch(() => {});
+        }
+    } else {
+        // Hand the stage back to the <img>: stop and fully unload the video so its
+        // audio does not keep playing underneath the next image.
+        if (videoEl) {
+            videoEl.pause();
+            videoEl.removeAttribute('src');
+            videoEl.load();
+            videoEl.style.display = 'none';
+        }
+        if (imgEl) {
+            imgEl.style.display = '';
+            imgEl.decoding = 'async';
+            imgEl.alt = img.filename;
 
-        const full = new Image();
-        full.decoding = 'async';
-        full.onload = () => {
-            if (ui._lightboxToken === token) imgEl.src = url;
-        };
-        full.src = url;
+            // Paint the cached thumbnail first — it is usually already in the
+            // browser cache from the grid, so the lightbox fills immediately
+            // instead of sitting blank for the second or two a big PNG needs.
+            imgEl.src = _thumbUrl(img, 768);
+
+            const full = new Image();
+            full.decoding = 'async';
+            full.onload = () => {
+                if (ui._lightboxToken === token) imgEl.src = url;
+            };
+            full.src = url;
+        }
+        // Reset zoom when switching images
+        if (ui._lightboxZoom) ui._lightboxZoom.reset();
     }
-
-    // Reset zoom when switching images
-    if (ui._lightboxZoom) ui._lightboxZoom.reset();
 
     const nameEl = ui.galleryLightboxName;
     if (nameEl) nameEl.textContent = img.filename;
@@ -593,6 +673,9 @@ function _preloadLightboxNeighbours(ui) {
     [idx - 1, idx + 1].forEach(i => {
         if (i < 0 || i >= images.length) return;
         const neighbour = images[i];
+        // A video's neighbour is streamed on demand with range requests; warming
+        // it through an <img> would only fetch bytes the <video> can't reuse.
+        if (_isVideo(neighbour)) return;
         const el = new Image();
         el.decoding = 'async';
         el.src = _imageViewUrl(neighbour.filename, neighbour.subfolder);
@@ -610,6 +693,12 @@ export function closeGalleryLightbox(ui) {
     ui._lightboxToken = (ui._lightboxToken || 0) + 1;
     ui._lightboxPreloads = null;
     if (ui.galleryLightboxImg) ui.galleryLightboxImg.src = '';
+    // Stop playback and release the file so closing actually silences a video.
+    if (ui.galleryLightboxVideo) {
+        ui.galleryLightboxVideo.pause();
+        ui.galleryLightboxVideo.removeAttribute('src');
+        ui.galleryLightboxVideo.load();
+    }
     if (ui._lightboxZoom) ui._lightboxZoom.reset();
 }
 
@@ -630,9 +719,10 @@ export async function deleteCurrentLightboxImage(ui) {
     const img = images[idx];
     if (!img) return;
 
+    const noun = _mediaNoun(img);
     const name = img.subfolder ? `${img.subfolder}/${img.filename}` : img.filename;
     const ok = await ui.showConfirm({
-        title: 'Delete image?',
+        title: `Delete ${noun}?`,
         message: `"${name}" will be removed from the output folder. This cannot be undone.`,
         tone: 'warning',
         confirmLabel: 'Delete',
@@ -661,7 +751,7 @@ export async function deleteCurrentLightboxImage(ui) {
         _reindexGalleryCards(ui);
         _renderGalleryCount(ui);
 
-        if (ui.feedback) ui.feedback.show('Image deleted.', 'success');
+        if (ui.feedback) ui.feedback.show(`${noun[0].toUpperCase()}${noun.slice(1)} deleted.`, 'success');
 
         if (images.length === 0) {
             closeGalleryLightbox(ui);
@@ -722,9 +812,10 @@ export function updateGallerySelectionBar(ui) {
 // ---- Delete (single) ----
 
 export async function deleteGalleryImage(ui, img, cardEl) {
+    const noun = _mediaNoun(img);
     const name = img.subfolder ? `${img.subfolder}/${img.filename}` : img.filename;
     const ok = await ui.showConfirm({
-        title: 'Delete image?',
+        title: `Delete ${noun}?`,
         message: `"${name}" will be removed from the output folder. This cannot be undone.`,
         tone: 'warning',
         confirmLabel: 'Delete',
@@ -765,7 +856,7 @@ export async function deleteGalleryImage(ui, img, cardEl) {
                 }, 300);
             }
 
-            if (ui.feedback) ui.feedback.show('Image deleted.', 'success');
+            if (ui.feedback) ui.feedback.show(`${noun[0].toUpperCase()}${noun.slice(1)} deleted.`, 'success');
         } else {
             const errMsg = result?.errors?.join(', ') || 'Unknown error';
             if (ui.feedback) ui.feedback.show(`Delete failed: ${errMsg}`, 'error');
@@ -783,8 +874,8 @@ export async function deleteSelectedGallery(ui) {
     if (count === 0) return;
 
     const ok = await ui.showConfirm({
-        title: `Delete ${count} image${count !== 1 ? 's' : ''}?`,
-        message: `${count} selected image${count !== 1 ? 's' : ''} will be removed from the output folder. This cannot be undone.`,
+        title: `Delete ${count} item${count !== 1 ? 's' : ''}?`,
+        message: `${count} selected item${count !== 1 ? 's' : ''} will be removed from the output folder. This cannot be undone.`,
         tone: 'warning',
         confirmLabel: `Delete ${count}`,
     });
@@ -801,7 +892,7 @@ export async function deleteSelectedGallery(ui) {
         updateGallerySelectionBar(ui);
 
         if (deleted > 0) {
-            if (ui.feedback) ui.feedback.show(`Deleted ${deleted} image${deleted !== 1 ? 's' : ''}.`, 'success');
+            if (ui.feedback) ui.feedback.show(`Deleted ${deleted} item${deleted !== 1 ? 's' : ''}.`, 'success');
             await handleGalleryLoad(ui);
         }
 
@@ -830,7 +921,7 @@ export function downloadSelectedGallery(ui) {
         }, i * 250);
     });
 
-    if (ui.feedback) ui.feedback.show(`Downloading ${images.length} image${images.length !== 1 ? 's' : ''}…`, 'success');
+    if (ui.feedback) ui.feedback.show(`Downloading ${images.length} item${images.length !== 1 ? 's' : ''}…`, 'success');
 }
 
 // ---- Helpers for batch ops ----
