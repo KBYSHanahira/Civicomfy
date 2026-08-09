@@ -1,4 +1,306 @@
+<a id="top"></a>
+
 # Civicomfy
+
+<div align="center">
+
+**🇯🇵 日本語** ・ <a href="#english">🇬🇧 English</a>
+
+</div>
+
+**Civitai・HuggingFace のモデルダウンローダーを ComfyUI に統合。**
+
+ComfyUI を離れることなく、モデルの検索・閲覧・ダウンロードから、すでに手元にあるモデルの管理までこなせます。ツールバーのボタン一つですべてが開きます。
+
+---
+
+## できること
+
+- 🔍 **閲覧・検索** — Civitai のカタログを検索(Meilisearch 採用)
+- ⬇️ **ダウンロード** — Civitai / HuggingFace から URL・ID 指定で
+- 📂 **自動振り分け** — 適切な ComfyUI フォルダへ保存(checkpoints・loras・vae など)
+- 🗂️ **My Models** — インストール済みモデルの一覧・並び替え・削除
+- 🖼️ **ギャラリー** — ワークフローが生成した画像**と動画**を閲覧
+- 📊 **ダウンロード** — 進行中の転送・キュー・履歴をリアルタイム表示
+- 🎨 **Claude テーマ** — ダーク/クリームの温かみのある統一デザイン
+
+---
+
+## スクリーンショット
+
+<img width="920" alt="ダウンロード — リンクを貼ってフォルダを選ぶ" src="docs/images/download.png" />
+
+コミット前にプレビューで確定 — 正確なファイル、正確なフォルダ、コピーできるトリガーワード。
+
+<img width="920" alt="ダウンロード — モデルのライブプレビュー" src="docs/images/download-preview.png" />
+
+<table>
+<tr>
+<td width="50%"><img alt="Civitai を閲覧" src="docs/images/browse.png" /><br><em>Browse — 検索・絞り込み・キュー</em></td>
+<td width="50%"><img alt="My Models" src="docs/images/my-models.png" /><br><em>My Models — ディスク上のすべて</em></td>
+</tr>
+<tr>
+<td width="50%"><img alt="ダウンロード" src="docs/images/downloads.png" /><br><em>Downloads — 実行中・待機中・履歴</em></td>
+<td width="50%"><img alt="ライトテーマのギャラリー" src="docs/images/gallery-light.png" /><br><em>ギャラリー — ライトテーマ、複数選択</em></td>
+</tr>
+<tr>
+<td width="50%"><img alt="ライトテーマの設定" src="docs/images/settings-light.png" /><br><em>Settings — ライトテーマ</em></td>
+<td width="50%"><img alt="アイコンレールに折りたたんだサイドバー" src="docs/images/collapsed.png" /><br><em>サイドバーをアイコンレールに折りたたみ</em></td>
+</tr>
+</table>
+
+> 実際のインターフェースを撮影したものです。モデル名・サムネイル・件数はプレースホルダーです。
+
+---
+
+## インストール
+
+```bash
+cd ComfyUI/custom_nodes
+git clone https://github.com/KBYSHanahira/Civicomfy.git
+```
+
+ComfyUI を再起動すると、右上のツールバーに **Civicomfy** ボタンが表示されます。
+
+---
+
+## 30秒で始める
+
+1. ツールバーの **Civicomfy** をクリック
+2. **Settings(設定)** を開き、[Civitai API キー](https://civitai.com/user/account) を貼り付け
+3. **Download(ダウンロード)** タブに Civitai または HuggingFace のリンクを貼り付け
+4. **Start download** をクリック — 進捗は **Downloads** で確認
+
+> 💡 API キーがなくても HuggingFace のファイルは閲覧・ダウンロードできます。Civitai のダウンロードには無料の API キーが必要です。
+
+---
+
+## インターフェース
+
+**サイドバーナビゲーション。** セクションは目的別にまとめられています —
+**Get models**(Download, Browse)、**Library**(My Models, Gallery)、
+**Activity**(Downloads)、**Configure**(Settings, Directories)。現在のセクション名と
+1行の説明が上部バーに表示され、**Downloads** のバッジがアプリのどこからでも進行中の
+転送数を数えます。
+
+**ウィンドウに合わせて縮小。** サイドバーは 60px のアイコンレールに折りたためるほか、
+ウィンドウが狭くなるとスライドオーバーのドロワーになります。各パネルは自身のスクロール
+位置を保持し、長いフォームは主要なアクションを画面外に隠さず下部に固定します。
+
+**Claude テーマ、2つのパレット。** 既定は温かみのあるダーク、必要に応じて温かみのある
+クリーム — サイドバー下部のトグルで切り替えます。すべての色は1つのトークンセットに由来する
+ため、バッジやプログレスバーに至るまで両パレットで一貫します。選択はブラウザごとに記憶
+されます。
+
+**キーボードとマウス。** `Esc` でウィンドウ(または最前面のパネルだけ)を閉じ、
+矢印キーでギャラリーのライトボックスを送り、カードグリッドは各ツールバーのスライダーで
+ライブにサイズ変更できます。
+
+---
+
+## 各セクション
+
+### 📥 Download(ダウンロード)
+
+次のいずれかを貼り付ければ、あとは Civicomfy が処理します:
+
+- Civitai モデル URL: `civitai.com/models/12345`
+- Civitai モデル ID: `12345`
+- Civitai バージョン URL: `…?modelVersionId=67890`
+- HuggingFace ファイル URL: `huggingface.co/.../resolve/main/model.safetensors`
+
+**得られるもの:**
+- モデルのライブプレビュー(画像、ファイルバリアント、バージョン情報)
+- モデルタイプに基づく保存先フォルダの自動選択
+- 任意: 特定のファイルバリアントを選択(fp16 / fp8、pruned / full など)
+- 任意: サブフォルダを選択、またはその場で新規作成
+- 任意: ファイル名を変更
+- **重複検出** — 既存のファイルは再ダウンロードしません(設定でより深いチェックを有効化可能 — MKLink/ジャンクションでマウントされたものを含む全サブフォルダを走査)
+- **強制再ダウンロード** — 本当に上書きしたいときは重複検出を無視
+
+**対応する Civitai ドメイン:** `civitai.com`, `civit.com`, `civit.red`, `civitai.red`
+
+---
+
+### 🔎 Browse(閲覧)
+
+Civitai からモデルを検索・発見します。
+
+- **タイプ**、**ベースモデル**(SDXL, SD 1.5, Flux, Pony, Illustrious, Wan, Hunyuan ほか35種以上)、**並び順**、**ページサイズ** で絞り込み
+- モデルカードをクリック → Download タブに自動入力
+- NSFW サムネイルは設定したしきい値を超えるとぼかし表示(クリックで表示)
+- 絞り込みと検索はセッションをまたいで記憶
+
+> Browse は少なくとも1つのフィルター(検索テキスト・タイプ・ベースモデルのいずれか)が必要です。
+
+---
+
+### 📊 Downloads(アクティビティ)
+
+ダウンロード状況のライブダッシュボード。
+
+- **Active(実行中)** — 速度・進捗%・経過時間つき
+- **Queued(待機中)** — 待機ジョブ(同時実行は最大3件)
+- **History(履歴)** — 直近100件の完了/失敗/キャンセル、再起動後も保持
+- **キャンセル**、**再試行**、**フォルダを開く**、**履歴をクリア**
+
+モーダルを開いている間、3秒ごとにポーリングします。
+
+---
+
+### 🗂️ My Models
+
+ディスク上にあるモデルを管理します。
+
+- すべての ComfyUI モデルフォルダを再帰的にスキャン
+- Civitai のサイドカーファイル(`.preview.jpeg`)からサムネイルを表示
+- タイプで絞り込み、名前/パスで検索、名前/サイズ/日付で並び替え
+- **Civitai で開く** • **詳細を見る**(説明・トリガーワード — クリックでコピー)• **削除**(確認あり)
+- 対応形式: `.safetensors`, `.ckpt`, `.pt`, `.pth`, `.bin`, `.gguf`, `.sft`
+
+---
+
+### 🖼️ ギャラリー
+
+ComfyUI の **output** フォルダをグリッド表示 — ワークフローが実際に生成した画像と動画。
+
+- **画像と動画に対応**(`.mp4` / `.webm` / `.mov` / `.m4v`)。動画カードは先頭フレームをポスターとして表示し、▶ バッジで動画だと一目でわかります
+- **ライトボックスで動画を再生** — ネイティブのコントロール(再生・シーク・音量)つき。`ffmpeg` などの追加依存は不要
+- サブフォルダで絞り込み、日付/名前で並び替え、サムネイルサイズをライブ変更
+- ライトボックスは矢印キーで移動、ズーム対応
+- 複数選択で一括 **ダウンロード** / **削除**
+
+---
+
+### 🧭 Directories(ディレクトリ)
+
+任意のモデルタイプを好きなフォルダに割り当てられます — checkpoint と LoRA を別ドライブに
+置いている場合などに便利です。行を空欄にすると ComfyUI のデフォルト(プレースホルダーで
+表示)を維持します。パスは保存前にサーバー側で検証され、上書き設定は
+`directory_overrides.json` に保持されます。
+
+---
+
+### ⚙️ Settings(設定)
+
+| 設定 | 内容 |
+|---|---|
+| **Civitai API キー** | Civitai からのダウンロードに必要 |
+| **HuggingFace トークン** | ゲート付き/非公開の HF モデルに必要 |
+| **デフォルトモデルタイプ** | Download タブで最初に選択される種類 |
+| **ダウンロードを自動で開く** | キュー投入後に Downloads へ移動 |
+| **サブフォルダの詳細チェック** | 重複チェック時に、対象フォルダだけでなく全サブフォルダ(および MKLink/ジャンクションでマウントされたドライブ)を走査 |
+| **成人向けコンテンツを隠す** | Browse 結果から NSFW を除外 |
+| **NSFW ぼかししきい値** | この `nsfwLevel` 以上のサムネイルをぼかす(0–128) |
+| **モデルメンテナンス** | 任意のカテゴリのメタデータ/サムネイルを一括更新 |
+
+設定はブラウザの Cookie に保存されます(365日)。API キーはサーバーのファイルシステムに
+一切保存されず、ブラウザからリクエストごとに送信されます。
+
+---
+
+## ダウンロードの仕組み
+
+1. **HEAD リクエスト** で最終 URL を解決し、サーバーがバイトレンジ要求に対応しているか確認
+2. **100MB 超かつレンジ対応** → N 個の並列チャンクに分割
+3. **それ以外** → 単一のストリーミング接続
+4. 各チャンクは指数バックオフで最大 **3回** 再試行
+5. 進捗は 0.5 秒ごとに更新
+6. キャンセル時は部分ファイルをクリーンに削除
+
+> ⚠️ **既知の問題:** マルチ接続ダウンロードには現在バグがあります。確実性のため接続数は 1 にしてください。
+
+### サイドカーファイル(Civitai のみ)
+
+| ファイル | 内容 |
+|---|---|
+| `<name>.cminfo.json` | モデルのメタデータ、ベースモデル、トリガーワード、説明、サンプルプロンプト |
+| `<name>.preview.jpeg` | Civitai の 450px サムネイル |
+
+HuggingFace のダウンロードはサイドカーを作成しません。
+
+### 制限
+
+| | |
+|---|---|
+| 同時ダウンロード | 3 |
+| 履歴エントリ | 100 |
+| 履歴の保存先 | `download_history.json` |
+
+---
+
+## MKLink / シンボリックリンク / ジャンクション対応
+
+モデルを外付けドライブに保存し `mklink /D` や `mklink /J` でリンクしている場合、
+Civicomfy はリンクをたどります — サブフォルダのドロップダウンも重複ファイルスキャナーも
+その中に入って走査します。循環リンクは検出してスキップします。
+
+---
+
+## 変更履歴
+
+### 2.3.0
+
+- **ギャラリーで動画を再生。** output フォルダの動画(`.mp4` / `.webm` / `.mov` / `.m4v`)が画像と並んで一覧に表示されるようになりました。グリッドのカードは動画の先頭フレームをポスターとして表示し、▶ バッジがつきます。ライトボックスではネイティブのコントロール(再生・シーク・音量)で再生できます。ComfyUI の `/view` ルート(すでに HTTP レンジ対応でファイルを配信)を指す `<video>` 要素でクライアント側で描画するため、**`ffmpeg` などの追加依存は不要**です。output のスキャンと削除のルートが動画拡張子を認識し、各エントリにクライアントが描画を切り替えるための `media_type` を付与します。
+
+### 2.2.0
+
+- **ギャラリーのライトボックスにダウンロード/削除ボタンを追加。** 以前は「前へ / 次へ / 閉じる」しか操作がなく、画像を保存・削除するにはビューアを閉じてカードを探し直す必要がありました。削除は確認のうえ次の画像へ進むので、開き直さずに選別を続けられます。残りがなくなればビューアを閉じます。ダウンロードは常にサムネイルではなくフル解像度の原本を取得します。
+- **修正: 画像を削除した後にギャラリーカードをクリックすると誤った画像が開く問題。** カードは生成時にグリッド上の位置を保持していましたが、画像を削除すると以降のカードが1つずつ繰り上がるため、保持した位置が静かに隣の画像を指していました。カードはクリック時に位置を読み取り、削除のたびに振り直すようになりました。これは新しいライトボックスのボタンだけでなく、既存のカード個別削除にも影響していました。
+- **修正: 削除確認の背後で矢印キーが画像を切り替えてしまう問題。** ダイアログは Escape と Enter は受け止めますが矢印キーは通すため、確認中もライトボックスが背後で移動していました。
+
+### 2.1.0
+
+パフォーマンス強化リリース。2つの画像グリッドは、数百ピクセル幅のサムネイルを描くために
+フル解像度の原本をブラウザへ送っており、これがカクつきの原因でした。
+
+**サムネイル**
+
+- **新しいキャッシュ付きサムネイルサービス**(`server/routes/Thumbnails.py`)。画像は一度だけ WebP に縮小してディスクにキャッシュし、immutable なキャッシュヘッダーつきで配信します。元ファイルの mtime を URL に含めるため、再生成された画像は古いキャッシュに当たらず新しい URL になります。
+  - ギャラリー: 50件のページが **276MB → 約1.1MB**。
+  - My Models: 50件のページが **134MB → 約1.8MB**。
+  - デコードはイベントループ外の小さな上限付きスレッドプールで実行され、閲覧が ComfyUI サーバー(キューを含む)をブロックしたり、実行中の生成から CPU を奪ったりしません。同一画像への同時リクエストは1回のデコードにまとめられます。
+  - キャッシュは最大4000ファイルで、古いものから削除します。アップグレード後の初回アクセスで初期セットを生成し(1画像あたり約100ms)、以降はディスクから配信します。
+- **ライトボックスが即座に開く** — 先にキャッシュ済みサムネイルを描画し、フルサイズ画像が届いたら差し替えます。ギャラリーのライトボックスは隣接画像も先読みするため、矢印キー移動で止まりません。
+- **Send to Workflow** はフルプレビューではなくサムネイル URL をノードに載せるようになりました。ノードは 580px のボックスに描画し、ワークフローにある間ビットマップを保持し続けるため、従来はノードごとに数MBのキャンバスメモリを消費していました。
+- **Download タブ** は Civitai の CDN に表示サイズの画像を要求します。従来プレビュー URL は `original=true`(フルアップロード)で届き、ブラウザ側で縮小していました。
+
+**スクロール**
+
+- My Models のカードは `content-visibility` を使い、画面外のカードはレイアウトと描画をスキップします。ギャラリーのグリッドはすでに対応済みで、My Models だけがカクついていた理由です。
+- 両グリッドのホバーオーバーレイのぼかしを `:hover` に限定しました。従来は無条件に宣言され、各カードに常時合成される3層を与えていました — **1ページ151層 → 現在1層**。
+- My Models はライブのグリッドへ50回追加する代わりに、ドキュメントフラグメント内でカードを構築します。
+
+**修正**
+
+- **ベースモデルのフィルター選択がセッション間で記憶される** ようになりました。保存設定に書き込まれておらず、リロードのたびにリセットされていました。
+- **マルチ接続ダウンロード** をキャンセル/失敗してもワーカースレッドを放置しなくなりました。従来はスレッドが動作中に一時ディレクトリが削除され、Windows ではモデルディレクトリに `.<name>.parts_<id>` フォルダが取り残されていました。スレッドは上限付きで join し、クリーンアップは諦める前に再試行します。
+- output フォルダのスキャンは、ページクリック・並び替え・サブフォルダ切り替えのたびに全画像を歩き直す代わりに短時間キャッシュします。画像の削除で無効化し、**Refresh** で強制的に再スキャンします。
+
+---
+
+## コントリビュート
+
+PR を歓迎します。
+
+<div align="center">
+
+[⬆ 上へ戻る](#top)
+
+</div>
+
+---
+---
+
+<a id="english"></a>
+
+# Civicomfy
+
+<div align="center">
+
+<a href="#top">🇯🇵 日本語</a> ・ **🇬🇧 English**
+
+</div>
 
 **A Civitai & HuggingFace model downloader, built into ComfyUI.**
 
@@ -12,7 +314,7 @@ Browse, search, and download models — and manage the ones you already have —
 - ⬇️ **Download** from Civitai *or* HuggingFace by URL/ID
 - 📂 **Auto-saves** to the right ComfyUI folder (checkpoints, loras, vae, etc.)
 - 🗂️ **My Models** — see, sort, and delete locally installed models
-- 🖼️ **Gallery** — browse the images your workflows produced
+- 🖼️ **Gallery** — browse the images *and videos* your workflows produced
 - 📊 **Downloads** — watch active transfers, queue, and history in real time
 - 🎨 **Claude theme** — one warm design system, in dark or cream
 
@@ -155,8 +457,10 @@ Manage models already on disk.
 
 ### 🖼️ Gallery
 
-A grid view of your ComfyUI **output** folder — the images your workflows actually produced.
+A grid view of your ComfyUI **output** folder — the images and videos your workflows actually produced.
 
+- **Images and videos** (`.mp4` / `.webm` / `.mov` / `.m4v`). Video cards show the first frame as a poster with a ▶ badge, so a clip reads as a video at a glance
+- **Play videos in the lightbox** with native controls (play, seek, volume) — no `ffmpeg` or extra dependency required
 - Filter by subfolder, sort by date or name, resize thumbnails live
 - Lightbox with arrow-key navigation and zoom
 - Multi-select for batch **download** or **delete**
@@ -227,6 +531,10 @@ If you store models on an external drive and link them in with `mklink /D` or `m
 
 ## Changelog
 
+### 2.3.0
+
+- **Video playback in the Gallery.** Output-folder videos (`.mp4`, `.webm`, `.mov`, `.m4v`) now list alongside images. Grid cards show the video's first frame as a poster with a ▶ badge, and the lightbox plays the clip with native controls (play, seek, volume). Rendered client-side with a `<video>` element pointed at ComfyUI's `/view` route — which already serves the files with HTTP range support — so **no `ffmpeg` or extra dependency** is required. The output scan and delete routes now recognise video extensions and tag each entry with a `media_type` the client keys its rendering off.
+
 ### 2.2.0
 
 - **Download and Delete buttons in the Gallery lightbox.** Previously the only actions were previous / next / close, so saving or removing an image meant closing the viewer and finding its card again. Delete asks for confirmation, then advances to the next image so you can keep culling without reopening; it closes the viewer when nothing is left. Download always fetches the full-resolution original, not the thumbnail.
@@ -265,3 +573,9 @@ A performance release. Both image grids were sending full-resolution originals t
 ## Contributing
 
 PRs welcome.
+
+<div align="center">
+
+[⬆ Back to top](#top)
+
+</div>
