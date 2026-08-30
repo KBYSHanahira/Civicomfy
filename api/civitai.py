@@ -93,6 +93,23 @@ class CivitaiAPI:
             return result
         return result
 
+    def get_models_bulk(self, model_ids: List[str]) -> Optional[Dict[str, Any]]:
+        """Gets several models in one call. (GET /models?ids=...)
+
+        `nsfw=true` is required: without it mature models are silently dropped
+        from the response instead of being returned.
+        """
+        endpoint = "/models"
+        params = {
+            "ids": [str(mid) for mid in model_ids],
+            "limit": 100,   # Endpoint ceiling; must be >= len(model_ids).
+            "nsfw": "true",
+        }
+        result = self._request("GET", endpoint, params=params, timeout=45)
+        if isinstance(result, dict) and "error" in result:
+            return result
+        return result
+
     def search_models(self, query: str, types: Optional[List[str]] = None,
                       sort: str = 'Highest Rated', period: str = 'AllTime',
                       limit: int = 20, page: int = 1,

@@ -127,7 +127,8 @@ Search and discover models from Civitai.
 
 - Filter by **type**, **base model** (SDXL, SD 1.5, Flux, Pony, Illustrious, Wan, Hunyuan, +35 more), **sort order**, **page size**
 - Click a model card → pre-fills the Download tab
-- NSFW thumbnails are blurred above your chosen threshold (click to reveal)
+- Each card shows the download size of its latest version; the Info panel lists the size of every version
+- NSFW thumbnails are blurred above your chosen threshold (click to reveal); pick **Unlock everything** in Settings to see every model unblurred and unfiltered
 - Your filters and search are remembered between sessions
 
 > Browse needs at least one filter active (search text, type, or base model).
@@ -190,7 +191,7 @@ saved, and overrides persist in `directory_overrides.json`.
 | **Auto-open Downloads** | Jumps to Downloads after queuing a download |
 | **Deep subfolder check** | When checking for duplicates, scans every subfolder (and MKLink/junction-mounted drives) instead of just the target folder |
 | **Hide mature content** | Filter NSFW out of Browse results |
-| **NSFW blur threshold** | Blur thumbnails at this `nsfwLevel` and above (0–128) |
+| **NSFW blur threshold** | Blur thumbnails at this `nsfwLevel` and above (0–128). **Unlock everything** turns blurring off *and* stops Civitai from withholding results — models whose imagery is entirely explicit are only listed at that setting |
 | **Model Maintenance** | Bulk-refresh metadata or thumbnails for any category |
 
 Settings live in a browser cookie (365 days). API keys never touch the server's filesystem — they're sent per-request from your browser.
@@ -234,6 +235,19 @@ If you store models on an external drive and link them in with `mklink /D` or `m
 ---
 
 ## Changelog
+
+### 2.4.0
+
+- **Model cards show their download size.** Civitai's search index carries no file information at all, so the size is resolved from the REST API in one batched request per page (`server/routes/ModelFileSizes.py`) and filled into the cards after they are already on screen — browsing never waits for it. Sizes of published versions never change, so they are cached for the life of the process. The Info panel lists the size of every version, which is what you actually pick between when a model has twenty of them.
+- **"Unlock everything" now unlocks the results too, not just the blur.** The search request always carried a rating filter, and because a model's `nsfwLevel` is a *list*, that filter dropped every model whose imagery is exclusively explicit — 11,504 LoRAs alone were invisible with no indication anything was missing. At the unlock setting Browse and Search now ask for every rating level.
+- **Fixed: the model type dropdown was blank on first run.** The default was `checkpoint`, but the options come from ComfyUI's own folder names (`checkpoints`), and assigning a missing value to a `<select>` silently blanks it — leaving the Download form with no model type at all. The saved value is now resolved against the real option list.
+- **Fixed: long version names spilled out of Browse cards.** `text-overflow` cannot act on a bare text node between two other children, so names ran up to 61px past the card edge instead of ellipsing.
+- **Fixed: on touch devices the action overlay covered every thumbnail.** With no hover to reveal it, the overlay sat open permanently and you could not see a single model image. Tapping the artwork now opens the actions for that card only.
+- **Fixed: the "All (N)" button on a Browse card did nothing.** It toggled a container that only ever existed in the old Search tab's markup. It now opens the info panel, where every version is listed.
+- **Fixed: an empty bordered box sat above Start download.** The container had a `:empty` rule to hide it, but an HTML comment inside it meant `:empty` never matched.
+- **Fixed:** overlapping `<code>` chips in wrapped hint text, colliding type / base-model badges on narrow cards, download names crushed to `Meg…` in Activity, and a doubled gap between wrapped form fields.
+- **A pass over the whole interface at phone, tablet and desktop widths.** Toolbar filter captions no longer strand themselves beside the wrong control when a row wraps (their widths lived in inline styles that beat every media query); directory rows put the path and its reset button on one line; touch pointers get ~40px hit areas throughout, including the card-size slider, whose grabbable area was 4px tall. Verified with a script that walks every element on all seven tabs at five widths in both themes looking for overflow, escaped boxes, overlaps and undersized targets: all zero.
+- **Removed the dead Search tab.** Its renderer, handler and stylesheet section had been unreachable since the tab was replaced by Browse — about 350 lines.
 
 ### 2.3.0
 

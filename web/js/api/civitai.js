@@ -81,6 +81,14 @@ export class CivitaiDownloaderAPI {
     });
   }
 
+  static async getModelFileSizes(modelIds, apiKey = '') {
+    return await this._request("/civitai/model_file_sizes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model_ids: modelIds, api_key: apiKey }),
+    });
+  }
+
   static async getBaseModels() {
     return await this._request("/civitai/base_models");
   }

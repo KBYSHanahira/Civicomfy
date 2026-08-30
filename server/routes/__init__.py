@@ -15,6 +15,7 @@ from . import GetLocalModels
 from . import RefreshModelInfo
 from . import UpdateThumbnail
 from . import GetModelDetails
+from . import ModelFileSizes
 from . import GetModelTypes
 from . import GetModelDirs
 from . import DirectorySettings

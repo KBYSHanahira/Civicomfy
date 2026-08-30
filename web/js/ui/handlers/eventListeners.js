@@ -350,6 +350,22 @@ export function setupEventListeners(ui) {
                 }
             }
 
+            // Touch devices have no hover, so the action overlay would otherwise
+            // have to sit open permanently and hide every thumbnail. Tapping the
+            // artwork opens it for that card only; tapping again closes it.
+            const preview = event.target.closest('.civitai-browse-card-preview');
+            if (preview && !event.target.closest('.civitai-browse-card-overlay')
+                && window.matchMedia('(hover: none)').matches) {
+                const card = preview.closest('.civitai-browse-card');
+                if (card) {
+                    const wasOpen = card.classList.contains('actions-open');
+                    ui.browseResultsContainer.querySelectorAll('.civitai-browse-card.actions-open')
+                        .forEach(c => c.classList.remove('actions-open'));
+                    if (!wasOpen) card.classList.add('actions-open');
+                    return;
+                }
+            }
+
             const infoButton = event.target.closest('.civitai-browse-card-info-btn');
             if (infoButton) {
                 event.stopPropagation();
@@ -383,17 +399,12 @@ export function setupEventListeners(ui) {
                 return;
             }
 
+            // The card overlay only lists the first three versions. The rest live
+            // in the info modal, which lists every version with its size.
             const viewAllButton = event.target.closest('.show-all-versions-button');
             if (viewAllButton) {
-                const modelId = viewAllButton.dataset.modelId;
-                const versionsContainer = ui.browseResultsContainer.querySelector(`#all-versions-${modelId}`);
-                if (versionsContainer) {
-                    const currentlyVisible = versionsContainer.style.display !== 'none';
-                    versionsContainer.style.display = currentlyVisible ? 'none' : 'flex';
-                    viewAllButton.innerHTML = currentlyVisible
-                        ? `All versions (${viewAllButton.dataset.totalVersions}) <i class="fas fa-chevron-down"></i>`
-                        : `Show less <i class="fas fa-chevron-up"></i>`;
-                }
+                event.stopPropagation();
+                ui.showBrowseCardInfo(viewAllButton.dataset.modelId);
             }
         });
     }

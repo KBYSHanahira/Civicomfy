@@ -150,9 +150,9 @@ export function modalTemplate(settings = {}) {
               </div>
             </div>
 
-            <div id="civitai-download-preview-area" class="civitai-download-preview-area">
-              <!-- Preview content will be injected here -->
-            </div>
+            <!-- Kept literally empty: .civitai-download-preview-area:empty is what
+                 hides the box before a model is resolved. -->
+            <div id="civitai-download-preview-area" class="civitai-download-preview-area"></div>
             <div class="civitai-form-actions">
               <span class="civitai-form-actions-hint"><i class="fas fa-info-circle"></i> The preview above confirms the exact file and folder before you start.</span>
               <button type="submit" id="civitai-download-submit" class="civitai-button primary"><i class="fas fa-download"></i> Start download</button>
@@ -163,7 +163,7 @@ export function modalTemplate(settings = {}) {
           <div class="civitai-browse-header civitai-toolbar">
             <div class="civitai-browse-controls civitai-toolbar-row">
               <input type="text" id="civitai-browse-search" class="civitai-input civitai-browse-search-input" placeholder="Search models..." autocomplete="off">
-              <select id="civitai-browse-search-mode" class="civitai-select" style="width:auto;flex-shrink:0;" title="Search field">
+              <select id="civitai-browse-search-mode" class="civitai-select civitai-toolbar-select" title="Search field">
                 <option value="all">All fields</option>
                 <option value="name">By name</option>
                 <option value="username">By username</option>
@@ -177,7 +177,7 @@ export function modalTemplate(settings = {}) {
             </div>
             <div class="civitai-toolbar-row civitai-toolbar-row--filters">
               <span class="civitai-toolbar-label">Filter</span>
-              <select id="civitai-browse-type-select" class="civitai-select" style="width:auto;flex-shrink:0;" title="Model Type">
+              <select id="civitai-browse-type-select" class="civitai-select civitai-toolbar-select" title="Model Type">
                 <option value="all">All types</option>
                 <!-- Model type options will be injected here by JS -->
               </select>
@@ -196,7 +196,7 @@ export function modalTemplate(settings = {}) {
                 </div>
               </div>
               <span class="civitai-toolbar-label">Sort</span>
-              <select id="civitai-browse-sort" class="civitai-select" style="min-width:155px;width:auto;">
+              <select id="civitai-browse-sort" class="civitai-select civitai-toolbar-select civitai-toolbar-select--wide">
                 <option value="Most Downloaded">Most Downloaded</option>
                 <option value="Highest Rated">Highest Rated</option>
                 <option value="Most Liked">Most Liked</option>
@@ -204,7 +204,7 @@ export function modalTemplate(settings = {}) {
                 <option value="Most Discussed">Most Discussed</option>
                 <option value="Most Collected">Most Collected</option>
               </select>
-              <select id="civitai-browse-limit" class="civitai-select" style="width:auto;" title="Results per page">
+              <select id="civitai-browse-limit" class="civitai-select civitai-toolbar-select" title="Results per page">
                 <option value="25" selected>25 / page</option>
                 <option value="50">50 / page</option>
                 <option value="75">75 / page</option>
@@ -234,7 +234,7 @@ export function modalTemplate(settings = {}) {
             </div>
             <div class="civitai-mymodels-controls-row civitai-toolbar-row civitai-toolbar-row--filters">
               <span class="civitai-toolbar-label">Filter</span>
-              <select id="civitai-mymodels-type-filter" class="civitai-select" title="Filter by model type">
+              <select id="civitai-mymodels-type-filter" class="civitai-select civitai-toolbar-select" title="Filter by model type">
                 <option value="">All types</option>
               </select>
               <div id="civitai-mymodels-base-model-picker" class="civitai-base-model-picker">
@@ -252,7 +252,7 @@ export function modalTemplate(settings = {}) {
                 </div>
               </div>
               <span class="civitai-toolbar-label">Sort</span>
-              <select id="civitai-mymodels-sort" class="civitai-select" title="Sort models">
+              <select id="civitai-mymodels-sort" class="civitai-select civitai-toolbar-select" title="Sort models">
                 <option value="name_asc">Name (A → Z)</option>
                 <option value="name_desc">Name (Z → A)</option>
                 <option value="time_desc" selected>Newest first</option>
@@ -260,7 +260,7 @@ export function modalTemplate(settings = {}) {
                 <option value="size_desc">Size (large first)</option>
                 <option value="size_asc">Size (small first)</option>
               </select>
-              <select id="civitai-mymodels-limit" class="civitai-select" title="Items per page">
+              <select id="civitai-mymodels-limit" class="civitai-select civitai-toolbar-select" title="Items per page">
                 <option value="25">25 / page</option>
                 <option value="50" selected>50 / page</option>
                 <option value="75">75 / page</option>
@@ -276,7 +276,7 @@ export function modalTemplate(settings = {}) {
         <div id="civitai-tab-gallery" class="civitai-downloader-tab-content">
           <div class="civitai-gallery-header civitai-toolbar">
             <div class="civitai-gallery-controls civitai-toolbar-row">
-              <select id="civitai-gallery-subfolder" class="civitai-select" style="min-width:150px;width:auto;" title="Filter by subfolder">
+              <select id="civitai-gallery-subfolder" class="civitai-select civitai-toolbar-select civitai-toolbar-select--wide" title="Filter by subfolder">
                 <option value="">All subfolders</option>
               </select>
               <span id="civitai-gallery-count" class="civitai-mymodels-count"></span>
@@ -289,13 +289,13 @@ export function modalTemplate(settings = {}) {
             </div>
             <div class="civitai-toolbar-row civitai-toolbar-row--filters">
               <span class="civitai-toolbar-label">Sort</span>
-              <select id="civitai-gallery-sort" class="civitai-select" style="width:auto;" title="Sort">
+              <select id="civitai-gallery-sort" class="civitai-select civitai-toolbar-select" title="Sort">
                 <option value="time_desc" selected>Newest first</option>
                 <option value="time_asc">Oldest first</option>
                 <option value="name_asc">Name (A → Z)</option>
                 <option value="name_desc">Name (Z → A)</option>
               </select>
-              <select id="civitai-gallery-limit" class="civitai-select" style="width:auto;" title="Images per page">
+              <select id="civitai-gallery-limit" class="civitai-select civitai-toolbar-select" title="Images per page">
                 <option value="30" selected>30 / page</option>
                 <option value="50">50 / page</option>
                 <option value="100">100 / page</option>
@@ -415,9 +415,9 @@ export function modalTemplate(settings = {}) {
                     <option value="8">X &amp; above</option>
                     <option value="16">XXX / Explicit only</option>
                     <option value="32">Blocked only (least strict)</option>
-                    <option value="128">🔓 Unlock — never blur</option>
+                    <option value="128">🔓 Unlock everything — show all, never blur</option>
                   </select>
-                  <p class="civitai-field-hint">Thumbnails blur when a model's rating reaches this level.</p>
+                  <p class="civitai-field-hint">Thumbnails blur when a model's rating reaches this level. <strong>Unlock everything</strong> also stops Civitai from holding back results — models whose imagery is entirely explicit only appear in Browse and Search at that setting.</p>
                 </div>
                 <div class="civitai-form-group">
                   <label for="civitai-settings-civitai-domain">Civitai link domain</label>

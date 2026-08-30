@@ -1,12 +1,11 @@
-// Rendering of search results list (Browse cards + Search list)
-// Usage: renderSearchResults(uiInstance, itemsArray)
-//        renderBrowseCards(uiInstance, itemsArray)
+// Rendering of the Browse tab: model card grid + the per-model info modal.
+// Usage: renderBrowseCards(uiInstance, itemsArray)
 //        showBrowseCardInfo(uiInstance, modelId)
 
-import { app } from "../../../../scripts/app.js";
 import { attachLightboxZoom } from "../utils/dom.js";
 import { buildCivitaiModelUrl } from "./handlers/settingsHandler.js";
 import { typeColor } from "./typeColors.js";
+import { CivitaiDownloaderAPI } from "../api/civitai.js";
 
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 
@@ -24,8 +23,12 @@ function esc(value) {
 // Module-level cache so info modal can access full hit data
 const _browseHitData = new Map();
 
-// Track the Note node added to the workflow so it can be updated instead of duplicated
-let _workflowInfoNodeId = null;
+// Meilisearch documents carry no file information at all, so download sizes
+// are resolved from the REST API after the results are already on screen and
+// filled in place. Sizes of published versions never change, so both maps are
+// kept for the lifetime of the session.
+const _versionSizes = new Map();      // versionId (string) -> { sizeKB, name }
+const _sizeLookedUpModels = new Set(); // model ids already asked about
 
 /**
  * Open a fullscreen lightbox to zoom an image or video.
@@ -91,6 +94,66 @@ function _openLightbox(url, isVideo = false) {
 // Return a consistent accent color for a model type (shared with My Models)
 function _typeColor(modelType) {
     return typeColor(modelType);
+}
+
+// ─── Download size (lazy) ─────────────────────────────────────
+// Placeholder stays hidden until a size is known, so results that Civitai
+// won't resolve simply show nothing instead of an empty slot.
+function _createSizePlaceholder(versionId) {
+    const el = document.createElement('span');
+    el.className = 'civitai-model-size';
+    el.dataset.sizeVersionId = String(versionId);
+    el.hidden = true;
+    el.innerHTML = '<i class="fas fa-hdd"></i> <span class="civitai-model-size-value"></span>';
+    return el;
+}
+
+function _fillSizePlaceholder(el) {
+    const entry = _versionSizes.get(String(el.dataset.sizeVersionId || ''));
+    if (!entry) return;
+    const text = _fmtBytes(Number(entry.sizeKB) * 1024);
+    if (!text) return;
+    const valueEl = el.querySelector('.civitai-model-size-value');
+    if (valueEl) valueEl.textContent = text;
+    el.title = entry.name ? `${entry.name} — ${text}` : `Download size: ${text}`;
+    el.hidden = false;
+}
+
+/**
+ * Fill every size placeholder inside `container`, fetching the ones that
+ * aren't cached yet. Fire-and-forget: results render without waiting on it.
+ */
+async function _hydrateModelSizes(ui, items, container) {
+    if (!container) return;
+    const fillAll = () => container.querySelectorAll('.civitai-model-size[hidden]').forEach(_fillSizePlaceholder);
+    fillAll();
+
+    const modelIds = [];
+    (items || []).forEach(hit => {
+        const id = hit?.id;
+        if (id == null) return;
+        const key = String(id);
+        if (_sizeLookedUpModels.has(key) || modelIds.includes(key)) return;
+        modelIds.push(key);
+    });
+    if (modelIds.length === 0) return;
+
+    let data;
+    try {
+        data = await CivitaiDownloaderAPI.getModelFileSizes(modelIds, ui.settings?.apiKey || '');
+    } catch (error) {
+        // Sizes are supplementary — a failed lookup must not disturb browsing.
+        console.warn('[Civicomfy] Model size lookup failed:', error);
+        return;
+    }
+
+    modelIds.forEach(id => _sizeLookedUpModels.add(id));
+    Object.entries(data?.versions || {}).forEach(([versionId, entry]) => {
+        if (entry && entry.sizeKB != null) _versionSizes.set(String(versionId), entry);
+    });
+    // Placeholders are keyed by version id, so a late response can only ever
+    // fill in matching cards — no need to guard against a newer render.
+    fillAll();
 }
 
 /**
@@ -208,6 +271,15 @@ export function renderBrowseCards(ui, items) {
             preview.appendChild(installedOverlay);
         }
 
+        // Touch affordance: with no hover, the overlay is opened by tapping the
+        // artwork, and this chip is the only thing that says so. CSS hides it
+        // wherever hover exists.
+        const tapHint = document.createElement('span');
+        tapHint.className = 'civitai-browse-card-tap-hint';
+        tapHint.setAttribute('aria-hidden', 'true');
+        tapHint.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
+        preview.appendChild(tapHint);
+
         // Hover overlay: version download buttons + view link
         const overlay = document.createElement('div');
         overlay.className = 'civitai-browse-card-overlay';
@@ -220,9 +292,11 @@ export function renderBrowseCards(ui, items) {
             btn.dataset.modelType = modelTypeApi;
             btn.dataset.modelName = modelName;
             btn.dataset.versionName = ver.name || 'Unknown';
-            btn.title = ver.id ? 'Pre-fill Download Tab' : 'Version ID missing';
+            btn.title = ver.id ? `Pre-fill Download tab — ${ver.name || 'Unknown'}` : 'Version ID missing';
             if (!ver.id) btn.disabled = true;
-            btn.innerHTML = `<span class="base-model-badge">${esc(ver.baseModel || 'N/A')}</span> ${esc(ver.name || 'Unknown')} <i class="fas fa-download"></i>`;
+            btn.innerHTML = `<span class="base-model-badge">${esc(ver.baseModel || 'N/A')}</span>`
+                + `<span class="cfy-vbtn-name">${esc(ver.name || 'Unknown')}</span>`
+                + `<i class="fas fa-download"></i>`;
             overlay.appendChild(btn);
         });
 
@@ -230,9 +304,10 @@ export function renderBrowseCards(ui, items) {
             const moreBtn = document.createElement('button');
             moreBtn.className = 'civitai-button secondary small show-all-versions-button';
             moreBtn.dataset.modelId = modelId;
-            moreBtn.dataset.totalVersions = allVersions.length;
             moreBtn.title = `Show all ${allVersions.length} versions`;
-            moreBtn.innerHTML = `All (${allVersions.length}) <i class="fas fa-chevron-down"></i>`;
+            // Opens the info modal rather than expanding in place, so the icon
+            // should not promise a dropdown.
+            moreBtn.innerHTML = `<span class="cfy-vbtn-name">All (${allVersions.length})</span><i class="fas fa-layer-group"></i>`;
             overlay.appendChild(moreBtn);
         }
 
@@ -277,12 +352,22 @@ export function renderBrowseCards(ui, items) {
             creatorLine.innerHTML = `<i class="fas fa-user"></i> ${creator}`;
             metaEl.appendChild(creatorLine);
         }
+        // Download count and file size share one line so adding the size
+        // doesn't make every card taller.
+        const statsLine = document.createElement('span');
+        statsLine.className = 'civitai-browse-card-meta-line';
         if (stats.downloadCount) {
-            const dlLine = document.createElement('span');
-            dlLine.className = 'civitai-browse-card-meta-line';
-            dlLine.innerHTML = `<i class="fas fa-download"></i> ${stats.downloadCount.toLocaleString()}`;
-            metaEl.appendChild(dlLine);
+            const dlStat = document.createElement('span');
+            dlStat.className = 'civitai-browse-card-stat';
+            dlStat.innerHTML = `<i class="fas fa-download"></i> ${stats.downloadCount.toLocaleString()}`;
+            statsLine.appendChild(dlStat);
         }
+        if (primaryVersionId) {
+            const sizeStat = _createSizePlaceholder(primaryVersionId);
+            sizeStat.classList.add('civitai-browse-card-stat');
+            statsLine.appendChild(sizeStat);
+        }
+        if (statsLine.childElementCount > 0) metaEl.appendChild(statsLine);
 
         body.appendChild(nameRow);
         body.appendChild(metaEl);
@@ -296,6 +381,8 @@ export function renderBrowseCards(ui, items) {
     ui.browseResultsContainer.className = 'civitai-browse-cards';
     ui.browseResultsContainer.innerHTML = '';
     ui.browseResultsContainer.appendChild(fragment);
+
+    _hydrateModelSizes(ui, items, ui.browseResultsContainer);
 }
 
 /**
@@ -712,6 +799,13 @@ function _renderBrowseInfoModal(ui, hit) {
                 vNameWrap.appendChild(badge);
             }
 
+            if (ver.id) {
+                const sizeEl = _createSizePlaceholder(ver.id);
+                sizeEl.classList.add('civitai-browse-info-version-size');
+                _fillSizePlaceholder(sizeEl);
+                vNameWrap.appendChild(sizeEl);
+            }
+
             const dlBtn = document.createElement('button');
             dlBtn.className = 'civitai-button primary small civitai-search-download-button';
             dlBtn.dataset.modelId = modelId;
@@ -782,6 +876,7 @@ function _renderBrowseInfoModal(ui, hit) {
             ui.fetchAndDisplayDownloadPreview();
         });
 
+        _hydrateModelSizes(ui, [hit], versList);
         sec.appendChild(versList);
         detailsWrap.appendChild(sec);
     }
@@ -913,188 +1008,4 @@ function _renderBrowseInfoModal(ui, hit) {
     }).observe(ui.modal, { childList: true, subtree: false });
 
     ui.modal.appendChild(overlay);
-}
-
-export function renderSearchResults(ui, items) {
-  ui.feedback?.ensureFontAwesome();
-
-  if (!items || items.length === 0) {
-    const queryUsed = ui.searchQueryInput && ui.searchQueryInput.value.trim();
-    const typeFilterUsed = ui.searchTypeSelect && ui.searchTypeSelect.value !== 'any';
-    const baseModelFilterUsed = ui.searchBaseModelSelect && ui.searchBaseModelSelect.value !== 'any';
-    const message = (queryUsed || typeFilterUsed || baseModelFilterUsed)
-      ? 'No models found matching your criteria.'
-      : 'Enter a query or select filters and click Search.';
-    ui.searchResultsContainer.innerHTML = `<p>${message}</p>`;
-    return;
-  }
-
-  const placeholder = PLACEHOLDER_IMAGE_URL;
-  const onErrorScript = `this.onerror=null; this.src='${placeholder}'; this.style.backgroundColor='transparent';`;
-  const fragment = document.createDocumentFragment();
-
-  items.forEach(hit => {
-    const modelId = hit.id;
-    if (!modelId) return;
-
-    const creator = hit.user?.username || 'Unknown Creator';
-    const modelName = hit.name || 'Untitled Model';
-    const modelTypeApi = hit.type || 'other';
-    const stats = hit.metrics || {};
-    const tags = hit.tags?.map(t => t.name) || [];
-
-    const thumbnailUrl = hit.thumbnailUrl || placeholder;
-    const firstImage = Array.isArray(hit.images) && hit.images.length > 0 ? hit.images[0] : null;
-    const thumbnailType = firstImage?.type;
-    const nsfwLevel = Number(firstImage?.nsfwLevel ?? hit.nsfwLevel ?? 0);
-    const blurMinLevel = Number(ui.settings?.nsfwBlurMinLevel ?? 4);
-    const shouldBlur = ui.settings?.hideMatureInSearch === true && nsfwLevel >= blurMinLevel;
-
-    const allVersions = hit.versions || [];
-    const primaryVersion = hit.version || (allVersions.length > 0 ? allVersions[0] : {});
-    const primaryVersionId = primaryVersion.id;
-    const primaryBaseModel = primaryVersion.baseModel || 'N/A';
-
-    const uniqueBaseModels = allVersions.length > 0
-      ? [...new Set(allVersions.map(v => v.baseModel).filter(Boolean))]
-      : (primaryBaseModel !== 'N/A' ? [primaryBaseModel] : []);
-    const baseModelsDisplay = uniqueBaseModels.length > 0 ? uniqueBaseModels.join(', ') : 'N/A';
-
-    const publishedAt = hit.publishedAt;
-    let lastUpdatedFormatted = 'N/A';
-    if (publishedAt) {
-      try {
-        const date = new Date(publishedAt);
-        lastUpdatedFormatted = date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-      } catch (_) {}
-    }
-
-    const listItem = document.createElement('div');
-    listItem.className = 'civitai-search-item';
-    listItem.dataset.modelId = modelId;
-
-    const MAX_VISIBLE_VERSIONS = 3;
-    let visibleVersions = [];
-    if (primaryVersionId) {
-      visibleVersions.push({ id: primaryVersionId, name: primaryVersion.name || 'Primary Version', baseModel: primaryBaseModel });
-    }
-    allVersions.forEach(v => {
-      if (v.id !== primaryVersionId && visibleVersions.length < MAX_VISIBLE_VERSIONS) visibleVersions.push(v);
-    });
-
-    let versionButtonsHtml = visibleVersions.map(version => {
-      const versionId = version.id;
-      const versionName = version.name || 'Unknown Version';
-      const baseModel = version.baseModel || 'N/A';
-      return `
-        <button class="civitai-button primary small civitai-search-download-button"
-                data-model-id="${modelId}"
-                data-version-id="${versionId || ''}"
-                data-model-type="${modelTypeApi || ''}"
-                ${!versionId ? 'disabled title="Version ID missing, cannot pre-fill"' : 'title="Pre-fill Download Tab"'} >
-          <span class="base-model-badge">${esc(baseModel)}</span> ${esc(versionName)} <i class="fas fa-download"></i>
-        </button>
-      `;
-    }).join('');
-
-    const hasMoreVersions = allVersions.length > visibleVersions.length;
-    const totalVersionCount = allVersions.length;
-    const moreButtonHtml = hasMoreVersions ? `
-      <button class="civitai-button secondary small show-all-versions-button"
-              data-model-id="${modelId}"
-              data-total-versions="${totalVersionCount}"
-              title="Show all ${totalVersionCount} versions">
-        All versions (${totalVersionCount}) <i class="fas fa-chevron-down"></i>
-      </button>
-    ` : '';
-
-    let allVersionsHtml = '';
-    if (hasMoreVersions) {
-      const hiddenVersions = allVersions.filter(v => !visibleVersions.some(vis => vis.id === v.id));
-      allVersionsHtml = `
-        <div class="all-versions-container" id="all-versions-${modelId}" style="display: none;">
-          ${hiddenVersions.map(version => {
-            const versionId = version.id;
-            const versionName = version.name || 'Unknown Version';
-            const baseModel = version.baseModel || 'N/A';
-            return `
-              <button class="civitai-button primary small civitai-search-download-button"
-                      data-model-id="${modelId}"
-                      data-version-id="${versionId || ''}"
-                      data-model-type="${modelTypeApi || ''}"
-                      ${!versionId ? 'disabled title="Version ID missing, cannot pre-fill"' : 'title="Pre-fill Download Tab"'} >
-                <span class="base-model-badge">${esc(baseModel)}</span> ${esc(versionName)} <i class="fas fa-download"></i>
-              </button>
-            `;
-          }).join('')}
-        </div>
-      `;
-    }
-
-    let thumbnailHtml = '';
-    const videoTitle = `Video preview for ${modelName}`;
-    const imageAlt = `${modelName} thumbnail`;
-    if (thumbnailUrl && typeof thumbnailUrl === 'string' && thumbnailType === 'video') {
-      thumbnailHtml = `
-        <video class="civitai-search-thumbnail" src="${esc(thumbnailUrl)}" autoplay loop muted playsinline
-               title="${esc(videoTitle)}"
-               onerror="console.error('Failed to load video preview:', this.src)">
-          Your browser does not support the video tag.
-        </video>
-      `;
-    } else {
-      const effective = thumbnailUrl || placeholder;
-      thumbnailHtml = `
-        <img src="${esc(effective)}" alt="${esc(imageAlt)}" class="civitai-search-thumbnail" loading="lazy" onerror="${onErrorScript}">
-      `;
-    }
-
-    const overlayHtml = shouldBlur ? `<div class="civitai-nsfw-overlay" title="R-rated: click to reveal">R</div>` : '';
-    const containerClasses = `civitai-thumbnail-container${shouldBlur ? ' blurred' : ''}`;
-
-    listItem.innerHTML = `
-      <div class="${containerClasses}" data-nsfw-level="${esc(nsfwLevel ?? '')}">
-        ${thumbnailHtml}
-        ${overlayHtml}
-        <div class="civitai-type-badge" data-type="${esc(modelTypeApi.toLowerCase())}">${esc(modelTypeApi)}</div>
-      </div>
-      <div class="civitai-search-info">
-        <h4>${esc(modelName)}</h4>
-        <div class="civitai-search-meta-info">
-          <span title="Creator: ${esc(creator)}"><i class="fas fa-user"></i> ${esc(creator)}</span>
-          <span title="Base Models: ${esc(baseModelsDisplay)}"><i class="fas fa-layer-group"></i> ${esc(baseModelsDisplay)}</span>
-          <span title="Published: ${esc(lastUpdatedFormatted)}"><i class="fas fa-calendar-alt"></i> ${esc(lastUpdatedFormatted)}</span>
-        </div>
-        <div class="civitai-search-stats" title="Stats: Downloads / Rating (Count) / Likes">
-          <span title="Downloads"><i class="fas fa-download"></i> ${stats.downloadCount?.toLocaleString() || 0}</span>
-          <span title="Thumbs"><i class="fas fa-thumbs-up"></i> ${stats.thumbsUpCount?.toLocaleString() || 0}</span>
-          <span title="Collected"><i class="fas fa-archive"></i> ${stats.collectedCount?.toLocaleString() || 0}</span>
-          <span title="Buzz"><i class="fas fa-bolt"></i> ${stats.tippedAmountCount?.toLocaleString() || 0}</span>
-        </div>
-        ${tags.length > 0 ? `
-        <div class="civitai-search-tags" title="${esc(tags.join(', '))}">
-          ${tags.slice(0, 5).map(tag => `<span class="civitai-search-tag">${esc(tag)}</span>`).join('')}
-          ${tags.length > 5 ? `<span class="civitai-search-tag">...</span>` : ''}
-        </div>
-        ` : ''}
-      </div>
-      <div class="civitai-search-actions">
-        <a href="${buildCivitaiModelUrl(modelId, primaryVersionId)}"
-           target="_blank" rel="noopener noreferrer" class="civitai-button small" 
-           title="Open on Civitai website">
-          View <i class="fas fa-external-link-alt"></i>
-        </a>
-        <div class="version-buttons-container">
-          ${versionButtonsHtml}
-          ${moreButtonHtml}
-        </div>
-        ${allVersionsHtml}
-      </div>
-    `;
-
-    fragment.appendChild(listItem);
-  });
-
-  ui.searchResultsContainer.innerHTML = '';
-  ui.searchResultsContainer.appendChild(fragment);
 }

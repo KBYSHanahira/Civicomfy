@@ -1,4 +1,5 @@
 import { CivitaiDownloaderAPI } from "../../api/civitai.js";
+import { isContentUnlocked } from "./settingsHandler.js";
 
 /**
  * Refresh the set of locally-installed Civitai model IDs stored on `ui._installedModelIds`.
@@ -26,8 +27,9 @@ export async function refreshInstalledModelIds(ui) {
 export async function handleBrowseLoad(ui) {
     if (!ui.browseResultsContainer || !ui.browsePaginationContainer) return;
 
-    const loadingMsg = '<p><i class="fas fa-spinner fa-spin"></i> Loading models...</p>';
-    ui.browseResultsContainer.innerHTML = loadingMsg;
+    ui.browseResultsContainer.className = 'civitai-browse-cards';
+    ui.browseResultsContainer.innerHTML =
+        '<p class="civitai-empty-state"><i class="fas fa-spinner fa-spin"></i> Loading models…</p>';
     ui.browsePaginationContainer.innerHTML = '';
 
     if (ui.browseRefreshButton) {
@@ -44,6 +46,9 @@ export async function handleBrowseLoad(ui) {
         limit: ui.browsePagination.limit,
         page: ui.browsePagination.currentPage,
         api_key: ui.settings?.apiKey || '',
+        // Only ask Civitai for every rating level once the user has unlocked
+        // content; otherwise its default filtering stays in place.
+        nsfw: isContentUnlocked(ui.settings),
     };
 
     try {
@@ -56,7 +61,8 @@ export async function handleBrowseLoad(ui) {
         }
 
         if (response.items.length === 0) {
-            ui.browseResultsContainer.innerHTML = '<p>No models found for this category.</p>';
+            ui.browseResultsContainer.innerHTML =
+                '<p class="civitai-empty-state"><i class="fas fa-compass"></i> No models found for this category.</p>';
         } else {
             ui.renderBrowseResults(response.items);
         }

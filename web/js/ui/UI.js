@@ -8,7 +8,7 @@ import { startStatusUpdates, stopStatusUpdates, updateStatus, handleCancelDownlo
 import { handleMyModelsLoad, renderMyModels, handleMyModelOpenOnCivit, handleMyModelViewDetail, handleMyModelDelete } from "./handlers/myModelsHandler.js";
 import { handleGalleryLoad, renderGalleryGrid, openGalleryLightbox, closeGalleryLightbox, lightboxPrev, lightboxNext, toggleGallerySelect, updateGallerySelectionBar, deleteSelectedGallery, downloadSelectedGallery, deleteGalleryImage, downloadCurrentLightboxImage, deleteCurrentLightboxImage } from "./handlers/galleryHandler.js";
 import { renderDownloadList } from "./statusRenderer.js";
-import { renderSearchResults, renderBrowseCards, showBrowseCardInfo } from "./searchRenderer.js";
+import { renderBrowseCards, showBrowseCardInfo } from "./searchRenderer.js";
 import { renderDownloadPreview } from "./previewRenderer.js";
 import { modalTemplate, PAGE_META } from "./templates.js";
 import { CivitaiDownloaderAPI } from "../api/civitai.js";
@@ -24,7 +24,6 @@ export class CivitaiDownloaderUI {
         this.statusData = { queue: [], active: [], history: [] };
         this.baseModels = [];
         this.browsePagination = { currentPage: 1, totalPages: 1, limit: 25 };
-        this.searchPagination = { currentPage: 1, totalPages: 1, limit: 25 };
         this.myModelsPagination = { currentPage: 1, limit: 50 };
         this.browseActiveType = 'all';
         this.browseLoaded = false;
@@ -718,7 +717,6 @@ export class CivitaiDownloaderUI {
 
     // --- Rendering (delegated to external renderers) ---
     renderDownloadList = (items, container, emptyMessage) => renderDownloadList(this, items, container, emptyMessage);
-    renderSearchResults = (items) => renderSearchResults(this, items);
     renderDownloadPreview = (data) => renderDownloadPreview(this, data);
     renderBrowseResults = (items) => renderBrowseCards(this, items);
     showBrowseCardInfo = (modelId) => showBrowseCardInfo(this, modelId);

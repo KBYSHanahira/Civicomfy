@@ -11,7 +11,7 @@ export function getDefaultSettings() {
         apiKey: '',
         hfToken: '',
         numConnections: 1,
-        defaultModelType: 'checkpoint',
+        defaultModelType: 'checkpoints',
         autoOpenStatusTab: true,
         deepSubfolderCheck: false,
         hideMatureInSearch: true,
@@ -51,9 +51,31 @@ export function getCivitaiDomain() {
     return 'civitai.com';
 }
 
+// Blur threshold at which the user has asked to see everything. It is not
+// only a blur switch: Civitai's search index drops models whose imagery is
+// exclusively explicit unless the request opts into every rating level, so at
+// this setting Browse and Search stop filtering results as well.
+export const NSFW_UNLOCK_LEVEL = 128;
+
+export function isContentUnlocked(settings) {
+    return Number(settings?.nsfwBlurMinLevel) >= NSFW_UNLOCK_LEVEL;
+}
+
 export function buildCivitaiModelUrl(modelId, versionId) {
     const domain = getCivitaiDomain();
     return `https://${domain}/models/${modelId}${versionId ? '?modelVersionId=' + versionId : ''}`;
+}
+
+// Model-type keys come from ComfyUI's own folder names, so a saved value can
+// legitimately not exist any more (renamed folder, older Civicomfy default).
+// Assigning a missing value to a <select> silently blanks it, which left the
+// Download form with no model type at all — so resolve to a real option.
+export function applyModelTypeToSelect(select, wanted) {
+    if (!select || select.options.length === 0) return null;
+    const has = (v) => v && select.querySelector(`option[value="${CSS.escape(String(v))}"]`);
+    const value = has(wanted) ? wanted : (has('checkpoints') ? 'checkpoints' : select.options[0].value);
+    select.value = value;
+    return value;
 }
 
 export function loadAndApplySettings(ui) {
@@ -99,7 +121,8 @@ export function applySettings(ui) {
         ui.settingsConnectionsInput.value = Math.max(1, Math.min(16, ui.settings.numConnections || 1));
     }
     if (ui.settingsDefaultTypeSelect) {
-        ui.settingsDefaultTypeSelect.value = ui.settings.defaultModelType || 'checkpoint';
+        const resolved = applyModelTypeToSelect(ui.settingsDefaultTypeSelect, ui.settings.defaultModelType);
+        if (resolved) ui.settings.defaultModelType = resolved;
     }
     if (ui.settingsAutoOpenCheckbox) {
         ui.settingsAutoOpenCheckbox.checked = ui.settings.autoOpenStatusTab === true;
@@ -134,8 +157,12 @@ export function applySettings(ui) {
     // re-applying settings (e.g. visiting the Settings tab to set an HF token)
     // would silently reset their chosen save location back to the default.
     if (ui.downloadModelTypeSelect && Object.keys(ui.modelTypes).length > 0 && !ui._downloadTypeInitialized) {
-        ui.downloadModelTypeSelect.value = ui.settings.defaultModelType || 'checkpoint';
+        const before = ui.downloadModelTypeSelect.value;
+        const resolved = applyModelTypeToSelect(ui.downloadModelTypeSelect, ui.settings.defaultModelType);
         ui._downloadTypeInitialized = true;
+        // Subfolders were loaded for whatever option the browser preselected
+        // while the list was being built; refresh them for the real default.
+        if (resolved && resolved !== before) ui.loadAndPopulateSubdirs?.(resolved);
     }
 }
 

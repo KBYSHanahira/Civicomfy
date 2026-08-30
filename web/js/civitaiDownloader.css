@@ -769,7 +769,12 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
 .civitai-form-row > .civitai-form-group {
   flex: 1 1 200px;
   min-width: 0;
+  /* The row's own gap already separates wrapped groups; keeping the margin too
+     doubled the space between them. */
+  margin-bottom: 0;
 }
+.civitai-form-row { margin-bottom: 16px; }
+.civitai-form-row:last-child { margin-bottom: 0; }
 /* Checkbox + label on one line. nowrap plus a zero flex-basis on the label:
    with wrap enabled a long label's content width pushes it onto its own line
    before the flexbox ever gets to shrink it, which left the checkbox stranded
@@ -806,16 +811,23 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
 .civitai-field-hint {
   font-size: 0.8em;
   color: var(--cfy-text-dim);
-  line-height: 1.55;
+  line-height: 1.7;
   margin: 0;
 }
 .civitai-field-hint i { margin-right: 4px; opacity: 0.7; }
 .civitai-field-hint code {
+  display: inline-block;
   background: var(--cfy-fill-2);
   border: 1px solid var(--cfy-line);
   border-radius: var(--cfy-radius-sm);
-  padding: 0 4px;
+  padding: 0 5px;
   font-size: 0.94em;
+  /* Inline code has no line box of its own: without a tightened line-height
+     the padded border box overlaps the line above when the hint wraps. */
+  line-height: 1.45;
+  vertical-align: baseline;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 /* Shared empty / loading / error state for grids and lists.
@@ -923,10 +935,6 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   text-align: center;
 }
 .civitai-preview-placeholder i { font-size: 1.5em; opacity: 0.45; }
-.civitai-download-preview-area .civitai-search-item {
-  margin-bottom: 14px;
-  background: var(--cfy-surface);
-}
 
 /* HuggingFace preview + preview errors */
 .cfy-hf-preview {
@@ -1459,7 +1467,10 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
 .civitai-card-size-control input[type=range] {
   accent-color: var(--cfy-accent);
   width: 72px;
-  height: 4px;
+  /* The visible track stays thin, but the control itself is tall enough to
+     grab — a 4px-high hit area is unusable with a finger. */
+  height: 22px;
+  background: transparent;
   border-radius: 2px;
   cursor: pointer;
   margin: 0;
@@ -1565,6 +1576,7 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   align-content: start;
 }
 .civitai-browse-card {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   background: var(--cfy-surface);
@@ -1618,6 +1630,12 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   z-index: 2;
   pointer-events: none;
   white-space: nowrap;
+  /* Both badges hug the bottom edge from opposite sides, so each needs a cap to
+     stay clear of the other. The type gets the larger share: it is the shorter
+     label of the two and the one that survives truncation intact. */
+  max-width: 58%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .civitai-browse-card-bm-badge {
   position: absolute;
@@ -1631,7 +1649,7 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   z-index: 2;
   pointer-events: none;
   white-space: nowrap;
-  max-width: 90px;
+  max-width: calc(42% - 16px);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1679,14 +1697,44 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   overflow-y: auto;
 }
 .civitai-browse-card:hover .civitai-browse-card-overlay { opacity: 1; }
-/* On touch devices there is no hover, so reveal the action overlay on tap/focus
-   to keep the download / "View on Civitai" buttons reachable. */
+/* On touch devices there is no hover. Keeping the overlay permanently open hid
+   every thumbnail, so it is opened per card by tapping the artwork (see the
+   browse results click handler) and closed by tapping again. */
 @media (hover: none) {
-  .civitai-browse-card .civitai-browse-card-overlay { opacity: 1; }
+  .civitai-browse-card .civitai-browse-card-overlay { opacity: 0; pointer-events: none; }
+  .civitai-browse-card.actions-open .civitai-browse-card-overlay { opacity: 1; pointer-events: auto; }
+}
+/* Tap affordance — only rendered where there is no hover to reveal the actions. */
+.civitai-browse-card-tap-hint { display: none; }
+@media (hover: none) {
+  .civitai-browse-card-tap-hint {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--cfy-glass);
+    border: 1px solid var(--cfy-glass-line);
+    color: #f5f4ef;
+    font-size: 0.8em;
+    pointer-events: none;
+    transition: opacity var(--cfy-transition);
+  }
+  .civitai-browse-card.actions-open .civitai-browse-card-tap-hint { opacity: 0; }
 }
 .civitai-browse-card:focus-within .civitai-browse-card-overlay { opacity: 1; }
 .civitai-browse-card-overlay .civitai-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
   height: auto;
+  min-height: 28px;
   padding: 5px 8px;
   font-size: 0.78em;
   border-radius: var(--cfy-radius);
@@ -1697,11 +1745,27 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   width: 100%;
   box-sizing: border-box;
   transform: none !important;
   box-shadow: none !important;
+}
+/* Only the version name gives way; the base-model chip and the icon keep their
+   size so the button stays readable at any card width. */
+.cfy-vbtn-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.civitai-browse-card-overlay .civitai-button > .base-model-badge,
+.civitai-browse-card-overlay .civitai-button > i { flex: 0 0 auto; }
+.civitai-browse-card-overlay .civitai-button > .base-model-badge {
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 0;
 }
 .civitai-browse-card-overlay .civitai-button:hover {
   background: var(--cfy-accent-strong);
@@ -1750,6 +1814,13 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   line-height: 1.4;
   transition: background var(--cfy-transition), box-shadow var(--cfy-transition);
   white-space: nowrap;
+}
+/* The card size slider means a card can be 120px or 280px wide at the same
+   viewport size, so the "Info" caption is dropped per card rather than per
+   breakpoint — it was eating the space the model name needed. */
+@container (max-width: 178px) {
+  .civitai-browse-card-info-btn > span { display: none; }
+  .civitai-browse-card-info-btn { padding: 3px 6px; }
 }
 .civitai-browse-card-info-btn:hover {
   background: var(--cfy-accent-glow);
@@ -1812,6 +1883,32 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   width: 10px;
   text-align: center;
 }
+/* Download count + file size sit side by side on one meta line, separated by
+   a dot that only appears when both are actually shown. */
+.civitai-browse-card-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.civitai-browse-card-stat[hidden] { display: none; }
+.civitai-browse-card-stat + .civitai-browse-card-stat::before {
+  content: "·";
+  opacity: 0.45;
+  margin-right: 2px;
+}
+.civitai-model-size[hidden] { display: none; }
+.civitai-browse-info-version-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85em;
+  color: var(--cfy-text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.civitai-browse-info-version-size i { opacity: 0.6; }
+
 .civitai-browse-selected-bar {
   display: flex;
   align-items: center;
@@ -2672,11 +2769,14 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
 .civitai-dl-titlerow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px 8px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 .civitai-dl-name {
-  flex: 1 1 auto;
+  /* 60% basis keeps the name and the pill on one line when there is room and
+     drops the pill underneath instead of shrinking the name to "Meg…". */
+  flex: 1 1 60%;
   min-width: 0;
   font-size: 0.98em;
   font-weight: 600;
@@ -2813,125 +2913,8 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
 }
 
 /* =============================================================
-   SEARCH RESULTS LIST
+   BROWSE CARD VERSION BUTTONS
    ============================================================= */
-.civitai-search-controls {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-  align-items: flex-end;
-}
-.civitai-search-controls .civitai-input { flex-grow: 1; }
-.civitai-search-controls .civitai-select { min-width: 140px; }
-.civitai-search-results { margin-top: 16px; }
-.civitai-search-item {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  margin-bottom: 12px;
-  padding: 14px;
-  border-radius: var(--cfy-radius-lg);
-  background: var(--cfy-surface);
-  border: 1px solid var(--cfy-border);
-  transition: border-color var(--cfy-transition), box-shadow var(--cfy-transition);
-}
-.civitai-search-item:hover {
-  border-color: var(--cfy-line-strong);
-  box-shadow: var(--cfy-shadow-sm);
-}
-.civitai-search-thumbnail {
-  width: 110px; height: 155px;
-  object-fit: cover;
-  border-radius: var(--cfy-radius);
-  background: var(--cfy-media-bg);
-  flex-shrink: 0;
-  display: block;
-}
-.civitai-type-badge {
-  position: absolute;
-  bottom: 6px; left: 6px;
-  background: rgba(0,0,0,0.8);
-  color: #fff;
-  padding: 2px 7px;
-  border-radius: 10px;
-  font-size: 0.72em;
-  font-weight: 700;
-  z-index: 2;
-  white-space: nowrap;
-}
-.civitai-search-meta-info {
-  font-size: 0.82em;
-  color: var(--cfy-text-dim);
-  margin-bottom: 6px;
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-.civitai-search-meta-info span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-.civitai-search-info {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow: hidden;
-  min-width: 0;
-}
-.civitai-search-info h4 {
-  margin: 0;
-  font-size: 1em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.civitai-search-info p {
-  margin: 0;
-  font-size: 0.88em;
-  color: var(--cfy-text-dim);
-}
-.civitai-search-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
-}
-.civitai-search-tag {
-  background: var(--cfy-fill-2);
-  color: var(--cfy-text);
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 0.78em;
-  border: 1px solid var(--cfy-fill-3);
-}
-.civitai-search-stats span { margin-right: 14px; font-size: 0.84em; color: var(--cfy-text-dim); }
-.civitai-search-stats i { margin-right: 4px; }
-.civitai-search-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-end;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-.version-buttons-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-.all-versions-container {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-bottom: 4px;
-  white-space: nowrap;
-  max-width: 100%;
-  align-items: flex-end;
-}
 .show-all-versions-button { align-self: flex-end; }
 .base-model-badge {
   display: inline-block;
@@ -3962,6 +3945,86 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   .civitai-card-size-control { margin-left: auto; }
 }
 
+/* ── Toolbar controls ─────────────────────────────────────── */
+/* Content-sized while there is room; the responsive rules below hand them an
+   even share of the row once there isn't. */
+.civitai-toolbar-select {
+  width: auto;
+  flex: 0 0 auto;
+  min-width: 0;
+  /* A <select> sizes itself to its widest option, and the model-type list holds
+     names like "animatediff_video_formats" — without a cap one control ate a
+     third of the toolbar. The dropdown itself is free to render wider. */
+  max-width: 190px;
+}
+.civitai-toolbar-select--wide { min-width: 155px; }
+.civitai-base-model-picker { max-width: 220px; }
+
+/* The uppercase FILTER / SORT captions are the first thing to go: as soon as
+   the row wraps they are stranded beside whichever control follows them. */
+@media (max-width: 940px) {
+  .civitai-toolbar-label { display: none; }
+}
+@media (max-width: 760px) {
+  .civitai-toolbar-spacer { display: none; }
+  .civitai-toolbar-select,
+  .civitai-base-model-picker {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    /* Half the row is the target here, so the desktop caps must stand down. */
+    max-width: none;
+  }
+  .civitai-toolbar-select--wide { min-width: 0; }
+  .civitai-browse-search-input { flex: 1 1 100%; max-width: none; }
+  .civitai-mymodels-count { order: -1; }
+}
+@media (max-width: 460px) {
+  .civitai-base-model-picker { flex-basis: 100%; }
+  .civitai-card-size-control { flex: 1 1 auto; }
+  .civitai-card-size-control input[type=range] { width: 100%; }
+}
+
+/* The subtitle is the least important thing in the header, and truncating it to
+   a few words reads worse than not showing it at all. */
+@media (max-width: 560px) {
+  .civitai-page-sub { display: none; }
+  .civitai-downloader-header h2 { font-size: 1.25em; }
+  /* Same specificity as the rule that lays the hint out, or it wins. */
+  .civitai-form-actions .civitai-form-actions-hint { display: none; }
+  .civitai-form-actions .civitai-button { flex: 1 1 auto; }
+  .civitai-empty-state { padding: 24px 14px; }
+}
+
+/* Directory rows: label on its own line, then path + reset side by side. */
+@media (max-width: 680px) {
+  .civitai-dir-row { row-gap: 4px; }
+  .civitai-dir-row-input { flex: 1 1 0; }
+}
+
+/* ── Touch input ──────────────────────────────────────────── */
+/* Coarse pointers need roughly 40px targets. Growing the shared control-height
+   token moves every input, select and button that uses it in one step; the few
+   controls with hard-coded sizes follow here. */
+@media (pointer: coarse) {
+  :root { --cfy-input-h: 42px; }
+  .civitai-button.small { height: 34px; padding: 0 12px; }
+  .civitai-icon-button { width: 40px; height: 40px; }
+  .civitai-checkbox { width: 20px; height: 20px; }
+  .civitai-form-group.inline > .civitai-checkbox { margin-top: 1px; }
+  .civitai-browse-card-info-btn { min-height: 32px; padding: 6px 9px; }
+  .civitai-browse-card-overlay .civitai-button,
+  .civitai-mymodel-card-overlay .civitai-button,
+  .civitai-gallery-card-overlay .civitai-button { min-height: 36px; }
+  /* Pagination sets its own height, so the shared .small bump misses it. The
+     id selector mirrors the rule above it, which is id-scoped for Browse. */
+  #civitai-browse-pagination .civitai-button,
+  .civitai-mymodels-pagination .civitai-button,
+  .civitai-gallery-pagination .civitai-button { height: 38px; min-width: 38px; }
+  .cfy-copy-btn { min-height: 30px; }
+  .civitai-card-size-control input[type=range] { height: 30px; }
+  .civitai-dl-facts .civitai-dl-fact { padding: 3px 9px; }
+}
+
 /* ── Accessibility: visible keyboard focus ─────────────────── */
 .civitai-button:focus-visible,
 .civitai-icon-button:focus-visible,
@@ -4272,6 +4335,9 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   height: 30px;
   font-size: 0.84em;
   padding: 0 9px;
+}
+@media (pointer: coarse) {
+  .civitai-gallery-pagination .civitai-gallery-page-btn { min-width: 38px; height: 38px; }
 }
 
 /* ── Gallery Lightbox ─────────────────────────────────────── */
