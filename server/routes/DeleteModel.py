@@ -7,6 +7,7 @@ from aiohttp import web
 import server
 import folder_paths
 from ...config import METADATA_SUFFIX, PREVIEW_SUFFIX
+from ...utils.helpers import safe_join
 
 prompt_server = server.PromptServer.instance
 
@@ -17,7 +18,7 @@ async def route_delete_model(request):
     """Delete a local model file by its path relative to the models directory."""
     try:
         data = await request.json()
-        rel_path = data.get("rel_path", "").strip()
+        rel_path = (data.get("rel_path") or "").strip()
 
         if not rel_path:
             return web.json_response({"error": "Missing 'rel_path'"}, status=400)
@@ -29,8 +30,8 @@ async def route_delete_model(request):
             models_dir = os.path.join(base, 'models')
 
         # Resolve absolute path and confirm it's inside models_dir
-        target = os.path.realpath(os.path.join(models_dir, rel_path))
-        if not target.startswith(os.path.realpath(models_dir) + os.sep):
+        target = safe_join(models_dir, rel_path)
+        if not target:
             return web.json_response({"error": "Invalid path: must be inside models directory"}, status=400)
 
         # Validate extension
@@ -81,7 +82,7 @@ async def route_open_model_folder(request):
 
     try:
         data = await request.json()
-        rel_path = data.get("rel_path", "").strip()
+        rel_path = (data.get("rel_path") or "").strip()
 
         if not rel_path:
             return web.json_response({"error": "Missing 'rel_path'"}, status=400)
@@ -91,8 +92,8 @@ async def route_open_model_folder(request):
             base = getattr(folder_paths, 'base_path', os.getcwd())
             models_dir = os.path.join(base, 'models')
 
-        target = os.path.realpath(os.path.join(models_dir, rel_path))
-        if not target.startswith(os.path.realpath(models_dir) + os.sep):
+        target = safe_join(models_dir, rel_path)
+        if not target:
             return web.json_response({"error": "Invalid path: must be inside models directory"}, status=400)
 
         folder = os.path.dirname(target)

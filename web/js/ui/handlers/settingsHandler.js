@@ -207,8 +207,11 @@ export function handleSettingsSave(ui) {
     ui.saveSettingsToCookie();
     // Changing the default model type here is an explicit user action, so reflect
     // it on the download form immediately (applySettings only seeds it once).
-    if (ui.downloadModelTypeSelect && ui.downloadModelTypeSelect.querySelector(`option[value="${defaultModelType}"]`)) {
+    if (ui.downloadModelTypeSelect && ui.downloadModelTypeSelect.value !== defaultModelType
+        && ui.downloadModelTypeSelect.querySelector(`option[value="${defaultModelType}"]`)) {
         ui.downloadModelTypeSelect.value = defaultModelType;
+        ui.subdirSelect.value = '';
+        ui.loadAndPopulateSubdirs(defaultModelType);
     }
     ui.applySettings();
 }

@@ -2,23 +2,12 @@
 // Usage: renderBrowseCards(uiInstance, itemsArray)
 //        showBrowseCardInfo(uiInstance, modelId)
 
-import { attachLightboxZoom } from "../utils/dom.js";
+import { attachLightboxZoom, esc } from "../utils/dom.js";
 import { buildCivitaiModelUrl } from "./handlers/settingsHandler.js";
 import { typeColor } from "./typeColors.js";
 import { CivitaiDownloaderAPI } from "../api/civitai.js";
 
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
-
-// Escape a value for safe interpolation into HTML text or a double-quoted
-// attribute. Civitai image-meta values (sampler, prompts, etc.) are untrusted.
-function esc(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 // Module-level cache so info modal can access full hit data
 const _browseHitData = new Map();
@@ -147,9 +136,14 @@ async function _hydrateModelSizes(ui, items, container) {
         return;
     }
 
-    modelIds.forEach(id => _sizeLookedUpModels.add(id));
     Object.entries(data?.versions || {}).forEach(([versionId, entry]) => {
         if (entry && entry.sizeKB != null) _versionSizes.set(String(versionId), entry);
+    });
+    // The server answers 200 even when a Civitai chunk failed, so only models
+    // that came back with sizes are settled; the rest are asked again next render
+    // (withheld models are cached server-side and cost no upstream call).
+    (items || []).forEach(hit => {
+        if ((hit?.versions || []).some(v => _versionSizes.has(String(v?.id)))) _sizeLookedUpModels.add(String(hit.id));
     });
     // Placeholders are keyed by version id, so a late response can only ever
     // fill in matching cards — no need to guard against a newer render.
@@ -349,7 +343,7 @@ export function renderBrowseCards(ui, items) {
         if (creator) {
             const creatorLine = document.createElement('span');
             creatorLine.className = 'civitai-browse-card-meta-line';
-            creatorLine.innerHTML = `<i class="fas fa-user"></i> ${creator}`;
+            creatorLine.innerHTML = `<i class="fas fa-user"></i> ${esc(creator)}`;
             metaEl.appendChild(creatorLine);
         }
         // Download count and file size share one line so adding the size
@@ -866,6 +860,8 @@ function _renderBrowseInfoModal(ui, hit) {
             ui.customFilenameInput.value = '';
             ui.forceRedownloadCheckbox.checked = false;
             ui.downloadModelTypeSelect.value = typeKey;
+            ui.subdirSelect.value = '';
+            ui.loadAndPopulateSubdirs(typeKey);
             if (ui.browseSelectedBar && ui.browseSelectedText) {
                 ui.browseSelectedText.textContent = `${mname || `Model #${mid}`}  —  ${versionName || `Version #${versionId}`}`;
                 ui.browseSelectedBar.style.display = 'flex';
@@ -1000,7 +996,8 @@ function _renderBrowseInfoModal(ui, hit) {
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 
     // Esc closes
-    const _onKey = e => { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', _onKey); } };
+    // A zoomed image on top closes itself first.
+    const _onKey = e => { if (e.key === 'Escape' && !document.querySelector('.civitai-lightbox')) { overlay.remove(); document.removeEventListener('keydown', _onKey); } };
     document.addEventListener('keydown', _onKey);
     // Clean up listener when overlay is removed
     new MutationObserver((_, obs) => {

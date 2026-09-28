@@ -27,6 +27,7 @@ import server
 import folder_paths
 
 from ...config import PLUGIN_ROOT, PREVIEW_SUFFIX
+from ...utils.helpers import safe_join
 
 prompt_server = server.PromptServer.instance
 
@@ -130,9 +131,8 @@ def _resolve_model_preview(rel_path):
     if not rel_path:
         return None
 
-    models_dir = os.path.realpath(_get_models_dir())
-    target = os.path.realpath(os.path.join(models_dir, rel_path))
-    if not target.startswith(models_dir + os.sep):
+    target = safe_join(_get_models_dir(), rel_path)
+    if not target:
         return None
 
     preview_path = os.path.splitext(target)[0] + PREVIEW_SUFFIX

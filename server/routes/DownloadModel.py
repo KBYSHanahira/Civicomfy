@@ -1,6 +1,7 @@
 # ================================================
 # File: server/routes/DownloadModel.py
 # ================================================
+import asyncio
 import os
 import json
 import traceback
@@ -33,11 +34,11 @@ async def route_download_model(request):
         model_type_value = data.get("model_type", "checkpoint")  # Use as-is; may be a literal folder name
         req_version_id = data.get("model_version_id") # Optional explicit version ID
         explicit_save_root = (data.get("save_root") or "").strip()
-        custom_filename_input = data.get("custom_filename", "").strip()
+        custom_filename_input = (data.get("custom_filename") or "").strip()
         selected_subdir = (data.get("subdir") or "").strip()
         # Optional file selection overrides
         req_file_id = data.get("file_id")
-        req_file_name_contains = data.get("file_name_contains", "").strip()
+        req_file_name_contains = (data.get("file_name_contains") or "").strip()
         num_connections = max(1, min(16, int(data.get("num_connections") or 1)))
         force_redownload = bool(data.get("force_redownload", False))
         deep_subfolder_check = bool(data.get("deep_subfolder_check", False))
@@ -71,7 +72,7 @@ async def route_download_model(request):
         if target_version_id:
             # Fetch version info directly using GET /model-versions/{id}
             print(f"[Server Download] Fetching info for Version ID: {target_version_id}")
-            version_info_result = api.get_model_version_info(target_version_id)
+            version_info_result = await asyncio.to_thread(api.get_model_version_info, target_version_id)
             if version_info_result and "error" not in version_info_result:
                 version_info = version_info_result # Assign to broader scope variable
                 # Infer model_id from version info if we didn't have it
@@ -79,14 +80,14 @@ async def route_download_model(request):
                      target_model_id = version_info['modelId']
                      print(f"[Server Download] Inferred Model ID {target_model_id} from Version ID {target_version_id}")
                      # Fetch model info as well for completeness if we only had version ID initially
-                     model_info_result = api.get_model_info(target_model_id)
+                     model_info_result = await asyncio.to_thread(api.get_model_info, target_model_id)
                      if model_info_result and "error" not in model_info_result:
                          model_info = model_info_result
                      else:
                          print(f"[Server Download] Warning: Could not fetch model info ({target_model_id}) after inferring from version.")
                          model_info = {} # Use empty dict as placeholder
                 else:
-                    model_info_result = api.get_model_info(target_model_id)
+                    model_info_result = await asyncio.to_thread(api.get_model_info, target_model_id)
                     if model_info_result and "error" not in model_info_result:
                          model_info = model_info_result
                     else:
@@ -103,7 +104,7 @@ async def route_download_model(request):
         elif target_model_id:
              # Fetch model info (GET /models/{id}) to get the latest version
             print(f"[Server Download] Fetching info for Model ID: {target_model_id} to find latest version.")
-            model_info_result = api.get_model_info(target_model_id)
+            model_info_result = await asyncio.to_thread(api.get_model_info, target_model_id)
             if model_info_result and "error" not in model_info_result:
                 model_info = model_info_result # Assign to broader scope variable
                 versions = model_info.get("modelVersions")
@@ -121,7 +122,7 @@ async def route_download_model(request):
                     print(f"[Server Download] Using latest/default Version ID {target_version_id} for Model ID {target_model_id}")
                     # Need to re-fetch full version details as model info often lacks file download URLs or full metadata
                     print(f"[Server Download] Fetching full details for selected Version ID: {target_version_id}")
-                    full_version_info_result = api.get_model_version_info(target_version_id)
+                    full_version_info_result = await asyncio.to_thread(api.get_model_version_info, target_version_id)
                     if full_version_info_result and "error" not in full_version_info_result:
                         version_info = full_version_info_result # Overwrite with full details
                     else:
@@ -232,8 +233,9 @@ async def route_download_model(request):
 
         # Subdir: only use the selected existing subdir coming from UI
         if selected_subdir:
-            norm_sub = os.path.normpath(selected_subdir.replace('\\', '/'))
-            parts = [p for p in norm_sub.split('/') if p and p not in ('.', '..')]
+            # /civitai/model_dirs returns Windows-style "a\b"; normpath would keep the
+            # backslash and sanitize_filename would then flatten it to "a_b".
+            parts = [p for p in re.split(r'[\\/]+', selected_subdir) if p and p not in ('.', '..')]
             if parts:
                 sub_path = os.path.join(*[sanitize_filename(p) for p in parts])
 
@@ -292,7 +294,7 @@ async def route_download_model(request):
         # Only runs when the user has enabled the "deep subfolder check" setting.
         existing_in_subfolder = None
         if deep_subfolder_check and not file_exists and not force_redownload:
-            try:
+            def _scan_subfolders():
                 visited_real = set()
                 for root, dirs, fnames in os.walk(base_output_dir, followlinks=True):
                     real = os.path.realpath(root)
@@ -304,8 +306,10 @@ async def route_download_model(request):
                     if os.path.abspath(root) == os.path.abspath(output_dir):
                         continue
                     if final_filename in fnames:
-                        existing_in_subfolder = os.path.join(root, final_filename)
-                        break
+                        return os.path.join(root, final_filename)
+                return None
+            try:
+                existing_in_subfolder = await asyncio.to_thread(_scan_subfolders)
             except Exception as scan_e:
                 print(f"[Server Download] Warning: Failed scanning subfolders for existing file: {scan_e}")
 
@@ -508,8 +512,8 @@ async def route_download_model(request):
          # Attempt to parse JSON body for details
          body_detail = ""
          try:
-             # Use await text() for aiohttp Response exceptions
-             body_detail = await http_err.text() if hasattr(http_err, 'text') else http_err.body.decode('utf-8', errors='ignore') if http_err.body else ""
+             # aiohttp HTTPException.text is a plain str property, not a coroutine
+             body_detail = http_err.text or ""
              # Try parsing as JSON if it looks like it
              if body_detail.startswith('{') and body_detail.endswith('}'):
                   body_detail = json.loads(body_detail) # Return parsed dict

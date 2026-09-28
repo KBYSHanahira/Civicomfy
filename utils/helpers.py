@@ -122,7 +122,9 @@ def get_default_model_dir(model_type: str, ensure: bool = True) -> str:
         if not models_dir:
             base = getattr(folder_paths, 'base_path', os.getcwd())
             models_dir = os.path.join(base, 'models')
-        # Use the raw (case-preserving) folder name
+        # Use the raw (case-preserving) folder name; it must be a single path component
+        if model_type_raw in ('.', '..') or os.path.isabs(model_type_raw) or os.path.basename(model_type_raw) != model_type_raw:
+            raise ValueError(f"Invalid model type folder name: {model_type_raw!r}")
         full_path = os.path.join(models_dir, model_type_raw)
 
     # Ensure full_path is a string path
@@ -137,6 +139,22 @@ def get_default_model_dir(model_type: str, ensure: bool = True) -> str:
             print(f"Error: Could not create directory '{full_path}': {e}")
 
     return full_path
+
+def safe_join(root: str, rel_path: str) -> Optional[str]:
+    """Join a client-supplied relative path under root, or None if it could escape.
+
+    Checked lexically rather than via realpath, so a subfolder that is a
+    junction/symlink to another drive still resolves.
+    """
+    if not rel_path or os.path.isabs(rel_path) or os.path.splitdrive(rel_path)[0]:
+        return None
+    if '..' in re.split(r'[\\/]+', rel_path):
+        return None
+    root = os.path.abspath(root)
+    target = os.path.abspath(os.path.join(root, rel_path))
+    if target == root or os.path.commonpath([target, root]) != root:
+        return None
+    return target
 
 def parse_civitai_input(url_or_id: str) -> tuple[int | None, int | None]:
     """

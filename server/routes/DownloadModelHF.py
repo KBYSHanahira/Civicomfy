@@ -1,7 +1,9 @@
 # ================================================
 # File: server/routes/DownloadModelHF.py
 # ================================================
+import asyncio
 import os
+import re
 import json
 import traceback
 from aiohttp import web
@@ -50,7 +52,7 @@ async def route_download_model_hf(request):
         print(f"[Server Download HF] repo={repo_id}, revision={revision}, file={filepath}")
 
         # --- Verify the file is accessible and get its size ---
-        file_info = api.get_file_info(download_url)
+        file_info = await asyncio.to_thread(api.get_file_info, download_url)
         if not file_info.get("success"):
             raise web.HTTPBadRequest(reason=file_info.get("error", "Could not access HuggingFace file"))
 
@@ -70,8 +72,7 @@ async def route_download_model_hf(request):
         # --- Resolve subdirectory ---
         sub_path = ""
         if selected_subdir:
-            norm_sub = os.path.normpath(selected_subdir.replace("\\", "/"))
-            parts = [p for p in norm_sub.split("/") if p and p not in (".", "..")]
+            parts = [p for p in re.split(r"[\\/]+", selected_subdir) if p and p not in (".", "..")]
             if parts:
                 sub_path = os.path.join(*[sanitize_filename(p) for p in parts])
 
@@ -123,7 +124,7 @@ async def route_download_model_hf(request):
         # Only runs when the user has enabled the "deep subfolder check" setting.
         if deep_subfolder_check and not force_redownload and not os.path.exists(output_path):
             existing_in_subfolder = None
-            try:
+            def _scan_subfolders():
                 visited_real = set()
                 for root, dirs, fnames in os.walk(base_output_dir, followlinks=True):
                     real = os.path.realpath(root)
@@ -134,8 +135,10 @@ async def route_download_model_hf(request):
                     if os.path.abspath(root) == os.path.abspath(output_dir):
                         continue
                     if final_filename in fnames:
-                        existing_in_subfolder = os.path.join(root, final_filename)
-                        break
+                        return os.path.join(root, final_filename)
+                return None
+            try:
+                existing_in_subfolder = await asyncio.to_thread(_scan_subfolders)
             except Exception as scan_e:
                 print(f"[Server Download HF] Warning: Failed scanning subfolders: {scan_e}")
 
@@ -230,7 +233,7 @@ async def route_get_model_details_hf(request):
         if not parsed.get("valid"):
             return web.json_response({"success": False, "error": parsed.get("error", "Invalid HuggingFace URL")})
 
-        file_info = api.get_file_info(parsed["download_url"])
+        file_info = await asyncio.to_thread(api.get_file_info, parsed["download_url"])
         if not file_info.get("success"):
             return web.json_response({"success": False, "error": file_info.get("error", "Could not access file")})
 

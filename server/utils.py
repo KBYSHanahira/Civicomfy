@@ -1,6 +1,7 @@
 # ================================================
 # File: server/utils.py
 # ================================================
+import asyncio
 import json
 from typing import Any, Dict, Optional
 from aiohttp import web
@@ -52,7 +53,7 @@ async def get_civitai_model_and_version_details(api: CivitaiAPI, model_url_or_id
     # we need to fetch that version *first* just to find the model ID.
     if not target_model_id and potential_version_id_from_input:
         print(f"[API Helper] Input requires fetching version {potential_version_id_from_input} first to find model ID.")
-        temp_version_info = api.get_model_version_info(potential_version_id_from_input)
+        temp_version_info = await asyncio.to_thread(api.get_model_version_info, potential_version_id_from_input)
         if temp_version_info and "error" not in temp_version_info and temp_version_info.get('modelId'):
             target_model_id = temp_version_info['modelId']
             print(f"[API Helper] Found Model ID {target_model_id} from Version ID {potential_version_id_from_input}.")
@@ -67,7 +68,7 @@ async def get_civitai_model_and_version_details(api: CivitaiAPI, model_url_or_id
 
     # --- 3. Fetch Core Model Information (Always based on target_model_id) ---
     print(f"[API Helper] Fetching core model info for Model ID: {target_model_id}")
-    model_info_result = api.get_model_info(target_model_id)
+    model_info_result = await asyncio.to_thread(api.get_model_info, target_model_id)
     if not model_info_result or "error" in model_info_result:
         err_details = model_info_result.get('details', 'Unknown API error') if isinstance(model_info_result, dict) else 'Unknown API error'
         raise web.HTTPNotFound(reason=f"Model {target_model_id} not found or API error", body=json.dumps({"error": f"Model {target_model_id} not found or API error", "details": err_details}))
@@ -83,7 +84,7 @@ async def get_civitai_model_and_version_details(api: CivitaiAPI, model_url_or_id
              print("[API Helper] Reusing version info fetched earlier.")
              version_info_to_use = temp_version_info
         else:
-            version_info_result = api.get_model_version_info(target_version_id)
+            version_info_result = await asyncio.to_thread(api.get_model_version_info, target_version_id)
             if not version_info_result or "error" in version_info_result:
                 err_details = version_info_result.get('details', 'Unknown API error') if isinstance(version_info_result, dict) else 'Unknown API error'
                 raise web.HTTPNotFound(reason=f"Specified Version {target_version_id} not found or API error", body=json.dumps({"error": f"Version {target_version_id} not found or API error", "details": err_details}))
@@ -103,7 +104,7 @@ async def get_civitai_model_and_version_details(api: CivitaiAPI, model_url_or_id
 
         print(f"[API Helper] Using latest/default Version ID: {target_version_id}. Fetching its full details.")
         # Fetch full details for this latest version
-        version_info_result = api.get_model_version_info(target_version_id)
+        version_info_result = await asyncio.to_thread(api.get_model_version_info, target_version_id)
         if not version_info_result or "error" in version_info_result:
              # Log error, but maybe try to proceed with summary data if desperate? Risky.
             err_details = version_info_result.get('details', 'Unknown error getting full version') if isinstance(version_info_result, dict) else 'Error'

@@ -8,6 +8,7 @@ import threading
 import time
 import shutil
 from pathlib import Path
+from urllib.parse import urlparse
 import os
 from typing import Optional, Dict, Tuple, Union, TYPE_CHECKING
 
@@ -71,10 +72,11 @@ class ChunkDownloader:
         self._last_downloaded_bytes = 0
         self._speed = 0
 
-    def _get_request_headers(self, add_range: Optional[str] = None) -> Dict[str, str]:
+    def _get_request_headers(self, url: str, add_range: Optional[str] = None) -> Dict[str, str]:
         """Constructs request headers with optional auth and range."""
         headers = {}
-        if self.api_key:
+        # After a redirect self.url points at a third-party CDN; don't leak the key there.
+        if self.api_key and urlparse(url).netloc == urlparse(self.initial_url).netloc:
             headers["Authorization"] = f"Bearer {self.api_key}"
         if add_range:
             headers['Range'] = add_range
@@ -138,8 +140,8 @@ class ChunkDownloader:
         supports_ranges = False
         
         try:
-            request_headers = self._get_request_headers()
-            
+            request_headers = self._get_request_headers(self.initial_url)
+
             print(f"[Downloader {self.download_id}] Checking range support/redirects for: {self.initial_url} (Timeout: {self.HEAD_REQUEST_TIMEOUT}s)")
             response = requests.head(
                 self.initial_url,
@@ -227,7 +229,7 @@ class ChunkDownloader:
     def download_segment(self, segment_index: int, start_byte: int, end_byte: int):
         """Downloads a specific segment of the file."""
         part_file_path = self.temp_dir / f"part_{segment_index}"
-        request_headers = self._get_request_headers(add_range=f'bytes={start_byte}-{end_byte}')
+        request_headers = self._get_request_headers(self.url, add_range=f'bytes={start_byte}-{end_byte}')
         retries = 3
         
         for current_try in range(retries):
@@ -377,7 +379,7 @@ class ChunkDownloader:
         response = None
         
         try:
-            request_headers = self._get_request_headers()
+            request_headers = self._get_request_headers(self.url)
             response = requests.get(self.url, stream=True, timeout=self.DOWNLOAD_TIMEOUT, 
                                     allow_redirects=True, headers=request_headers)
             response.raise_for_status()
@@ -596,10 +598,20 @@ class ChunkDownloader:
         # thread holds open, stranding a ".<name>.parts_<id>" directory in the
         # user's model folder. So we always join, just with a bound: workers
         # check is_cancelled between chunks and exit promptly, but one blocked in
-        # a socket read cannot react until its own request times out.
-        deadline = time.monotonic() + self.THREAD_JOIN_TIMEOUT
+        # a socket read cannot react until its own request times out. The bound
+        # only starts once cancelled; a healthy download is waited on until done.
+        deadline = None
         for t in self.threads:
-            t.join(timeout=max(0.0, deadline - time.monotonic()))
+            while t.is_alive():
+                if deadline is None and self.is_cancelled:
+                    deadline = time.monotonic() + self.THREAD_JOIN_TIMEOUT
+                if deadline is not None:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        break
+                    t.join(timeout=min(0.5, remaining))
+                else:
+                    t.join(timeout=0.5)
 
         stragglers = [t for t in self.threads if t.is_alive()]
         if stragglers:

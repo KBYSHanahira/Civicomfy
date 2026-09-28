@@ -326,13 +326,20 @@ export function setupEventListeners(ui) {
     if (ui.browseResultsContainer) {
         ui.browseResultsContainer.addEventListener('click', (event) => {
             // Handle NSFW click-to-reveal for both legacy .civitai-thumbnail-container and new .civitai-browse-card-preview
-            const thumbContainer = event.target.closest('.civitai-thumbnail-container, .civitai-browse-card-preview');
+            // The action overlay sits inside the preview, so its buttons must not
+            // count as clicks on the artwork.
+            const thumbContainer = !event.target.closest('.civitai-browse-card-overlay')
+                && event.target.closest('.civitai-thumbnail-container, .civitai-browse-card-preview');
             if (thumbContainer) {
                 const nsfwLevel = Number(thumbContainer.dataset.nsfwLevel ?? thumbContainer.getAttribute('data-nsfw-level'));
                 const threshold = Number(ui.settings?.nsfwBlurMinLevel ?? 4);
                 const enabled = ui.settings?.hideMatureInSearch === true;
-                if (enabled && Number.isFinite(nsfwLevel) && nsfwLevel >= threshold) {
-                    if (thumbContainer.classList.contains('blurred')) {
+                const blurred = thumbContainer.classList.contains('blurred');
+                // On touch, a tap on revealed artwork opens the actions below
+                // instead of blurring it again.
+                if (enabled && Number.isFinite(nsfwLevel) && nsfwLevel >= threshold
+                    && (blurred || !window.matchMedia('(hover: none)').matches)) {
+                    if (blurred) {
                         thumbContainer.classList.remove('blurred');
                         const overlay = thumbContainer.querySelector('.civitai-nsfw-overlay');
                         if (overlay) overlay.remove();
@@ -384,6 +391,9 @@ export function setupEventListeners(ui) {
                 ui.customFilenameInput.value = '';
                 ui.forceRedownloadCheckbox.checked = false;
                 ui.downloadModelTypeSelect.value = modelTypeInternalKey;
+                // Setting .value fires no change event; the old type's subfolders must go.
+                ui.subdirSelect.value = '';
+                ui.loadAndPopulateSubdirs(modelTypeInternalKey);
 
                 // Update "Selected" bar in Browse tab
                 if (ui.browseSelectedBar && ui.browseSelectedText) {

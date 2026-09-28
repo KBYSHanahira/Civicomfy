@@ -349,6 +349,8 @@ export async function handleGalleryLoad(ui) {
     grid.innerHTML = '<p class="civitai-empty-state"><i class="fas fa-spinner fa-spin"></i> Loading…</p>';
     if (countEl) countEl.textContent = '';
 
+    // Pagination and filter clicks can overlap; only the newest request may render.
+    const seq = ui._galleryLoadSeq = (ui._galleryLoadSeq || 0) + 1;
     try {
         // A saved subfolder can only be applied once the options exist, so the
         // first load restores it before reading the control.
@@ -369,6 +371,7 @@ export async function handleGalleryLoad(ui) {
         ui._galleryForceRefresh = false;
 
         const data = await CivitaiDownloaderAPI.getOutputImages({ page, limit, subfolder, sort, refresh });
+        if (seq !== ui._galleryLoadSeq) return;
 
         if (!data || !Array.isArray(data.images)) {
             throw new Error("Invalid response from server.");
@@ -420,8 +423,10 @@ export async function handleGalleryLoad(ui) {
         _renderGalleryCount(ui);
 
     } catch (err) {
+        if (seq !== ui._galleryLoadSeq) return;
         console.error("[Civicomfy] Failed to load gallery:", err);
-        grid.innerHTML = `<p class="civitai-empty-state civitai-empty-state--error"><i class="fas fa-exclamation-triangle"></i> Failed to load images: ${err.message}</p>`;
+        grid.innerHTML = '<p class="civitai-empty-state civitai-empty-state--error"><i class="fas fa-exclamation-triangle"></i> </p>';
+        grid.firstElementChild.append(`Failed to load images: ${err.message}`);
     }
 }
 

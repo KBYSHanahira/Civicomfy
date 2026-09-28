@@ -235,7 +235,7 @@ async def route_get_model_details(request):
         print(f"[Server GetDetails] HTTP Error: {http_err.status} {http_err.reason}")
         body_detail = ""
         try:
-            body_detail = await http_err.text() if hasattr(http_err, 'text') else http_err.body.decode('utf-8', errors='ignore') if http_err.body else ""
+            body_detail = http_err.text or ""
             if body_detail.startswith('{') and body_detail.endswith('}'): body_detail = json.loads(body_detail)
         except Exception: pass
         return web.json_response({"success": False, "error": http_err.reason, "details": body_detail or "No details", "status_code": http_err.status}, status=http_err.status)

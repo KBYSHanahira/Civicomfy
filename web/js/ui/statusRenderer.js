@@ -1,18 +1,8 @@
 // Renders active/queued/history download lists
 
-const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
+import { esc } from "../utils/dom.js";
 
-// Escape a value for safe interpolation into HTML text or a double-quoted
-// attribute. Model/version/file names and error text can contain markup or
-// stray quotes that would otherwise break out of the surrounding context.
-function esc(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
 
 export function renderDownloadList(ui, items, container, emptyMessage) {
   if (!items || items.length === 0) {

@@ -1,14 +1,5 @@
 import { CivitaiDownloaderAPI } from "../../api/civitai.js";
-
-// Escape a value for safe interpolation into HTML.
-function esc(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
+import { esc } from "../../utils/dom.js";
 
 // Returns true when the URL looks like a HuggingFace file link.
 function isHuggingFaceUrl(input) {
@@ -43,6 +34,11 @@ export async function fetchAndDisplayDownloadPreview(ui) {
     ui.downloadPreviewArea.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading model details...</p>';
     ui.ensureFontAwesome();
 
+    // A slower earlier lookup must not replace the preview (and #civitai-file-select)
+    // of the URL now in the field.
+    const seq = ui._previewSeq = (ui._previewSeq || 0) + 1;
+    const stale = () => seq !== ui._previewSeq;
+
     // ---- HuggingFace branch ----
     if (isHuggingFaceUrl(modelUrlOrId)) {
         try {
@@ -50,6 +46,7 @@ export async function fetchAndDisplayDownloadPreview(ui) {
                 hf_url: modelUrlOrId,
                 hf_token: ui.settings.hfToken || '',
             });
+            if (stale()) return;
             if (result && result.success) {
                 ui.downloadPreviewArea.innerHTML = `
                     <div class="cfy-hf-preview">
@@ -74,6 +71,7 @@ export async function fetchAndDisplayDownloadPreview(ui) {
                 ui.downloadPreviewArea.innerHTML = `<p class="cfy-preview-error"><i class="fas fa-exclamation-triangle"></i> ${esc(message)}</p>`;
             }
         } catch (error) {
+            if (stale()) return;
             const message = `Error fetching HuggingFace details: ${error.details || error.message || 'Unknown error'}`;
             console.error("HF Preview Fetch Error:", error);
             ui.downloadPreviewArea.innerHTML = `<p class="cfy-preview-error"><i class="fas fa-exclamation-triangle"></i> ${esc(message)}</p>`;
@@ -90,6 +88,7 @@ export async function fetchAndDisplayDownloadPreview(ui) {
 
     try {
         const result = await CivitaiDownloaderAPI.getModelDetails(params);
+        if (stale()) return;
         if (result && result.success) {
             ui.renderDownloadPreview(result);
             // Auto-select model type save location based on Civitai model type
@@ -101,6 +100,7 @@ export async function fetchAndDisplayDownloadPreview(ui) {
             ui.downloadPreviewArea.innerHTML = `<p class="cfy-preview-error"><i class="fas fa-exclamation-triangle"></i> ${esc(message)}</p>`;
         }
     } catch (error) {
+        if (stale()) return;
         const message = `Error fetching details: ${error.details || error.message || 'Unknown error'}`;
         console.error("Download Preview Fetch Error:", error);
         ui.downloadPreviewArea.innerHTML = `<p class="cfy-preview-error"><i class="fas fa-exclamation-triangle"></i> ${esc(message)}</p>`;
@@ -127,6 +127,7 @@ export async function handleDownloadSubmit(ui) {
         return;
     }
 
+    const submitLabel = ui.downloadSubmitButton.innerHTML;
     ui.downloadSubmitButton.disabled = true;
     ui.downloadSubmitButton.textContent = 'Starting...';
 
@@ -179,11 +180,12 @@ export async function handleDownloadSubmit(ui) {
         ui.showToast(message, 'error', 6000);
     } finally {
         ui.downloadSubmitButton.disabled = false;
-        ui.downloadSubmitButton.textContent = 'Start Download';
+        ui.downloadSubmitButton.innerHTML = submitLabel;
     }
 }
 
 async function _handleHFDownloadSubmit(ui, hfUrl) {
+    const submitLabel = ui.downloadSubmitButton.innerHTML;
     ui.downloadSubmitButton.disabled = true;
     ui.downloadSubmitButton.textContent = 'Starting...';
 
@@ -228,7 +230,7 @@ async function _handleHFDownloadSubmit(ui, hfUrl) {
         ui.showToast(message, 'error', 6000);
     } finally {
         ui.downloadSubmitButton.disabled = false;
-        ui.downloadSubmitButton.textContent = 'Start Download';
+        ui.downloadSubmitButton.innerHTML = submitLabel;
     }
 }
 

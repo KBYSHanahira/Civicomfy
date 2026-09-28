@@ -1,22 +1,10 @@
 // Renders the download preview panel
 
-import { attachLightboxZoom } from "../utils/dom.js";
+import { attachLightboxZoom, esc } from "../utils/dom.js";
 import { sanitizeHtml } from "../utils/sanitize.js";
 import { buildCivitaiModelUrl } from "./handlers/settingsHandler.js";
 
 const PLACEHOLDER_IMAGE_URL = `/extensions/Civicomfy/images/placeholder.jpeg`;
-
-// Escape a value for safe interpolation into HTML text or a double-quoted
-// attribute. Civitai-API fields (names, URLs, tags) can contain markup or
-// stray quotes that would otherwise break out of the surrounding context.
-function esc(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 export function renderDownloadPreview(ui, data) {
   if (!ui.downloadPreviewArea) return;

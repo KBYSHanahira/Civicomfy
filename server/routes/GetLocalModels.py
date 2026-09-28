@@ -7,6 +7,7 @@ from aiohttp import web
 import server
 import folder_paths
 from ...config import METADATA_SUFFIX, PREVIEW_SUFFIX
+from ...utils.helpers import safe_join
 
 prompt_server = server.PromptServer.instance
 
@@ -62,11 +63,10 @@ async def route_get_local_models(request):
         )
 
         models = []
-        scan_root = os.path.join(models_dir, filter_type) if filter_type else models_dir
         # 'type' comes straight from a query string, so keep the walk inside
         # models_dir: "../../.." would otherwise list arbitrary directories.
-        if os.path.realpath(scan_root) != os.path.realpath(models_dir) and \
-           not os.path.realpath(scan_root).startswith(os.path.realpath(models_dir) + os.sep):
+        scan_root = safe_join(models_dir, filter_type) if filter_type else models_dir
+        if not scan_root:
             return web.json_response({"error": "Invalid 'type' parameter"}, status=400)
 
         for dirpath, dirnames, filenames in os.walk(scan_root):
@@ -130,8 +130,8 @@ async def route_model_preview_image(request):
             return web.Response(status=400, text="Missing rel_path")
 
         models_dir = _get_models_dir()
-        target = os.path.realpath(os.path.join(models_dir, rel_path))
-        if not target.startswith(os.path.realpath(models_dir) + os.sep):
+        target = safe_join(models_dir, rel_path)
+        if not target:
             return web.Response(status=400, text="Invalid path")
 
         base_no_ext = os.path.splitext(target)[0]

@@ -34,7 +34,7 @@ async def route_cancel_download(request):
          # Consistent error handling
          body_detail = ""
          try:
-              body_detail = await http_err.text() if hasattr(http_err, 'text') else http_err.body.decode('utf-8', errors='ignore') if http_err.body else ""
+              body_detail = http_err.text or ""
               if body_detail.startswith('{') and body_detail.endswith('}'): body_detail = json.loads(body_detail)
          except Exception: pass
          return web.json_response({"error": http_err.reason, "details": body_detail or "No details", "status_code": http_err.status}, status=http_err.status)

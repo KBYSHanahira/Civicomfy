@@ -12,6 +12,7 @@ import { renderBrowseCards, showBrowseCardInfo } from "./searchRenderer.js";
 import { renderDownloadPreview } from "./previewRenderer.js";
 import { modalTemplate, PAGE_META } from "./templates.js";
 import { CivitaiDownloaderAPI } from "../api/civitai.js";
+import { esc } from "../utils/dom.js";
 
 export class CivitaiDownloaderUI {
     constructor() {
@@ -223,6 +224,11 @@ export class CivitaiDownloaderUI {
             this.modelTypes = types;
             const sortedTypes = Object.entries(this.modelTypes).sort((a, b) => a[1].localeCompare(b[1]));
 
+            // This also runs again after "Create model type"; a rebuild must not
+            // silently change what the user had selected.
+            const previous = [this.downloadModelTypeSelect, this.settingsDefaultTypeSelect, this.browseTypeSelect]
+                .filter(Boolean).map(select => [select, select.value]);
+
             this.downloadModelTypeSelect.innerHTML = '';
             this.settingsDefaultTypeSelect.innerHTML = '';
 
@@ -242,6 +248,9 @@ export class CivitaiDownloaderUI {
             if (this.browseTypeSelect) {
                 this.browseTypeSelect.appendChild(option.cloneNode(true));
             }
+        });
+        previous.forEach(([select, value]) => {
+            if (value && select.querySelector(`option[value="${CSS.escape(value)}"]`)) select.value = value;
         });
         // Restore saved active type after options are populated
         if (this.browseTypeSelect && this._savedBrowseActiveType) {
@@ -386,13 +395,14 @@ export class CivitaiDownloaderUI {
             picker.appendChild(label);
         });
 
-        // "All" checkbox toggles the rest
+        // "All" checkbox toggles the rest. Assigned, not added: the picker is
+        // rebuilt every time the model types are repopulated.
         if (this.maintenanceAllCheckbox) {
-            this.maintenanceAllCheckbox.addEventListener('change', () => {
+            this.maintenanceAllCheckbox.onchange = () => {
                 if (this.maintenanceAllCheckbox.checked) {
                     picker.querySelectorAll('.civitai-maint-type-cb').forEach(cb => { cb.checked = false; });
                 }
-            });
+            };
         }
         picker.querySelectorAll('.civitai-maint-type-cb').forEach(cb => {
             cb.addEventListener('change', () => {
@@ -431,7 +441,7 @@ export class CivitaiDownloaderUI {
                         ? ` &bull; <span style="color:var(--cfy-warning);">Skipped: ${prog.skipped}</span>`
                         : '';
                     const itemBadge = prog.current_item
-                        ? `<br><small style="opacity:0.75;font-style:italic;">${prog.current_item}</small>`
+                        ? `<br><small style="opacity:0.75;font-style:italic;">${esc(prog.current_item)}</small>`
                         : '';
                     this._showMaintenanceResult(
                         `<i class="fas fa-spinner fa-spin"></i> Refreshing model info… <strong>${prog.current}/${prog.total}</strong>${skippedBadge}${itemBadge}`,
@@ -455,18 +465,18 @@ export class CivitaiDownloaderUI {
                     ? `<br><small style="color:var(--cfy-warning);"><i class="fas fa-stop-circle"></i> Stopped early by user.</small>`
                     : '';
                 this._showMaintenanceResult(
-                    `<i class="fas fa-check-circle"></i> <strong>${result.message}</strong>` +
+                    `<i class="fas fa-check-circle"></i> <strong>${esc(result.message)}</strong>` +
                     `<br><small>Total: ${result.total} &bull; Updated: ${result.updated}${skippedPart} &bull; Failed: ${result.failed}</small>` +
                     stoppedNote +
-                    (result.errors?.length ? `<br><small style="color:var(--cfy-danger);">Errors: ${result.errors.slice(0, 5).join(', ')}</small>` : ''),
+                    (result.errors?.length ? `<br><small style="color:var(--cfy-danger);">Errors: ${esc(result.errors.slice(0, 5).join(', '))}</small>` : ''),
                     result.stopped ? 'info' : 'success'
                 );
                 this._myModelsLoaded = false;
             } else {
-                this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${result?.error || 'Unknown error'}`, 'error');
+                this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${esc(result?.error || 'Unknown error')}`, 'error');
             }
         } catch (err) {
-            this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${err.message || 'Request failed'}`, 'error');
+            this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${esc(err.message || 'Request failed')}`, 'error');
         } finally {
             clearInterval(pollInterval);
             if (this.maintenanceControlsEl) this.maintenanceControlsEl.style.display = 'none';
@@ -489,7 +499,7 @@ export class CivitaiDownloaderUI {
                         ? ` &bull; <span style="color:var(--cfy-warning);">Skipped: ${prog.skipped}</span>`
                         : '';
                     const itemBadge = prog.current_item
-                        ? `<br><small style="opacity:0.75;font-style:italic;">${prog.current_item}</small>`
+                        ? `<br><small style="opacity:0.75;font-style:italic;">${esc(prog.current_item)}</small>`
                         : '';
                     this._showMaintenanceResult(
                         `<i class="fas fa-spinner fa-spin"></i> Downloading thumbnails… <strong>${prog.current}/${prog.total}</strong>${skippedBadge}${itemBadge}`,
@@ -515,18 +525,18 @@ export class CivitaiDownloaderUI {
                     ? `<br><small style="color:var(--cfy-warning);"><i class="fas fa-stop-circle"></i> Stopped early by user.</small>`
                     : '';
                 this._showMaintenanceResult(
-                    `<i class="fas fa-check-circle"></i> <strong>${result.message}</strong>` +
+                    `<i class="fas fa-check-circle"></i> <strong>${esc(result.message)}</strong>` +
                     `<br><small>Total: ${result.total} &bull; Downloaded: ${result.downloaded}${skippedPart} &bull; Failed: ${result.failed}</small>` +
                     stoppedNote +
-                    (result.errors?.length ? `<br><small style="color:var(--cfy-danger);">Errors: ${result.errors.slice(0, 5).join(', ')}</small>` : ''),
+                    (result.errors?.length ? `<br><small style="color:var(--cfy-danger);">Errors: ${esc(result.errors.slice(0, 5).join(', '))}</small>` : ''),
                     result.stopped ? 'info' : 'success'
                 );
                 this._myModelsLoaded = false;
             } else {
-                this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${result?.error || 'Unknown error'}`, 'error');
+                this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${esc(result?.error || 'Unknown error')}`, 'error');
             }
         } catch (err) {
-            this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${err.message || 'Request failed'}`, 'error');
+            this._showMaintenanceResult(`<i class="fas fa-exclamation-triangle"></i> ${esc(err.message || 'Request failed')}`, 'error');
         } finally {
             clearInterval(pollInterval);
             if (this.maintenanceControlsEl) this.maintenanceControlsEl.style.display = 'none';

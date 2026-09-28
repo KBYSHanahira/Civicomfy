@@ -1,6 +1,7 @@
 # ================================================
 # File: server/routes/SearchModels.py
 # ================================================
+import asyncio
 import json
 import math
 import traceback
@@ -20,7 +21,7 @@ async def route_search_models(request):
     try:
         data = await get_request_json(request)
 
-        query = data.get("query", "").strip()
+        query = (data.get("query") or "").strip()
         search_mode = data.get("search_mode", "all")  # "all", "name", or "username"
         model_type_keys = data.get("model_types", []) # e.g., ["lora", "checkpoint"] (frontend internal keys)
         base_model_filters = data.get("base_models", []) # e.g., ["SD 1.5", "Pony"]
@@ -64,7 +65,8 @@ async def route_search_models(request):
         print(f"[Server Search] Meili: query='{query if query else '<none>'}', mode='{search_mode}', types={api_types_filter or 'Any'}, baseModels={valid_base_models or 'Any'}, sort={sort}, nsfw={nsfw}, limit={limit}, page={page}")
 
         # Call the new search method
-        meili_results = api.search_models_meili(
+        meili_results = await asyncio.to_thread(
+             api.search_models_meili,
              query=query or None, # Meili handles empty query if filters exist
              types=api_types_filter or None,
              base_models=valid_base_models or None,
@@ -159,7 +161,7 @@ async def route_search_models(request):
          # ... (keep existing HTTP error handling) ...
          body_detail = ""
          try:
-              body_detail = await http_err.text() if hasattr(http_err, 'text') else http_err.body.decode('utf-8', errors='ignore') if http_err.body else ""
+              body_detail = http_err.text or ""
               if body_detail.startswith('{') and body_detail.endswith('}'): body_detail = json.loads(body_detail)
          except Exception: pass
          return web.json_response({"error": http_err.reason, "details": body_detail or "No details", "status_code": http_err.status}, status=http_err.status)

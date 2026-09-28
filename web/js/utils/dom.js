@@ -94,6 +94,17 @@ export function attachLightboxZoom(mediaEl, badgeContainer) {
     return { reset, cleanup };
 }
 
+// Escape a value for safe interpolation into HTML text or a double-quoted
+// attribute. Civitai fields, file names and error text are untrusted.
+export function esc(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 /**
  * Dynamically adds a CSS link to the document's head.
  * It resolves the path relative to this script's location using import.meta.url,

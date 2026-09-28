@@ -51,11 +51,14 @@ export async function handleBrowseLoad(ui) {
         nsfw: isContentUnlocked(ui.settings),
     };
 
+    // Typing, paging and filter changes can overlap; only the newest request may render.
+    const seq = ui._browseLoadSeq = (ui._browseLoadSeq || 0) + 1;
     try {
         const [response] = await Promise.all([
             CivitaiDownloaderAPI.searchModels(params),
             refreshInstalledModelIds(ui),
         ]);
+        if (seq !== ui._browseLoadSeq) return;
         if (!response || !response.metadata || !Array.isArray(response.items)) {
             throw new Error("Received invalid data from browse API.");
         }
@@ -69,12 +72,14 @@ export async function handleBrowseLoad(ui) {
         ui.renderBrowsePagination(response.metadata);
 
     } catch (error) {
+        if (seq !== ui._browseLoadSeq) return;
         const message = `Browse failed: ${error.details || error.message || 'Unknown error'}`;
         console.error("[Civicomfy] Browse Load Error:", error);
-        ui.browseResultsContainer.innerHTML = `<p class="civitai-empty-state civitai-empty-state--error"><i class="fas fa-exclamation-triangle"></i> ${message}</p>`;
+        ui.browseResultsContainer.innerHTML = `<p class="civitai-empty-state civitai-empty-state--error"><i class="fas fa-exclamation-triangle"></i> </p>`;
+        ui.browseResultsContainer.firstElementChild.append(message);
         ui.showToast(message, 'error');
     } finally {
-        if (ui.browseRefreshButton) {
+        if (ui.browseRefreshButton && seq === ui._browseLoadSeq) {
             ui.browseRefreshButton.disabled = false;
         }
     }

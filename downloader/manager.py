@@ -257,7 +257,8 @@ class DownloadManager:
     def _save_history_to_file(self):
         """Saves the current in-memory history list to the JSON file."""
         # Assumes self.lock is HELD when this is called
-        history_to_save = self.history[:DOWNLOAD_HISTORY_LIMIT] # Ensure limit before saving
+        # api_key stays in memory for in-session retries but is never written to disk.
+        history_to_save = [{k: v for k, v in item.items() if k != 'api_key'} for item in self.history[:DOWNLOAD_HISTORY_LIMIT]]
         # Bound before the try: the error handler below inspects it, and raising a
         # NameError there would kill the queue thread that called us.
         temp_file_path = HISTORY_FILE_PATH + ".tmp"

@@ -1,6 +1,7 @@
 # ================================================
 # File: server/routes/ModelFileSizes.py
 # ================================================
+import asyncio
 import traceback
 from typing import Any, Dict, List
 from aiohttp import web
@@ -78,7 +79,7 @@ async def route_model_file_sizes(request):
             api = CivitaiAPI(api_key or None)
             for start in range(0, len(pending), CHUNK_SIZE):
                 chunk = pending[start:start + CHUNK_SIZE]
-                result = api.get_models_bulk(chunk)
+                result = await asyncio.to_thread(api.get_models_bulk, chunk)
                 if not isinstance(result, dict) or "error" in result:
                     details = result.get("details") if isinstance(result, dict) else None
                     print(f"[Server FileSizes] Lookup failed for {len(chunk)} models: {details}")

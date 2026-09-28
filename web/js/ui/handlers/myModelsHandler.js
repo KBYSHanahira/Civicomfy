@@ -384,7 +384,8 @@ function _buildModelRow(model) {
     metaLines.forEach(({ icon, text }) => {
         const line = document.createElement('span');
         line.className = 'civitai-mymodel-meta-line';
-        line.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
+        line.innerHTML = `<i class="fas ${icon}"></i> `;
+        line.append(text);
         meta.appendChild(line);
     });
 
@@ -544,7 +545,8 @@ export function showModelDetailModal(model, opts = {}) {
     metaItems.forEach(({ icon, text }) => {
         const item = document.createElement('span');
         item.className = 'civitai-mymodel-detail-meta-item';
-        item.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
+        item.innerHTML = `<i class="fas ${icon}"></i> `;
+        item.append(text);
         metaBar.appendChild(item);
     });
 
@@ -896,9 +898,9 @@ export function showModelDetailModal(model, opts = {}) {
     panel.appendChild(footerBar);
     overlay.appendChild(panel);
 
-    // Close on Escape key
+    // Close on Escape key, unless a zoomed image on top closes itself first
     const onEsc = (e) => {
-        if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); }
+        if (e.key === 'Escape' && !document.querySelector('.civitai-lightbox')) { overlay.remove(); document.removeEventListener('keydown', onEsc); }
     };
     document.addEventListener('keydown', onEsc);
 
