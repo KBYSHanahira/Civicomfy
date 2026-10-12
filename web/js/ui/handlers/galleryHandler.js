@@ -14,6 +14,10 @@ function _imageViewUrl(filename, subfolder) {
 // with a hundred near-identical widths.
 const THUMB_SIZES = [256, 384, 512, 768];
 
+// The lightbox shows a 1600px WebP instead of the multi-megabyte original. The
+// original is fetched only when the user zooms in to inspect detail.
+const LIGHTBOX_SIZE = 1600;
+
 function _thumbSizeFor(cardWidthPx) {
     const needed = (cardWidthPx || 148) * (window.devicePixelRatio || 1);
     return THUMB_SIZES.find(s => s >= needed) ?? THUMB_SIZES[THUMB_SIZES.length - 1];
@@ -579,6 +583,7 @@ export function openGalleryLightbox(ui, index) {
     // Attach wheel zoom once; reset on subsequent opens
     if (!ui._lightboxZoom && ui.galleryLightboxImg && lb) {
         ui._lightboxZoom = attachLightboxZoom(ui.galleryLightboxImg, lb);
+        ui.galleryLightboxImg.addEventListener('wheel', () => ui._lightboxLoadFull?.(), { passive: true });
     } else if (ui._lightboxZoom) {
         ui._lightboxZoom.reset();
     }
@@ -628,17 +633,24 @@ function _renderLightboxImage(ui) {
             imgEl.decoding = 'async';
             imgEl.alt = img.filename;
 
-            // Paint the cached thumbnail first — it is usually already in the
-            // browser cache from the grid, so the lightbox fills immediately
-            // instead of sitting blank for the second or two a big PNG needs.
-            imgEl.src = _thumbUrl(img, 768);
-
-            const full = new Image();
-            full.decoding = 'async';
-            full.onload = () => {
-                if (ui._lightboxToken === token) imgEl.src = url;
+            // A failed downscale (unreadable source, Pillow missing) falls back
+            // to the original once rather than leaving the stage blank.
+            imgEl.onerror = () => {
+                if (imgEl.src.includes('/civitai/output_thumb')) imgEl.src = url;
             };
-            full.src = url;
+            imgEl.src = _thumbUrl(img, LIGHTBOX_SIZE);
+
+            // First wheel (zoom) on this image swaps in the original, preloaded
+            // off-screen so the visible image never blanks while it decodes.
+            ui._lightboxLoadFull = () => {
+                ui._lightboxLoadFull = null;
+                const full = new Image();
+                full.decoding = 'async';
+                full.onload = () => {
+                    if (ui._lightboxToken === token) imgEl.src = url;
+                };
+                full.src = url;
+            };
         }
         // Reset zoom when switching images
         if (ui._lightboxZoom) ui._lightboxZoom.reset();
@@ -683,7 +695,7 @@ function _preloadLightboxNeighbours(ui) {
         if (_isVideo(neighbour)) return;
         const el = new Image();
         el.decoding = 'async';
-        el.src = _imageViewUrl(neighbour.filename, neighbour.subfolder);
+        el.src = _thumbUrl(neighbour, LIGHTBOX_SIZE);
         preloads.push(el);
     });
 

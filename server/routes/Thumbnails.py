@@ -35,7 +35,7 @@ IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
 
 # Requests are snapped to this ladder so a dragged size-slider cannot spray the
 # cache with a hundred near-identical widths.
-ALLOWED_SIZES = (256, 384, 512, 768)
+ALLOWED_SIZES = (256, 384, 512, 768, 1600)
 DEFAULT_SIZE = 512
 WEBP_QUALITY = 80
 
