@@ -109,7 +109,8 @@ q('#civitai-download-preview-area').innerHTML = `
 // ---- Browse tab ----
 q('#civitai-browse-search').value = 'watercolour';
 const bcards = q('#civitai-browse-results');
-const chip = (label, hue) => `<span class="civitai-browse-card-type-chip" style="background:hsl(${hue} 30% 40% / 0.22);border-color:hsl(${hue} 30% 55% / 0.5);color:hsl(${hue} 40% 68%);">${label}</span>`;
+const typeHues = ['hsl(268 35% 38%)', 'hsl(210 40% 36%)', 'hsl(32 45% 36%)'];
+const typeNames = ['LORA', 'CHECKPOINT', 'Embedding'];
 const names = ['Example Watercolour Style', 'Sample Line Art', 'Demo Cinematic Light', 'Placeholder Ink Wash',
   'Example Soft Portrait', 'Sample Retro Film', 'Demo Studio Product', 'Placeholder Pastel Set',
   'Example Neon City', 'Sample Clay Render', 'Demo Paper Cut', 'Placeholder Gouache'];
@@ -118,22 +119,18 @@ names.forEach((n, i) => {
     <div class="civitai-browse-card">
       <div class="civitai-browse-card-preview">
         <img src="${thumb(i)}">
-        <span class="civitai-browse-card-badge">v${1 + (i % 3)}.0</span>
-        <span class="civitai-browse-card-bm-badge">${i % 2 ? 'SDXL 1.0' : 'Flux.1 D'}</span>
-        ${i === 3 ? '<div class="civitai-browse-card-installed-overlay"><span class="civitai-browse-card-installed-badge"><i class="fas fa-check"></i> Installed</span></div>' : ''}
+        <div class="civitai-browse-card-badge" style="background-color:${typeHues[i % 3]}">${typeNames[i % 3]}</div>
+        <div class="civitai-browse-card-bm-badge">${i % 2 ? 'SDXL 1.0' : 'Flux.1 D'}</div>
+        ${i === 3 ? '<div class="civitai-browse-card-installed-overlay"><div class="civitai-browse-card-installed-badge"><i class="fas fa-check-circle"></i> Installed</div></div>' : ''}
       </div>
       <div class="civitai-browse-card-body">
         <div class="civitai-browse-card-name-row">
           <span class="civitai-browse-card-name">${n}</span>
-          <button class="civitai-browse-card-info-btn"><i class="fas fa-info"></i></button>
-        </div>
-        <div class="civitai-browse-card-type-row">
-          ${i % 3 === 0 ? chip('LORA', 268) : i % 3 === 1 ? chip('CHECKPOINT', 210) : chip('EMBEDDING', 32)}
-          <span class="civitai-browse-card-bm-chip">${i % 2 ? 'SDXL 1.0' : 'Flux.1 D'}</span>
+          <button class="civitai-browse-card-info-btn"><i class="fas fa-info-circle"></i><span>Info</span></button>
         </div>
         <div class="civitai-browse-card-meta">
           <span class="civitai-browse-card-meta-line"><i class="fas fa-user"></i> example_creator</span>
-          <span class="civitai-browse-card-meta-line"><i class="fas fa-download"></i> ${(3 + i) * 1310}</span>
+          <span class="civitai-browse-card-meta-line"><span class="civitai-browse-card-stat"><i class="fas fa-download"></i> ${((3 + i) * 1310).toLocaleString()}</span><span class="civitai-browse-card-stat"><i class="fas fa-hdd"></i> ${120 + i * 9} MB</span></span>
         </div>
       </div>
     </div>`);
@@ -185,7 +182,7 @@ for (let i = 0; i < 18; i++) {
       </div>
       <div class="civitai-gallery-card-body">
         <div class="civitai-gallery-card-name">ComfyUI_0${1000 + i}_.png</div>
-        <div class="civitai-gallery-card-meta"><span><i class="fas fa-folder"></i> renders</span></div>
+        <div class="civitai-gallery-card-meta"><span><i class="fas fa-file"></i> ${(2.4 + i / 10).toFixed(1)} MB</span><span><i class="fas fa-clock"></i> Jul ${10 + (i % 14)}, 2026 09:${10 + i}</span></div>
       </div>
     </div>`);
 }
@@ -237,7 +234,7 @@ q('#civitai-dir-settings-list').innerHTML = types.map((t, i) => `
   <div class="civitai-dir-row">
     <label class="civitai-dir-row-label">${t}</label>
     <input class="civitai-input civitai-dir-row-input" value="${i === 1 ? 'D:/shared/models/loras' : ''}" placeholder="E:/ComfyUI/models/${t}">
-    <button class="civitai-button small secondary civitai-dir-row-reset"><i class="fas fa-rotate-left"></i></button>
+    <button class="civitai-button small secondary civitai-dir-row-reset"><i class="fas fa-undo"></i></button>
   </div>`).join('');
 
 // ---- activity badge + active section ----

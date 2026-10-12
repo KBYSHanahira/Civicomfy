@@ -11,7 +11,7 @@ export const PAGE_META = {
   browse:    { title: 'Browse',     sub: 'Search the Civitai catalogue and queue models directly' },
   mymodels:  { title: 'My Models',  sub: 'Everything installed in your ComfyUI models folder' },
   gallery:   { title: 'Gallery',    sub: 'Images generated in your ComfyUI output folder' },
-  status:    { title: 'Activity',   sub: 'Active downloads, queue and history' },
+  status:    { title: 'Downloads',  sub: 'Active transfers, queue and history' },
   settings:  { title: 'Settings',   sub: 'API keys, interface preferences and model maintenance' },
   directory: { title: 'Directories', sub: 'Per-model-type save folders' },
 };

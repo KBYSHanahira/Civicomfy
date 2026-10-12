@@ -159,7 +159,9 @@ body.cfy-theme-light {
 }
 
 /* ── Search icon inside inputs ─────────────────────────────── */
-.civitai-browse-search-input,
+/* ID selectors: .civitai-input's `background` shorthand comes later and would
+   otherwise reset the icon while the padding below still reserved its space. */
+#civitai-browse-search,
 #civitai-mymodels-search {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23938e86' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -896,6 +898,16 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
 #civitai-tab-download,
 #civitai-tab-settings,
 #civitai-tab-directory { padding-bottom: 0; }
+/* Short forms (fullscreen, tall windows) pin the action bar to the panel's
+   bottom edge instead of leaving it floating under the last card. */
+#civitai-tab-download.active,
+#civitai-tab-settings.active,
+#civitai-tab-directory.active { display: flex; flex-direction: column; }
+#civitai-download-form,
+#civitai-settings-form { display: flex; flex-direction: column; flex: 1 0 auto; }
+#civitai-tab-directory .civitai-form-actions,
+#civitai-download-form .civitai-form-actions,
+#civitai-settings-form .civitai-form-actions { margin-top: auto; }
 
 /* =============================================================
    DOWNLOAD PREVIEW AREA
@@ -1733,15 +1745,21 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
 }
 .civitai-browse-card-name-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
 }
+/* Two lines before the ellipsis: model names are the only thing that tells
+   cards apart, and one line cut most of them at "Example Wat…". */
 .civitai-browse-card-name {
   font-size: 0.84em;
   font-weight: 600;
-  white-space: nowrap;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   color: var(--cfy-text);
   flex: 1;
   min-width: 0;
@@ -2622,13 +2640,22 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   border-radius: var(--cfy-radius-lg);
   padding: 14px 16px 16px;
 }
+/* The rule and spacing live on the header, not the <h3>, so the Clear button
+   centres against the title row instead of the title plus its margin. */
 .civitai-status-history-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--cfy-border);
 }
-.civitai-status-history-header h3 { margin-bottom: 12px; }
+.civitai-status-section .civitai-status-history-header h3 {
+  margin: 0;
+  padding: 0;
+  border-bottom: 0;
+}
 .civitai-status-section h3 {
   margin: 0 0 12px;
   font-size: 0.9em;
@@ -3037,12 +3064,18 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   flex-shrink: 0;
   border-top: 1px solid var(--cfy-fill-2);
 }
+/* Filenames are long and unbroken (`name_v2_fp16.safetensors`); two lines with
+   anywhere-wrapping keep the version suffix visible. */
 .civitai-mymodel-name {
   font-size: 0.84em;
   font-weight: 600;
-  white-space: nowrap;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   color: var(--cfy-text);
 }
 .civitai-mymodel-meta {
@@ -3445,7 +3478,7 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 14px;
-  align-items: start;
+  margin-bottom: 18px;
 }
 .civitai-settings-section {
   background: var(--cfy-surface);
@@ -3869,15 +3902,29 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   }
   .civitai-toolbar-select--wide { min-width: 0; }
   .civitai-browse-search-input { flex: 1 1 100%; max-width: none; }
-  .civitai-mymodels-count { order: -1; }
+  /* The count drops its pill and takes a caption line above the controls. Sharing
+     the row with them squeezed the card-size slider to a stub and left the
+     refresh button wrapped alone on the next line. */
+  .civitai-mymodels-count {
+    order: -1;
+    flex: 1 0 100%;
+    padding: 0 2px;
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
 }
 @media (max-width: 460px) {
   .civitai-base-model-picker { flex-basis: 100%; }
   /* Basis 0 lets the slider shrink into the half row beside the search-field
      select, so the refresh button stays on that line instead of wrapping alone. */
   .civitai-card-size-control,
-  .civitai-browse-controls .civitai-toolbar-select { flex: 1 1 0; min-width: 0; }
+  .civitai-browse-controls .civitai-toolbar-select,
+  .civitai-gallery-controls .civitai-toolbar-select { flex: 1 1 0; min-width: 0; }
   .civitai-card-size-control input[type=range] { width: 100%; min-width: 0; }
+  /* My Models has no select beside the slider: the search field takes its own
+     line so the slider and Refresh share the next one. */
+  #civitai-mymodels-search { flex: 1 1 100%; }
 }
 
 /* The subtitle is the least important thing in the header, and truncating it to
@@ -3988,6 +4035,16 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   color: var(--cfy-accent-text);
   letter-spacing: 0.02em;
   white-space: nowrap;
+}
+/* Narrow: the count gets the first line and the four actions pair up 2×2,
+   instead of wrapping wherever the widths happen to run out. */
+@media (max-width: 560px) {
+  .civitai-gallery-select-bar .civitai-toolbar-spacer { display: none; }
+  .civitai-gallery-select-count { flex: 1 0 calc(100% - 30px); }
+  .civitai-gallery-select-bar .civitai-button {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+  }
 }
 
 /* ── Gallery Grid ─────────────────────────────────────────── */
@@ -4246,6 +4303,12 @@ textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
   padding: 22px;
   box-sizing: border-box;
   gap: 10px;
+}
+/* Room for the prev/next arrows beside the image (12px inset + 38px button) so a
+   full-width picture is not covered by its own controls. On a phone there is no
+   room to spare, so the arrows float over the picture instead. */
+@media (min-width: 601px) {
+  .civitai-gallery-lightbox-content { padding-inline: 58px; }
 }
 
 .civitai-gallery-lightbox-img {

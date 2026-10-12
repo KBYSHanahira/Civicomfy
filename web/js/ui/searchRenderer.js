@@ -85,6 +85,10 @@ function _typeColor(modelType) {
     return typeColor(modelType);
 }
 
+// API type names that overflow the artwork badge on a narrow card, shown the way
+// Civitai itself labels them.
+const TYPE_BADGE_LABELS = { TextualInversion: 'Embedding', MotionModule: 'Motion' };
+
 // ─── Download size (lazy) ─────────────────────────────────────
 // Placeholder stays hidden until a size is known, so results that Civitai
 // won't resolve simply show nothing instead of an empty slot.
@@ -240,7 +244,7 @@ export function renderBrowseCards(ui, items) {
         // Type badge — bottom-left, with type color
         const badge = document.createElement('div');
         badge.className = 'civitai-browse-card-badge';
-        badge.textContent = modelTypeApi;
+        badge.textContent = TYPE_BADGE_LABELS[modelTypeApi] ?? modelTypeApi;
         badge.style.backgroundColor = typeColor;
         preview.appendChild(badge);
 
