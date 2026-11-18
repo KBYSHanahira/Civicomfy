@@ -1,0 +1,225 @@
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+/* Narrow: the rail becomes a slide-over drawer */
+@media (max-width: 880px) {
+  .civitai-rail {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    z-index: 60;
+    flex-basis: var(--cfy-rail-w);
+    width: var(--cfy-rail-w);
+    transform: translateX(-102%);
+    box-shadow: var(--cfy-shadow-lg);
+    transition: transform var(--cfy-transition);
+  }
+  .civitai-downloader-modal-content.rail-open .civitai-rail { transform: translateX(0); }
+  .civitai-downloader-modal-content.rail-collapsed .civitai-rail {
+    flex-basis: var(--cfy-rail-w);
+    width: var(--cfy-rail-w);
+  }
+  /* keep labels visible inside the drawer even if collapsed was toggled */
+  .civitai-downloader-modal-content.rail-collapsed .civitai-nav-group-label,
+  .civitai-downloader-modal-content.rail-collapsed .cfy-nav-code,
+  .civitai-downloader-modal-content.rail-collapsed .civitai-downloader-tab > span:not(.civitai-nav-badge),
+  .civitai-downloader-modal-content.rail-collapsed .civitai-rail-action > span { display: initial; }
+  .civitai-downloader-modal-content.rail-collapsed .civitai-downloader-tab,
+  .civitai-downloader-modal-content.rail-collapsed .civitai-rail-action {
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+  }
+  .civitai-icon-button.civitai-rail-open { display: inline-flex; align-self: center; margin-left: 10px; flex-shrink: 0; }
+  #civitai-rail-collapse { display: none; }
+  /* Top bar: the brand shrinks to its mark; the readout takes the room. */
+  .cfy-brand,
+  .civitai-downloader-modal-content.rail-collapsed .cfy-brand {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 0 12px;
+    border-right: 0;
+  }
+  .cfy-brand-text,
+  .cfy-topbar-hazard,
+  .civitai-downloader-header::after { display: none; }
+  .civitai-rail-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 55;
+    background: rgba(0,0,0,0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--cfy-transition);
+  }
+  .civitai-downloader-modal-content.rail-open .civitai-rail-scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@media (max-width: 900px) {
+  .civitai-form-row { gap: 10px; }
+  .civitai-form-row > .civitai-form-group { flex-basis: 180px; }
+  .civitai-browse-controls,
+  .civitai-gallery-controls { gap: 6px; }
+  .civitai-browse-search-input { flex-basis: 100%; max-width: 100%; }
+  .civitai-base-model-picker { flex: 1 1 180px; min-width: 0; }
+}
+@media (max-width: 600px) {
+  .civitai-downloader-tab-content { padding: 14px; }
+  #civitai-tab-browse,
+  #civitai-tab-mymodels,
+  #civitai-tab-gallery { padding: 14px; }
+  .civitai-downloader-header { padding-right: 8px; }
+  .cfy-page-code { font-size: 1.6em; }
+  .cfy-statusbar-label:last-child { display: none; }
+  .civitai-browse-controls { gap: 6px; }
+  .civitai-browse-search-input { max-width: 100%; }
+  .civitai-mymodels-controls-row { flex-wrap: wrap; }
+  .civitai-form-row > .civitai-form-group { flex-basis: 100%; }
+  .civitai-settings-container { grid-template-columns: 1fr; }
+}
+/* The scrim only exists to close the drawer; it must never block clicks
+   at wider widths where the rail is docked. */
+.civitai-rail-scrim { display: none; }
+@media (max-width: 880px) { .civitai-rail-scrim { display: block; } }
+/* Tablet / mid-range: let control bars and form rows wrap gracefully */
+@media (max-width: 820px) {
+  .civitai-form-row { flex-wrap: wrap; }
+  .civitai-browse-controls,
+  .civitai-gallery-controls,
+  .civitai-mymodels-controls-row { flex-wrap: wrap; }
+  .civitai-card-size-control { margin-left: auto; }
+}
+
+/* ── Toolbar controls ─────────────────────────────────────── */
+/* Content-sized while there is room; the responsive rules below hand them an
+   even share of the row once there isn't. */
+.civitai-toolbar-select {
+  width: auto;
+  flex: 0 0 auto;
+  min-width: 0;
+  /* A <select> sizes itself to its widest option, and the model-type list holds
+     names like "animatediff_video_formats" — without a cap one control ate a
+     third of the toolbar. The dropdown itself is free to render wider. */
+  max-width: 190px;
+}
+.civitai-toolbar-select--wide { min-width: 155px; }
+.civitai-base-model-picker { max-width: 220px; }
+
+/* The uppercase FILTER / SORT captions are the first thing to go: as soon as
+   the row wraps they are stranded beside whichever control follows them. */
+@media (max-width: 940px) {
+  .civitai-toolbar-label { display: none; }
+}
+@media (max-width: 760px) {
+  .civitai-toolbar-spacer { display: none; }
+  .civitai-toolbar-select,
+  .civitai-base-model-picker {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    /* Half the row is the target here, so the desktop caps must stand down. */
+    max-width: none;
+  }
+  .civitai-toolbar-select--wide { min-width: 0; }
+  .civitai-browse-search-input { flex: 1 1 100%; max-width: none; }
+  /* The count drops its pill and takes a caption line above the controls. Sharing
+     the row with them squeezed the card-size slider to a stub and left the
+     refresh button wrapped alone on the next line. */
+  .civitai-mymodels-count {
+    order: -1;
+    flex: 1 0 100%;
+    padding: 0 2px;
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
+}
+@media (max-width: 460px) {
+  .civitai-base-model-picker { flex-basis: 100%; }
+  /* Basis 0 lets the slider shrink into the half row beside the search-field
+     select, so the refresh button stays on that line instead of wrapping alone. */
+  .civitai-card-size-control,
+  .civitai-browse-controls .civitai-toolbar-select,
+  .civitai-gallery-controls .civitai-toolbar-select { flex: 1 1 0; min-width: 0; }
+  .civitai-card-size-control input[type=range] { width: 100%; min-width: 0; }
+  /* My Models has no select beside the slider: the search field takes its own
+     line so the slider and Refresh share the next one. */
+  #civitai-mymodels-search { flex: 1 1 100%; }
+}
+
+/* The subtitle is the least important thing in the header, and truncating it to
+   a few words reads worse than not showing it at all. */
+@media (max-width: 560px) {
+  .civitai-page-sub { display: none; }
+  .civitai-downloader-header h2 { font-size: 1.25em; }
+  /* The section readout is worth more than the logo on a phone. */
+  .cfy-brand { display: none; }
+  .civitai-page-title-wrap { padding-left: 12px; gap: 10px; }
+  .cfy-page-title-text { padding-left: 10px; }
+  /* Same specificity as the rule that lays the hint out, or it wins. */
+  .civitai-form-actions .civitai-form-actions-hint { display: none; }
+  .civitai-form-actions .civitai-button { flex: 1 1 auto; }
+  .civitai-empty-state { padding: 24px 14px; }
+}
+
+/* Directory rows: label on its own line, then path + reset side by side. */
+@media (max-width: 680px) {
+  .civitai-dir-row { row-gap: 4px; }
+  .civitai-dir-row-input { flex: 1 1 0; }
+}
+
+/* ── Touch input ──────────────────────────────────────────── */
+/* Coarse pointers need roughly 40px targets. Growing the shared control-height
+   token moves every input, select and button that uses it in one step; the few
+   controls with hard-coded sizes follow here. */
+@media (pointer: coarse) {
+  :root { --cfy-input-h: 42px; }
+  .civitai-button.small { height: 34px; padding: 0 12px; }
+  .civitai-icon-button,
+  .civitai-close-button { width: 40px; height: 40px; }
+  .civitai-checkbox { width: 20px; height: 20px; }
+  .civitai-form-group.inline > .civitai-checkbox { margin-top: 1px; }
+  .civitai-browse-card-info-btn { min-height: 32px; padding: 6px 9px; }
+  .civitai-browse-card-overlay .civitai-button,
+  .civitai-mymodel-card-overlay .civitai-button,
+  .civitai-gallery-card-overlay .civitai-button { min-height: 36px; }
+  /* Pagination sets its own height, so the shared .small bump misses it. The
+     id selector mirrors the rule above it, which is id-scoped for Browse. */
+  #civitai-browse-pagination .civitai-button,
+  .civitai-mymodels-pagination .civitai-button,
+  .civitai-gallery-pagination .civitai-button { height: 38px; min-width: 38px; }
+  .cfy-copy-btn { min-height: 30px; }
+  .civitai-card-size-control input[type=range] { height: 30px; }
+}
+
+/* ── Accessibility: visible keyboard focus ─────────────────── */
+.civitai-button:focus-visible,
+.civitai-icon-button:focus-visible,
+.civitai-close-button:focus-visible,
+.civitai-downloader-tab:focus-visible,
+.civitai-input:focus-visible,
+.civitai-select:focus-visible,
+.civitai-base-model-picker-toggle:focus-visible,
+.civitai-rail-action:focus-visible,
+.civitai-browse-card-info-btn:focus-visible,
+.cfy-copy-btn:focus-visible,
+.civitai-lightbox-close:focus-visible,
+.civitai-gallery-lightbox-close:focus-visible,
+.civitai-gallery-lightbox-nav:focus-visible {
+  outline: 2px solid var(--cfy-accent);
+  outline-offset: 2px;
+}
+
+/* ── Reduced motion ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  .civitai-downloader-modal.open .civitai-downloader-modal-content,
+  .civitai-downloader-tab-content.active {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+

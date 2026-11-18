@@ -11,7 +11,7 @@
     body { background: #211f1e; display: flex; align-items: center; justify-content: center; }
     body.cfy-theme-light { background: #d9d5c9; }
     .civitai-downloader-modal { position: static !important; background: none !important; backdrop-filter: none !important; opacity: 1 !important; visibility: visible !important; }
-    * { transition: none !important; animation: none !important; }
+    html.cfy-still * { transition: none !important; animation: none !important; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
   </style>
 </head>
@@ -40,6 +40,7 @@ function thumb(i, w = 240, h = 320) {
 const params = new URLSearchParams(location.hash.slice(1));
 const tab = params.get('tab') || 'download';
 if (params.get('theme') === 'light') document.body.classList.add('cfy-theme-light');
+if (params.get('motion') !== '1') document.documentElement.classList.add('cfy-still');
 
 const modal = document.createElement('div');
 modal.className = 'civitai-downloader-modal open';
@@ -245,6 +246,7 @@ modal.querySelectorAll('.civitai-downloader-tab').forEach(b => b.classList.toggl
 modal.querySelectorAll('.civitai-downloader-tab-content').forEach(c => c.classList.toggle('active', c.id === 'civitai-tab-' + tab));
 q('#civitai-page-title').textContent = PAGE_META[tab].title;
 q('#civitai-page-sub').textContent = PAGE_META[tab].sub;
+q('#civitai-page-code').textContent = PAGE_META[tab].code;
 
 const scrollBy = parseInt(params.get('scroll') || '0', 10);
 if (scrollBy) q('#civitai-tab-' + tab).scrollTop = scrollBy;

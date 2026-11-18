@@ -1,0 +1,664 @@
+/* =============================================================
+   MY MODELS TAB
+   ============================================================= */
+#civitai-tab-mymodels,
+#civitai-tab-gallery { padding: 18px 24px 22px; }
+.civitai-mymodels-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+.civitai-mymodels-controls-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.civitai-mymodels-header .civitai-select {
+  width: auto;
+  flex-shrink: 0;
+  font-size: 0.88em;
+}
+.civitai-mymodels-header .civitai-input {
+  width: auto;
+  flex: 1 1 200px;
+  min-width: 140px;
+  max-width: 340px;
+}
+.civitai-mymodels-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--cfy-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.74em;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  background: var(--cfy-accent-soft);
+  border: 1px solid var(--cfy-accent-glow);
+  border-left: 2px solid var(--cfy-accent);
+  border-radius: 0;
+  color: var(--cfy-accent-text);
+  flex-shrink: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.civitai-mymodels-count:empty { display: none; }
+.civitai-mymodels-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--cfy-mymodels-card-min-w, 148px), 1fr));
+  gap: 10px;
+  align-content: start;
+}
+.civitai-mymodel-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+  animation: cfy-rise var(--cfy-dur-3) var(--cfy-ease-out) both;
+  /* Skip layout and paint for cards scrolled out of view. Without this every
+     card in the page stays live — including the three blurred overlay buttons
+     each one owns — and scrolling repaints all 50. The gallery grid has carried
+     this since it was written, which is why it scrolls smoothly and this did
+     not. The height is the measured uniform card height, so the scrollbar does
+     not jump as cards are realised. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 298px;
+  transition: border-color var(--cfy-transition);
+  cursor: default;
+}
+.civitai-mymodel-card:hover { border-color: var(--cfy-line-strong); }
+.civitai-mymodel-card-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  flex-shrink: 0;
+  background: var(--cfy-media-bg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.civitai-mymodel-card-preview > img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform var(--cfy-dur-3) var(--cfy-ease-out);
+}
+.civitai-mymodel-card:hover .civitai-mymodel-card-preview > img { transform: scale(1.04); }
+.civitai-mymodel-card-preview.no-preview {
+  border-bottom: 1px dashed var(--cfy-border);
+  color: var(--cfy-text-dim);
+}
+.civitai-mymodel-card-badge {
+  position: absolute;
+  bottom: 6px; left: 6px;
+  background: var(--cfy-glass);
+  border-left: 2px solid var(--cfy-accent);
+  color: #fff;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.62em;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: var(--cfy-label-tracking);
+  z-index: 2;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.civitai-mymodel-card-bm-badge {
+  position: absolute;
+  bottom: 6px; right: 6px;
+  background: var(--cfy-glass);
+  color: var(--cfy-on-media-dim);
+  font-family: var(--cfy-font-mono);
+  font-size: 0.6em;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 0;
+  z-index: 2;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.civitai-mymodel-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--cfy-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity var(--cfy-dur-2) var(--cfy-ease-out);
+  z-index: 3;
+}
+.civitai-mymodel-card:hover .civitai-mymodel-card-overlay,
+.civitai-mymodel-card:focus-within .civitai-mymodel-card-overlay { opacity: 1; }
+.civitai-mymodel-card-overlay .civitai-button {
+  height: auto;
+  padding: 7px 11px;
+  font-size: 0.88em;
+  border-radius: 0;
+  background: var(--cfy-glass);
+  border-color: var(--cfy-glass-line);
+  color: #fff;
+  box-shadow: none;
+  transform: none;
+}
+/* The overlay sits at opacity 0 until the card is hovered, so the blur is never
+   visible before then — but declaring it unconditionally still gave every card
+   three permanently-composited layers, 150 across a page. Scoping it to hover
+   is visually identical and leaves at most three alive at a time. */
+.civitai-mymodel-card:hover .civitai-mymodel-card-overlay .civitai-button {
+  backdrop-filter: blur(4px);
+}
+.civitai-mymodel-card-overlay .civitai-button:hover:not(:disabled) {
+  background: var(--cfy-accent-strong);
+  border-color: var(--cfy-accent);
+  transform: none;
+  box-shadow: none;
+}
+.civitai-mymodel-card-overlay .civitai-button.danger:hover:not(:disabled) {
+  background: var(--cfy-danger);
+  border-color: var(--cfy-danger);
+  color: var(--cfy-on-accent);
+}
+.civitai-mymodel-card-body {
+  padding: 7px 9px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--cfy-line);
+}
+/* Filenames are long and unbroken (`name_v2_fp16.safetensors`); two lines with
+   anywhere-wrapping keep the version suffix visible. */
+.civitai-mymodel-name {
+  font-size: 0.84em;
+  font-weight: 600;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--cfy-text);
+}
+.civitai-mymodel-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--cfy-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.66em;
+  color: var(--cfy-text-dim);
+  overflow: hidden;
+}
+.civitai-mymodel-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+.civitai-mymodel-meta-line i {
+  opacity: 0.5;
+  flex-shrink: 0;
+  width: 10px;
+  text-align: center;
+}
+.civitai-mymodel-detail-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--cfy-overlay);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  animation: cfy-fade-in var(--cfy-dur-2) var(--cfy-ease-out) both;
+}
+/* Chamfered top-right and bottom-left corners under a 2px orange top edge.
+   clip-path hides the drop shadow; the dim backdrop carries the depth. */
+.civitai-mymodel-detail-panel {
+  background: var(--cfy-bg);
+  border: 1px solid var(--cfy-border);
+  border-top: 2px solid var(--cfy-accent);
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - var(--cfy-cut)) 0, 100% var(--cfy-cut), 100% 100%, var(--cfy-cut) 100%, 0 calc(100% - var(--cfy-cut)));
+  animation: cfy-modal-in var(--cfy-dur-3) var(--cfy-ease-out) both;
+  width: 94%;
+  max-width: 860px;
+  max-height: 92%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--cfy-shadow-lg);
+}
+
+/* Header */
+.civitai-mymodel-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--cfy-border);
+  flex-shrink: 0;
+  gap: 10px;
+  background: var(--cfy-recess-strong);
+}
+.civitai-mymodel-detail-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+/* Type chip — matches cfy-prev-type-badge */
+.civitai-mymodel-detail-type-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 0;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.62em;
+  font-weight: 700;
+  letter-spacing: var(--cfy-label-tracking);
+  text-transform: uppercase;
+  background: var(--cfy-accent);
+  color: var(--cfy-on-accent);
+  border: 1px solid var(--cfy-accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.civitai-mymodel-detail-title {
+  margin: 0;
+  font-family: var(--cfy-font-display);
+  font-size: 1.15em;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.civitai-mymodel-detail-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Meta bar — pill chips matching cfy-prev-stat */
+.civitai-mymodel-detail-meta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--cfy-border);
+  background: var(--cfy-recess);
+  flex-shrink: 0;
+}
+.civitai-mymodel-detail-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--cfy-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.74em;
+  color: var(--cfy-text-dim);
+  background: var(--cfy-fill-1);
+  border: 1px solid var(--cfy-line);
+  border-radius: 0;
+  padding: 3px 8px;
+}
+.civitai-mymodel-detail-meta-item i { opacity: 0.55; }
+
+/* Body */
+.civitai-mymodel-detail-body {
+  display: flex;
+  gap: 16px;
+  padding: 16px 18px;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Left: preview — matches cfy-prev-gallery */
+.civitai-mymodel-detail-left {
+  flex-shrink: 0;
+  width: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.civitai-mymodel-detail-preview-wrap {
+  width: 210px;
+  aspect-ratio: 2/3;
+  border-radius: 0;
+  overflow: hidden;
+  background: var(--cfy-media-bg);
+  border: 1px solid var(--cfy-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: zoom-in;
+}
+.civitai-mymodel-detail-preview-wrap.no-preview {
+  cursor: default;
+  border: 1px dashed var(--cfy-border);
+  color: var(--cfy-text-dim);
+  font-size: 2em;
+  opacity: 0.35;
+}
+.civitai-mymodel-detail-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform var(--cfy-dur-3) var(--cfy-ease-out);
+}
+.civitai-mymodel-detail-preview-wrap:not(.no-preview):hover .civitai-mymodel-detail-preview {
+  transform: scale(1.04);
+}
+
+/* Right: scrollable details — matches cfy-prev-info */
+.civitai-mymodel-detail-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  min-width: 0;
+  padding-right: 2px;
+}
+
+@media (max-width: 680px) {
+  .civitai-mymodel-detail-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .civitai-mymodel-detail-left,
+  .civitai-mymodel-detail-preview-wrap {
+    width: 100%;
+  }
+  .civitai-mymodel-detail-preview-wrap {
+    aspect-ratio: auto;
+    height: 240px;
+  }
+  .civitai-mymodel-detail-right {
+    overflow-y: visible;
+  }
+}
+
+/* Section block — matches cfy-prev-box */
+.civitai-mymodel-detail-section {
+  background: var(--cfy-fill-1);
+  border: 1px solid var(--cfy-line);
+  border-radius: 0;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 0;
+}
+/* Amber trigger-words section */
+.civitai-mymodel-detail-section.tw-section {
+  background: var(--cfy-amber-soft);
+  border-color: var(--cfy-amber-line);
+  border-left: 2px solid var(--cfy-amber);
+}
+.civitai-mymodel-detail-section-label {
+  font-family: var(--cfy-font-mono);
+  font-size: 0.64em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--cfy-label-tracking);
+  color: var(--cfy-text-faint);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.civitai-mymodel-detail-section-label::before { content: "// "; color: var(--cfy-accent); }
+.civitai-mymodel-detail-section-label i { opacity: 0.7; }
+
+/* KV grid */
+.civitai-mymodel-detail-kv-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 14px;
+  font-size: 0.83em;
+}
+.civitai-mymodel-detail-kv-key {
+  font-family: var(--cfy-font-mono);
+  font-size: 0.86em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cfy-text-faint);
+  white-space: nowrap;
+  padding-top: 2px;
+}
+.civitai-mymodel-detail-kv-val {
+  color: var(--cfy-text);
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.civitai-mymodel-detail-kv-val code {
+  background: var(--cfy-recess-strong);
+  border: 1px solid var(--cfy-fill-3);
+  border-radius: 0;
+  padding: 1px 6px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.95em;
+}
+
+/* Trigger words — amber chips matching cfy-prev-trained-word */
+.civitai-mymodel-detail-tw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.civitai-mymodel-detail-trigger-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  overflow-wrap: anywhere;
+}
+.civitai-mymodel-detail-trigger-word {
+  background: var(--cfy-amber-dim);
+  border: 1px solid var(--cfy-amber-line);
+  color: var(--cfy-amber-text);
+  font-size: 0.75em;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 0;
+  border-left: 2px solid var(--cfy-amber);
+  white-space: normal;
+  word-break: break-word;
+  font-family: var(--cfy-font-mono);
+  cursor: pointer;
+  transition: background var(--cfy-transition), border-color var(--cfy-transition), transform var(--cfy-transition);
+  user-select: none;
+}
+.civitai-mymodel-detail-trigger-word:hover {
+  background: var(--cfy-amber-glow);
+  border-color: var(--cfy-amber-glow);
+  border-left-color: var(--cfy-amber);
+}
+.civitai-mymodel-detail-trigger-word:active { transform: scale(0.96); }
+
+/* Example prompts */
+.civitai-mymodel-detail-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.civitai-mymodel-detail-prompt-card {
+  background: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-radius: 0;
+  overflow: hidden;
+}
+.civitai-mymodel-detail-prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  background: var(--cfy-recess);
+  border-bottom: 1px solid var(--cfy-border);
+  font-size: 0.78em;
+}
+.civitai-mymodel-detail-prompt-num {
+  font-family: var(--cfy-font-mono);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--cfy-accent-text);
+}
+.civitai-mymodel-detail-prompt-text {
+  padding: 7px 10px;
+  font-size: 0.8em;
+  line-height: 1.6;
+  color: var(--cfy-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Description — matches cfy-prev-desc-body */
+.civitai-mymodel-detail-desc {
+  font-size: 0.82em;
+  line-height: 1.65;
+  color: var(--cfy-text);
+  padding: 10px 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--cfy-recess);
+  border-left: 2px solid var(--cfy-line-strong);
+  border-radius: 0;
+  word-break: break-word;
+}
+.civitai-mymodel-detail-desc p { margin: 0 0 8px; }
+.civitai-mymodel-detail-desc p:last-child { margin-bottom: 0; }
+.civitai-mymodel-detail-desc ul,
+.civitai-mymodel-detail-desc ol { padding-left: 20px; margin: 4px 0 8px; }
+.civitai-mymodel-detail-desc li { margin: 2px 0; }
+.civitai-mymodel-detail-desc strong,
+.civitai-mymodel-detail-desc b { color: var(--cfy-text); font-weight: 700; }
+.civitai-mymodel-detail-desc h1,
+.civitai-mymodel-detail-desc h2,
+.civitai-mymodel-detail-desc h3,
+.civitai-mymodel-detail-desc h4 { font-size: 1em; font-weight: 700; margin: 8px 0 4px; color: var(--cfy-text); }
+.civitai-mymodel-detail-desc a { color: var(--cfy-accent-text); text-decoration: underline; }
+.civitai-mymodel-detail-desc a:hover { color: var(--cfy-accent); }
+.civitai-mymodel-detail-desc br + br { display: block; content: ''; margin-top: 6px; }
+
+/* Footer bar */
+.civitai-mymodel-detail-footer-bar {
+  padding: 9px 16px;
+  border-top: 1px solid var(--cfy-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  background: var(--cfy-recess);
+}
+.civitai-mymodel-detail-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8em;
+  color: var(--cfy-text-dim);
+  min-width: 0;
+  overflow: hidden;
+}
+.civitai-mymodel-detail-path-label {
+  flex-shrink: 0;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.82em;
+  text-transform: uppercase;
+  letter-spacing: var(--cfy-label-tracking);
+  color: var(--cfy-text-faint);
+}
+.civitai-mymodel-detail-path-code {
+  background: var(--cfy-recess-strong);
+  border: 1px solid var(--cfy-fill-3);
+  border-radius: 0;
+  padding: 1px 7px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.88em;
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+}
+.civitai-mymodel-detail-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+/* Corner brackets (top-left orange, bottom-right faint) appear and grow on hover. */
+.civitai-mymodel-card::before,
+.civitai-mymodel-card::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--cfy-dur-1), width var(--cfy-dur-2) var(--cfy-ease-snap), height var(--cfy-dur-2) var(--cfy-ease-snap);
+}
+.civitai-mymodel-card::before { top: 0; left: 0; border-top: 2px solid var(--cfy-accent); border-left: 2px solid var(--cfy-accent); }
+.civitai-mymodel-card::after { right: 0; bottom: 0; border-right: 2px solid var(--cfy-line-strong); border-bottom: 2px solid var(--cfy-line-strong); }
+.civitai-mymodel-card:hover::before,
+.civitai-mymodel-card:hover::after,
+.civitai-mymodel-card:focus-within::before,
+.civitai-mymodel-card:focus-within::after { opacity: 1; width: 18px; height: 18px; }
+/* Orange bar wiping along the bottom edge on hover. */
+.civitai-mymodel-card-body { position: relative; }
+.civitai-mymodel-card-body::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: var(--cfy-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--cfy-dur-2) var(--cfy-ease-out);
+}
+.civitai-mymodel-card:hover .civitai-mymodel-card-body::after { transform: scaleX(1); }
+.civitai-mymodel-card:nth-child(2) { animation-delay: calc(var(--cfy-stagger) * 1); }
+.civitai-mymodel-card:nth-child(3) { animation-delay: calc(var(--cfy-stagger) * 2); }
+.civitai-mymodel-card:nth-child(4) { animation-delay: calc(var(--cfy-stagger) * 3); }
+.civitai-mymodel-card:nth-child(5) { animation-delay: calc(var(--cfy-stagger) * 4); }
+.civitai-mymodel-card:nth-child(6) { animation-delay: calc(var(--cfy-stagger) * 5); }
+.civitai-mymodel-card:nth-child(7) { animation-delay: calc(var(--cfy-stagger) * 6); }
+.civitai-mymodel-card:nth-child(8) { animation-delay: calc(var(--cfy-stagger) * 7); }
+.civitai-mymodel-card:nth-child(9) { animation-delay: calc(var(--cfy-stagger) * 8); }
+.civitai-mymodel-card:nth-child(10) { animation-delay: calc(var(--cfy-stagger) * 9); }
+.civitai-mymodel-card:nth-child(11) { animation-delay: calc(var(--cfy-stagger) * 10); }
+.civitai-mymodel-card:nth-child(12) { animation-delay: calc(var(--cfy-stagger) * 11); }

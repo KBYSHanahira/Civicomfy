@@ -496,9 +496,9 @@ export function showModelDetailModal(model, opts = {}) {
         chip.className = 'civitai-mymodel-detail-type-chip';
         chip.textContent = typeLabel;
         const tc = _mmTypeColor(typeLabel);
-        chip.style.background = tc + '28';
-        chip.style.borderColor = tc + '60';
-        chip.style.color = tc;
+        chip.style.background = tc;
+        chip.style.borderColor = tc;
+        chip.style.color = '#fff';
         titleWrap.appendChild(chip);
     }
 

@@ -1,0 +1,483 @@
+/* =============================================================
+   GALLERY TAB
+   ============================================================= */
+.civitai-gallery-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--cfy-border);
+  padding-bottom: 12px;
+  flex-shrink: 0;
+}
+.civitai-gallery-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Multi-select action bar ──────────────────────────────── */
+.civitai-gallery-select-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  background: var(--cfy-accent-soft);
+  border: 1px solid var(--cfy-accent-glow);
+  border-left: 2px solid var(--cfy-accent);
+  border-radius: 0;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  animation: cfy-wipe var(--cfy-dur-3) var(--cfy-ease-out) both;
+}
+.civitai-gallery-select-bar > i { color: var(--cfy-accent); flex-shrink: 0; }
+.civitai-gallery-select-count {
+  font-family: var(--cfy-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8em;
+  font-weight: 700;
+  color: var(--cfy-accent-text);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+/* Narrow: the count gets the first line and the four actions pair up 2×2,
+   instead of wrapping wherever the widths happen to run out. */
+@media (max-width: 560px) {
+  .civitai-gallery-select-bar .civitai-toolbar-spacer { display: none; }
+  .civitai-gallery-select-count { flex: 1 0 calc(100% - 30px); }
+  .civitai-gallery-select-bar .civitai-button {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+  }
+}
+
+/* ── Gallery Grid ─────────────────────────────────────────── */
+.civitai-gallery-grid {
+  --cfy-gallery-card-w: 148px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--cfy-gallery-card-w), 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+/* ── Gallery Card ─────────────────────────────────────────── */
+.civitai-gallery-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 230px;
+  animation: cfy-rise var(--cfy-dur-3) var(--cfy-ease-out) both;
+  transition: border-color var(--cfy-transition);
+}
+.civitai-gallery-card:hover { border-color: var(--cfy-line-strong); }
+.civitai-gallery-card.selected {
+  border-color: var(--cfy-accent);
+  outline: 2px solid var(--cfy-accent);
+  outline-offset: -2px;
+}
+.civitai-gallery-card.selected .civitai-gallery-card-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--cfy-accent-dim);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── Card Preview ─────────────────────────────────────────── */
+.civitai-gallery-card-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  flex-shrink: 0;
+  background: var(--cfy-media-bg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.civitai-gallery-card-preview > img,
+.civitai-gallery-card-preview > video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform var(--cfy-dur-3) var(--cfy-ease-out);
+}
+.civitai-gallery-card:hover .civitai-gallery-card-preview > img {
+  transform: scale(1.04);
+}
+.civitai-gallery-card-preview.no-preview {
+  border-bottom: 1px dashed var(--cfy-border);
+  color: var(--cfy-text-dim);
+}
+
+/* ── Video play badge ─────────────────────────────────────── */
+/* Marks a card as a video while it sits on its static poster frame. Hidden on
+   hover so it doesn't fight the dark action overlay. pointer-events:none keeps
+   the click falling through to the card's own open-lightbox handler. */
+.civitai-gallery-card-play-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
+  color: #fff;
+  transition: opacity var(--cfy-dur-2) var(--cfy-ease-out);
+}
+.civitai-gallery-card-play-badge i {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  background: var(--cfy-glass);
+  border: 1px solid var(--cfy-glass-line);
+  border-left: 2px solid var(--cfy-accent);
+  font-size: 1em;
+  padding-left: 3px; /* optical centering of the play triangle */
+}
+.civitai-gallery-card:hover .civitai-gallery-card-play-badge {
+  opacity: 0;
+}
+
+/* ── Date badge (top-right) ───────────────────────────────── */
+.civitai-gallery-card-date-badge {
+  position: absolute;
+  top: 6px; right: 6px;
+  background: var(--cfy-glass);
+  color: var(--cfy-on-media-dim);
+  font-family: var(--cfy-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.62em;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 0;
+  z-index: 2;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── Selection checkbox (top-left) ───────────────────────── */
+.civitai-gallery-card-select-wrap {
+  position: absolute;
+  top: 6px; left: 6px;
+  z-index: 4;
+  width: 22px; height: 22px;
+  opacity: 0;
+  transition: opacity var(--cfy-dur-1);
+}
+.civitai-gallery-card:hover .civitai-gallery-card-select-wrap,
+.civitai-gallery-card.selected .civitai-gallery-card-select-wrap {
+  opacity: 1;
+}
+.civitai-gallery-card-checkbox {
+  width: 22px; height: 22px;
+  border-radius: 0;
+  border: 1px solid var(--cfy-glass-line);
+  background: var(--cfy-glass);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7em;
+  color: #fff;
+  transition: background var(--cfy-dur-1), border-color var(--cfy-dur-1);
+}
+.civitai-gallery-card-checkbox:hover { border-color: var(--cfy-accent); }
+/* Selected: solid orange with the same black tick as .civitai-checkbox; the
+   icon the JS inserts is hidden so the tick stays black on the orange fill. */
+.civitai-gallery-card.selected .civitai-gallery-card-checkbox {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M1 5.2 3.8 8 9 2' fill='none' stroke='%230a0a0b' stroke-width='2' stroke-linecap='square'/%3E%3C/svg%3E") center / 11px no-repeat, var(--cfy-accent);
+  border-color: var(--cfy-accent);
+}
+.civitai-gallery-card.selected .civitai-gallery-card-checkbox i { display: none; }
+
+/* ── Hover action overlay ─────────────────────────────────── */
+.civitai-gallery-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--cfy-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity var(--cfy-dur-2) var(--cfy-ease-out);
+  z-index: 3;
+}
+.civitai-gallery-card:hover .civitai-gallery-card-overlay,
+.civitai-gallery-card:focus-within .civitai-gallery-card-overlay { opacity: 1; }
+.civitai-gallery-card.selected .civitai-gallery-card-overlay { pointer-events: none; }
+
+.civitai-gallery-card-overlay .civitai-button {
+  height: auto;
+  padding: 7px 11px;
+  font-size: 0.88em;
+  border-radius: 0;
+  background: var(--cfy-glass);
+  border-color: var(--cfy-glass-line);
+  color: #fff;
+  box-shadow: none;
+  transform: none;
+}
+/* Hover-scoped for the same reason as the My Models overlay above. */
+.civitai-gallery-card:hover .civitai-gallery-card-overlay .civitai-button {
+  backdrop-filter: blur(4px);
+}
+.civitai-gallery-card-overlay .civitai-button:hover:not(:disabled) {
+  background: var(--cfy-accent-strong);
+  border-color: var(--cfy-accent);
+  transform: none;
+  box-shadow: none;
+}
+.civitai-gallery-card-overlay .civitai-button.danger:hover:not(:disabled) {
+  background: var(--cfy-danger);
+  border-color: var(--cfy-danger);
+  color: var(--cfy-on-accent);
+}
+
+/* ── Card body ────────────────────────────────────────────── */
+.civitai-gallery-card-body {
+  padding: 7px 9px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--cfy-line);
+}
+.civitai-gallery-card-name {
+  font-size: 0.84em;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--cfy-text);
+}
+.civitai-gallery-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--cfy-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.65em;
+  color: var(--cfy-text-dim);
+  overflow: hidden;
+}
+.civitai-gallery-card-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+.civitai-gallery-card-meta i {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* ── Gallery Lightbox ─────────────────────────────────────── */
+.civitai-gallery-lightbox {
+  position: absolute;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.civitai-gallery-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--cfy-overlay);
+  cursor: zoom-out;
+  animation: cfy-fade-in var(--cfy-dur-2) var(--cfy-ease-out) both;
+}
+
+.civitai-gallery-lightbox-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 22px;
+  box-sizing: border-box;
+  gap: 10px;
+}
+/* Room for the prev/next arrows beside the image (12px inset + 38px button) so a
+   full-width picture is not covered by its own controls. On a phone there is no
+   room to spare, so the arrows float over the picture instead. */
+@media (min-width: 601px) {
+  .civitai-gallery-lightbox-content { padding-inline: 58px; }
+}
+
+.civitai-gallery-lightbox-img {
+  max-width: 100%;
+  /* Bound by the container, not the viewport — the lightbox is confined to the
+     modal body, so vh units overflowed it. The parent has a definite height
+     (height:100%), so this % resolves; the img keeps its aspect ratio. */
+  max-height: calc(100% - 60px);
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: var(--cfy-shadow-lg);
+  object-fit: contain;
+  display: block;
+  background: var(--cfy-media-bg);
+  animation: cfy-wipe var(--cfy-dur-3) var(--cfy-ease-out) both;
+}
+
+/* Lightbox video mirrors the image's sizing so both fit the same stage. The
+   native controls stay inside the rounded box; black backing suits letterboxed
+   frames better than the neutral media background an image wants. */
+.civitai-gallery-lightbox-video {
+  max-width: 100%;
+  max-height: calc(100% - 60px);
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: var(--cfy-shadow-lg);
+  object-fit: contain;
+  display: block;
+  background: #000;
+}
+
+.civitai-gallery-lightbox-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--cfy-glass);
+  border: 1px solid var(--cfy-glass-line);
+  color: #fff;
+  width: 38px;
+  height: 38px;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background var(--cfy-transition), border-color var(--cfy-transition), color var(--cfy-transition);
+  z-index: 2;
+}
+.civitai-gallery-lightbox-close:hover {
+  background: var(--cfy-danger);
+  color: var(--cfy-on-accent);
+  border-color: var(--cfy-danger);
+}
+
+.civitai-gallery-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--cfy-glass);
+  border: 1px solid var(--cfy-glass-line);
+  color: #fff;
+  width: 38px;
+  height: 38px;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background var(--cfy-transition), border-color var(--cfy-transition);
+  z-index: 2;
+}
+.civitai-gallery-lightbox-nav:hover {
+  border-color: var(--cfy-accent);
+  color: var(--cfy-accent);
+}
+.civitai-gallery-lightbox-nav.prev { left: 12px; }
+.civitai-gallery-lightbox-nav.next { right: 12px; }
+
+.civitai-gallery-lightbox-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+.civitai-gallery-lightbox-name {
+  font-size: 0.88em;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: min(600px, 100%);
+  min-width: 0;
+}
+.civitai-gallery-lightbox-meta {
+  font-family: var(--cfy-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72em;
+  letter-spacing: 0.04em;
+  color: var(--cfy-on-media-dim);
+}
+.civitai-gallery-lightbox-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Corner brackets (top-left orange, bottom-right faint) appear and grow on hover. */
+.civitai-gallery-card::before,
+.civitai-gallery-card::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--cfy-dur-1), width var(--cfy-dur-2) var(--cfy-ease-snap), height var(--cfy-dur-2) var(--cfy-ease-snap);
+}
+.civitai-gallery-card::before { top: 0; left: 0; border-top: 2px solid var(--cfy-accent); border-left: 2px solid var(--cfy-accent); }
+.civitai-gallery-card::after { right: 0; bottom: 0; border-right: 2px solid var(--cfy-line-strong); border-bottom: 2px solid var(--cfy-line-strong); }
+.civitai-gallery-card:hover::before,
+.civitai-gallery-card:hover::after,
+.civitai-gallery-card:focus-within::before,
+.civitai-gallery-card:focus-within::after { opacity: 1; width: 18px; height: 18px; }
+/* Orange bar wiping along the bottom edge on hover. */
+.civitai-gallery-card-body { position: relative; }
+.civitai-gallery-card-body::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: var(--cfy-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--cfy-dur-2) var(--cfy-ease-out);
+}
+.civitai-gallery-card:hover .civitai-gallery-card-body::after { transform: scaleX(1); }
+.civitai-gallery-card:nth-child(2) { animation-delay: calc(var(--cfy-stagger) * 1); }
+.civitai-gallery-card:nth-child(3) { animation-delay: calc(var(--cfy-stagger) * 2); }
+.civitai-gallery-card:nth-child(4) { animation-delay: calc(var(--cfy-stagger) * 3); }
+.civitai-gallery-card:nth-child(5) { animation-delay: calc(var(--cfy-stagger) * 4); }
+.civitai-gallery-card:nth-child(6) { animation-delay: calc(var(--cfy-stagger) * 5); }
+.civitai-gallery-card:nth-child(7) { animation-delay: calc(var(--cfy-stagger) * 6); }
+.civitai-gallery-card:nth-child(8) { animation-delay: calc(var(--cfy-stagger) * 7); }
+.civitai-gallery-card:nth-child(9) { animation-delay: calc(var(--cfy-stagger) * 8); }
+.civitai-gallery-card:nth-child(10) { animation-delay: calc(var(--cfy-stagger) * 9); }
+.civitai-gallery-card:nth-child(11) { animation-delay: calc(var(--cfy-stagger) * 10); }
+.civitai-gallery-card:nth-child(12) { animation-delay: calc(var(--cfy-stagger) * 11); }

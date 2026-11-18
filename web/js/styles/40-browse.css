@@ -1,0 +1,1490 @@
+/* =============================================================
+   BROWSE CONTROLS
+   ============================================================= */
+.civitai-browse-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--cfy-line);
+  padding-bottom: 12px;
+  flex-shrink: 0;
+}
+.civitai-browse-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.civitai-card-size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: var(--cfy-input-h);
+  padding: 0 10px;
+  border: 1px solid var(--cfy-border);
+  border-bottom-color: var(--cfy-line-strong);
+  border-radius: 0;
+  background: var(--cfy-surface);
+  color: var(--cfy-text-dim);
+  transition: border-color var(--cfy-transition), color var(--cfy-transition);
+}
+.civitai-card-size-control:hover { border-color: var(--cfy-line-strong); color: var(--cfy-text); }
+.civitai-card-size-control > i { font-size: 0.78em; opacity: 0.7; }
+.civitai-card-size-control input[type=range] {
+  accent-color: var(--cfy-accent);
+  width: 72px;
+  /* The visible track stays thin, but the control itself is tall enough to
+     grab — a 4px-high hit area is unusable with a finger. */
+  height: 22px;
+  background: transparent;
+  border-radius: 0;
+  cursor: pointer;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.civitai-card-size-control input[type=range]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--cfy-line-strong);
+  border: 0;
+}
+.civitai-card-size-control input[type=range]::-moz-range-track {
+  height: 2px;
+  background: var(--cfy-line-strong);
+  border: 0;
+}
+.civitai-card-size-control input[type=range]::-moz-range-progress {
+  height: 2px;
+  background: var(--cfy-accent);
+}
+.civitai-card-size-control input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  background: var(--cfy-accent);
+  border: 0;
+  border-radius: 0;
+  transition: transform var(--cfy-dur-1) var(--cfy-ease-snap);
+}
+.civitai-card-size-control input[type=range]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--cfy-accent);
+  border: 0;
+  border-radius: 0;
+}
+.civitai-card-size-control input[type=range]:active::-webkit-slider-thumb { transform: scaleY(1.35); }
+.civitai-card-size-control input[type=range]:focus-visible { outline: 1px solid var(--cfy-accent); outline-offset: 2px; }
+.civitai-browse-search-input {
+  flex: 1 1 220px;
+  min-width: 150px;
+  max-width: 360px;
+}
+.civitai-base-model-picker {
+  position: relative;
+  min-width: 155px;
+}
+.civitai-base-model-picker-toggle {
+  width: 100%;
+  height: var(--cfy-input-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+  background-color: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-bottom-color: var(--cfy-line-strong);
+  border-radius: 0;
+  color: var(--cfy-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9em;
+  white-space: nowrap;
+  transition: border-color var(--cfy-transition), box-shadow var(--cfy-transition);
+  box-sizing: border-box;
+}
+.civitai-base-model-picker-toggle > span { overflow: hidden; text-overflow: ellipsis; }
+.civitai-base-model-picker-toggle > i { color: var(--cfy-accent); font-size: 0.7em; flex-shrink: 0; }
+.civitai-base-model-picker-toggle:hover { border-color: var(--cfy-line-strong); }
+.civitai-base-model-picker-toggle:focus-visible {
+  outline: none;
+  border-color: var(--cfy-accent);
+  box-shadow: inset 0 -2px 0 var(--cfy-accent);
+}
+.civitai-base-model-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  z-index: 9999;
+  min-width: 220px;
+  background: var(--cfy-panel);
+  border: 1px solid var(--cfy-line-strong);
+  border-top: 2px solid var(--cfy-accent);
+  border-radius: 0;
+  box-shadow: var(--cfy-shadow);
+  overflow: hidden;
+  animation: cfy-fade-in var(--cfy-dur-1) var(--cfy-ease-out) both, cfy-rise var(--cfy-dur-2) var(--cfy-ease-out) both;
+}
+.civitai-base-model-picker-search-wrap {
+  padding: 8px;
+  border-bottom: 1px solid var(--cfy-line);
+}
+.civitai-base-model-picker-search-wrap .civitai-input { font-size: 0.85em; }
+.civitai-base-model-picker-options {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.civitai-base-model-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 10px;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.8em;
+  color: var(--cfy-text-dim);
+  user-select: none;
+  transition: background var(--cfy-transition), color var(--cfy-transition), border-color var(--cfy-transition);
+}
+.civitai-base-model-option:hover { background: var(--cfy-surface-hover); color: var(--cfy-text); }
+.civitai-base-model-option:has(.civitai-base-model-checkbox:checked) {
+  border-left-color: var(--cfy-accent);
+  background: var(--cfy-accent-dim);
+  color: var(--cfy-text);
+}
+.civitai-base-model-group-label {
+  padding: 8px 12px 4px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.64em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--cfy-label-tracking);
+  color: var(--cfy-text-faint);
+  position: sticky;
+  top: 0;
+  background: var(--cfy-panel);
+}
+.civitai-base-model-group-label::before { content: "// "; color: var(--cfy-accent); }
+.civitai-base-model-checkbox {
+  accent-color: var(--cfy-accent);
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.civitai-base-model-picker-footer {
+  padding: 6px 8px;
+  border-top: 1px solid var(--cfy-line);
+  display: flex;
+  justify-content: flex-end;
+}
+#civitai-tab-browse { padding: 18px 24px 22px; }
+
+/* =============================================================
+   BROWSE CARD GRID
+   ============================================================= */
+.civitai-browse-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--cfy-browse-card-min-w, 158px), 1fr));
+  gap: 12px;
+  align-content: start;
+}
+.civitai-browse-card {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-radius: 0;
+  overflow: hidden;
+  transition: border-color var(--cfy-transition);
+  cursor: default;
+  animation: cfy-rise var(--cfy-dur-3) var(--cfy-ease-out) both;
+}
+.civitai-browse-card:nth-child(2) { animation-delay: calc(var(--cfy-stagger) * 1); }
+.civitai-browse-card:nth-child(3) { animation-delay: calc(var(--cfy-stagger) * 2); }
+.civitai-browse-card:nth-child(4) { animation-delay: calc(var(--cfy-stagger) * 3); }
+.civitai-browse-card:nth-child(5) { animation-delay: calc(var(--cfy-stagger) * 4); }
+.civitai-browse-card:nth-child(6) { animation-delay: calc(var(--cfy-stagger) * 5); }
+.civitai-browse-card:nth-child(7) { animation-delay: calc(var(--cfy-stagger) * 6); }
+.civitai-browse-card:nth-child(8) { animation-delay: calc(var(--cfy-stagger) * 7); }
+.civitai-browse-card:nth-child(9) { animation-delay: calc(var(--cfy-stagger) * 8); }
+.civitai-browse-card:nth-child(10) { animation-delay: calc(var(--cfy-stagger) * 9); }
+.civitai-browse-card:nth-child(11) { animation-delay: calc(var(--cfy-stagger) * 10); }
+.civitai-browse-card:nth-child(12) { animation-delay: calc(var(--cfy-stagger) * 11); }
+/* Corner brackets sit above the thumbnail and its overlays; hidden until
+   hover/focus. Both on the top edge because the bottom edge carries the bar. */
+.civitai-browse-card::before,
+.civitai-browse-card::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--cfy-dur-1) var(--cfy-ease-out), width var(--cfy-dur-2) var(--cfy-ease-snap), height var(--cfy-dur-2) var(--cfy-ease-snap);
+}
+.civitai-browse-card::before {
+  top: 0;
+  left: 0;
+  border-top: 2px solid var(--cfy-accent);
+  border-left: 2px solid var(--cfy-accent);
+}
+.civitai-browse-card::after {
+  top: 0;
+  right: 0;
+  border-top: 2px solid var(--cfy-line-strong);
+  border-right: 2px solid var(--cfy-line-strong);
+}
+.civitai-browse-card:hover,
+.civitai-browse-card:focus-within { border-color: var(--cfy-line-strong); }
+.civitai-browse-card:hover::before,
+.civitai-browse-card:focus-within::before,
+.civitai-browse-card:hover::after,
+.civitai-browse-card:focus-within::after { opacity: 1; width: 18px; height: 18px; }
+.civitai-browse-card-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  flex-shrink: 0;
+  background: var(--cfy-media-bg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.civitai-browse-card-preview img,
+.civitai-browse-card-preview video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform var(--cfy-dur-3) var(--cfy-ease-out);
+}
+.civitai-browse-card:hover .civitai-browse-card-preview img,
+.civitai-browse-card:hover .civitai-browse-card-preview video { transform: scale(1.04); }
+.civitai-browse-card-preview.blurred img,
+.civitai-browse-card-preview.blurred video {
+  filter: blur(14px) brightness(0.55) saturate(0.5);
+  pointer-events: none;
+}
+.civitai-browse-card-preview.blurred { cursor: pointer; }
+.civitai-browse-card-badge {
+  position: absolute;
+  bottom: 7px; left: 7px;
+  background: var(--cfy-media-bg);
+  color: #fff;
+  font-family: var(--cfy-font-display);
+  font-size: 0.68em;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 0;
+  letter-spacing: 0.08em;
+  z-index: 2;
+  pointer-events: none;
+  white-space: nowrap;
+  /* Both badges hug the bottom edge from opposite sides, so each needs a cap to
+     stay clear of the other. The type gets the larger share: it is the shorter
+     label of the two and the one that survives truncation intact. */
+  max-width: 58%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.civitai-browse-card-bm-badge {
+  position: absolute;
+  bottom: 7px; right: 7px;
+  background: var(--cfy-glass);
+  border: 1px solid var(--cfy-glass-line);
+  color: var(--cfy-on-media-dim);
+  font-family: var(--cfy-font-mono);
+  font-size: 0.6em;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 0;
+  z-index: 2;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: calc(42% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* ── Installed overlay ──────────────────────────────────────── */
+.civitai-browse-card-installed-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--cfy-overlay) 0%, transparent 45%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 8px;
+  z-index: 2;
+  pointer-events: none;
+}
+.civitai-browse-card-installed-badge {
+  background: var(--cfy-success-solid);
+  border-left: 2px solid var(--cfy-success);
+  color: #fff;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.62em;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: var(--cfy-label-tracking);
+}
+.civitai-browse-card-installed-badge i {
+  font-size: 0.95em;
+}
+.civitai-browse-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--cfy-overlay);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  padding: 8px 7px;
+  gap: 5px;
+  opacity: 0;
+  transition: opacity var(--cfy-dur-2) var(--cfy-ease-out);
+  z-index: 3;
+  overflow-y: auto;
+}
+.civitai-browse-card:hover .civitai-browse-card-overlay { opacity: 1; }
+/* On touch devices there is no hover. Keeping the overlay permanently open hid
+   every thumbnail, so it is opened per card by tapping the artwork (see the
+   browse results click handler) and closed by tapping again. */
+@media (hover: none) {
+  .civitai-browse-card .civitai-browse-card-overlay { opacity: 0; pointer-events: none; }
+  .civitai-browse-card.actions-open .civitai-browse-card-overlay { opacity: 1; pointer-events: auto; }
+}
+/* Tap affordance — only rendered where there is no hover to reveal the actions. */
+.civitai-browse-card-tap-hint { display: none; }
+@media (hover: none) {
+  .civitai-browse-card-tap-hint {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 0;
+    background: var(--cfy-glass);
+    border: 1px solid var(--cfy-glass-line);
+    color: #f5f4ef;
+    font-size: 0.8em;
+    pointer-events: none;
+    transition: opacity var(--cfy-transition);
+  }
+  .civitai-browse-card.actions-open .civitai-browse-card-tap-hint { opacity: 0; }
+}
+.civitai-browse-card:focus-within .civitai-browse-card-overlay { opacity: 1; }
+.civitai-browse-card-overlay .civitai-button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  height: auto;
+  min-height: 28px;
+  padding: 5px 8px;
+  font-size: 0.78em;
+  border-radius: 0;
+  background: var(--cfy-glass);
+  border-color: var(--cfy-glass-line);
+  color: #f5f4ef;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+  transform: none !important;
+  box-shadow: none !important;
+}
+/* Only the version name gives way; the base-model chip and the icon keep their
+   size so the button stays readable at any card width. */
+.cfy-vbtn-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.civitai-browse-card-overlay .civitai-button > .base-model-badge,
+.civitai-browse-card-overlay .civitai-button > i { flex: 0 0 auto; }
+.civitai-browse-card-overlay .civitai-button > .base-model-badge {
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 0;
+}
+.civitai-browse-card-overlay .civitai-button:hover {
+  background: var(--cfy-accent);
+  border-color: var(--cfy-accent);
+  color: var(--cfy-on-accent);
+}
+.civitai-browse-card-overlay .civitai-button > .base-model-badge {
+  background: transparent;
+  border-color: var(--cfy-glass-line);
+  color: var(--cfy-on-media-dim);
+}
+.civitai-browse-card-overlay .civitai-button:hover > .base-model-badge {
+  border-color: currentColor;
+  color: inherit;
+}
+.civitai-browse-card-overlay a.civitai-button {
+  text-align: center;
+  display: block;
+}
+.civitai-browse-card-body {
+  padding: 8px 10px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  position: relative;
+  border-top: 1px solid var(--cfy-line);
+}
+/* Signal bar that wipes along the card's bottom edge on hover. */
+.civitai-browse-card-body::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--cfy-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--cfy-dur-2) var(--cfy-ease-snap);
+  pointer-events: none;
+}
+.civitai-browse-card:hover .civitai-browse-card-body::after,
+.civitai-browse-card:focus-within .civitai-browse-card-body::after { transform: scaleX(1); }
+.civitai-browse-card-name-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+/* Two lines before the ellipsis: model names are the only thing that tells
+   cards apart, and one line cut most of them at "Example Wat…". */
+.civitai-browse-card-name {
+  font-size: 0.84em;
+  font-weight: 600;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--cfy-text);
+  flex: 1;
+  min-width: 0;
+}
+.civitai-browse-card-info-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: 1px solid var(--cfy-line-strong);
+  border-radius: 0;
+  color: var(--cfy-text-dim);
+  cursor: pointer;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.64em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  line-height: 1.4;
+  transition: background var(--cfy-transition), color var(--cfy-transition), border-color var(--cfy-transition);
+  white-space: nowrap;
+}
+/* The card size slider means a card can be 120px or 280px wide at the same
+   viewport size, so the "Info" caption is dropped per card rather than per
+   breakpoint — it was eating the space the model name needed. */
+@container (max-width: 178px) {
+  .civitai-browse-card-info-btn > span { display: none; }
+  .civitai-browse-card-info-btn { padding: 3px 6px; }
+}
+.civitai-browse-card-info-btn:hover {
+  border-color: var(--cfy-accent);
+  background: var(--cfy-accent-dim);
+  color: var(--cfy-accent-text);
+}
+.civitai-browse-card-info-btn:focus-visible { outline: 1px solid var(--cfy-accent); outline-offset: 1px; }
+.civitai-browse-card-type-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.civitai-browse-card-type-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 0;
+  font-family: var(--cfy-font-display);
+  font-size: 0.68em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.civitai-browse-card-bm-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 0;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.6em;
+  font-weight: 500;
+  background: var(--cfy-fill-2);
+  border: 1px solid var(--cfy-line-strong);
+  color: var(--cfy-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+  flex-shrink: 1;
+}
+.civitai-browse-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.64em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cfy-text-dim);
+  overflow: hidden;
+}
+.civitai-browse-card-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+.civitai-browse-card-meta-line i {
+  color: var(--cfy-text-faint);
+  flex-shrink: 0;
+  width: 10px;
+  text-align: center;
+}
+/* Download count + file size sit side by side on one meta line, separated by
+   a dot that only appears when both are actually shown. */
+.civitai-browse-card-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.civitai-browse-card-stat[hidden] { display: none; }
+.civitai-browse-card-stat + .civitai-browse-card-stat::before {
+  content: "·";
+  opacity: 0.45;
+  margin-right: 2px;
+}
+.civitai-model-size[hidden] { display: none; }
+.civitai-browse-info-version-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.8em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cfy-text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.civitai-browse-info-version-size i { color: var(--cfy-text-faint); }
+
+.civitai-browse-selected-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--cfy-accent-soft);
+  border: 1px solid var(--cfy-line);
+  border-left: 2px solid var(--cfy-accent);
+  border-radius: 0;
+  margin-bottom: 12px;
+  font-size: 0.87em;
+  flex-shrink: 0;
+  transform-origin: left;
+  animation: cfy-wipe var(--cfy-dur-2) var(--cfy-ease-out) both;
+}
+.civitai-browse-selected-bar > i { color: var(--cfy-accent); flex-shrink: 0; }
+.civitai-browse-selected-label {
+  font-family: var(--cfy-font-mono);
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--cfy-label-tracking);
+  color: var(--cfy-accent-text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.civitai-browse-selected-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#civitai-browse-pagination,
+.civitai-mymodels-pagination,
+.civitai-gallery-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+#civitai-browse-pagination .civitai-button,
+.civitai-mymodels-pagination .civitai-button,
+.civitai-gallery-pagination .civitai-button {
+  min-width: 34px;
+  height: 32px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.8em;
+  font-variant-numeric: tabular-nums;
+  padding: 0 10px;
+  border-radius: 0;
+}
+#civitai-browse-pagination .civitai-button.active,
+.civitai-mymodels-pagination .civitai-button.active,
+.civitai-gallery-pagination .civitai-button.active {
+  background: var(--cfy-accent);
+  border-color: var(--cfy-accent);
+  color: var(--cfy-on-accent);
+}
+/* Page counter caption: full-width line under the buttons, not squeezed
+   between them (it had no styling at all before). */
+.civitai-pagination-info {
+  flex-basis: 100%;
+  text-align: center;
+  margin-top: 4px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.7em;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: var(--cfy-text-faint);
+}
+/* Ellipsis separators rendered by the pagination builders */
+#civitai-browse-pagination > span:not(.civitai-pagination-info),
+.civitai-mymodels-pagination > span:not(.civitai-pagination-info) {
+  color: var(--cfy-text-faint);
+  padding: 0 2px;
+  user-select: none;
+}
+
+/* =============================================================
+   BROWSE INFO PANEL
+   ============================================================= */
+.civitai-browse-info-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--cfy-overlay);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  animation: cfy-fade-in var(--cfy-dur-2) var(--cfy-ease-out) both;
+}
+.civitai-browse-info-panel {
+  position: relative;
+  background: var(--cfy-bg);
+  border: 1px solid var(--cfy-line-strong);
+  border-radius: 0;
+  width: 94%;
+  max-width: 820px;
+  max-height: 92%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--cfy-shadow-lg);
+  animation: cfy-rise var(--cfy-dur-3) var(--cfy-ease-out) both;
+}
+.civitai-browse-info-panel::before,
+.civitai-browse-info-panel::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  z-index: 3;
+  pointer-events: none;
+}
+.civitai-browse-info-panel::before {
+  top: 0;
+  left: 0;
+  border-top: 2px solid var(--cfy-accent);
+  border-left: 2px solid var(--cfy-accent);
+}
+.civitai-browse-info-panel::after {
+  right: 0;
+  bottom: 0;
+  border-right: 2px solid var(--cfy-line-strong);
+  border-bottom: 2px solid var(--cfy-line-strong);
+}
+
+/* Header */
+.civitai-browse-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--cfy-line);
+  flex-shrink: 0;
+  gap: 10px;
+  background: var(--cfy-recess-strong);
+}
+.civitai-browse-info-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.civitai-browse-info-type-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 0;
+  font-family: var(--cfy-font-display);
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.civitai-browse-info-title {
+  margin: 0;
+  font-size: 1.04em;
+  font-weight: 700;
+  color: var(--cfy-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.civitai-browse-info-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Meta bar */
+.civitai-browse-info-meta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--cfy-line);
+  background: var(--cfy-recess);
+  flex-shrink: 0;
+}
+.civitai-browse-info-creator {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: 0.84em;
+  color: var(--cfy-text-dim);
+  min-width: 0;
+}
+.civitai-browse-info-creator-avatar {
+  width: 22px; height: 22px;
+  border-radius: 0;
+  object-fit: cover;
+  border: 1px solid var(--cfy-line-strong);
+  flex-shrink: 0;
+}
+.civitai-browse-info-creator-avatar-icon {
+  font-size: 1.3em;
+  color: var(--cfy-text-dim);
+  flex-shrink: 0;
+}
+.civitai-browse-info-creator-name {
+  font-weight: 600;
+  color: var(--cfy-text);
+}
+.civitai-browse-info-date {
+  color: var(--cfy-text-faint);
+  font-family: var(--cfy-font-mono);
+  font-size: 0.86em;
+  font-variant-numeric: tabular-nums;
+}
+.civitai-browse-info-updated {
+  font-style: italic;
+  font-size: 0.9em;
+  margin-left: 2px;
+}
+.civitai-browse-info-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.76em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cfy-text-dim);
+  align-items: center;
+}
+.civitai-browse-info-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.civitai-browse-info-stats i { color: var(--cfy-text-faint); }
+.civitai-browse-info-stars {
+  color: var(--cfy-amber);
+  font-size: 0.92em;
+}
+.civitai-browse-info-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.civitai-browse-info-rating-val {
+  font-weight: 700;
+  color: var(--cfy-amber);
+}
+.civitai-browse-info-rating-count {
+  font-size: 0.88em;
+  opacity: 0.6;
+}
+
+/* Body */
+.civitai-browse-info-body {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Gallery (left) */
+.civitai-browse-info-gallery {
+  flex-shrink: 0;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.civitai-browse-info-main-image {
+  position: relative;
+  width: 200px;
+  height: 280px;
+  border-radius: 0;
+  border: 1px solid var(--cfy-line);
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--cfy-media-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: zoom-in;
+}
+.civitai-browse-info-main-image img,
+.civitai-browse-info-main-image video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform var(--cfy-dur-3) var(--cfy-ease-out);
+}
+.civitai-browse-info-main-image:hover img,
+.civitai-browse-info-main-image:hover video { transform: scale(1.04); }
+
+/* When the modal/viewport is narrow, stack the gallery above the details so the
+   fixed-width gallery can't push the prompt/details column out of the frame. */
+@media (max-width: 680px) {
+  .civitai-browse-info-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .civitai-browse-info-gallery,
+  .civitai-browse-info-main-image {
+    width: 100%;
+  }
+  .civitai-browse-info-main-image {
+    height: 240px;
+  }
+  .civitai-browse-info-details {
+    overflow-y: visible;
+  }
+}
+.civitai-browse-info-img-counter {
+  position: absolute;
+  bottom: 7px; right: 7px;
+  background: var(--cfy-glass);
+  border: 1px solid var(--cfy-glass-line);
+  color: #fff;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.66em;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 6px;
+  border-radius: 0;
+  z-index: 2;
+  pointer-events: none;
+  display: none;
+}
+.civitai-browse-info-img-meta {
+  display: none;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.66em;
+  color: var(--cfy-text-dim);
+  background: var(--cfy-recess);
+  border: 1px solid var(--cfy-line);
+  border-radius: 0;
+  padding: 5px 8px;
+}
+.civitai-browse-info-img-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.civitai-browse-info-thumb-strip {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  overflow-y: auto;
+  max-height: 120px;
+}
+.civitai-browse-info-thumb {
+  position: relative;
+  width: 44px; height: 58px;
+  border-radius: 0;
+  overflow: hidden;
+  border: 1px solid var(--cfy-line);
+  box-sizing: border-box;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color var(--cfy-transition), transform var(--cfy-transition);
+  background: var(--cfy-media-bg);
+}
+.civitai-browse-info-thumb:hover { border-color: var(--cfy-line-strong); }
+.civitai-browse-info-thumb.active {
+  border-color: var(--cfy-accent);
+  box-shadow: inset 0 -2px 0 var(--cfy-accent);
+}
+.civitai-browse-info-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+.civitai-browse-info-thumb-video-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cfy-overlay);
+  color: #fff;
+  font-size: 0.75em;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Details (right) */
+.civitai-browse-info-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  min-width: 0;
+  padding-right: 2px;
+}
+
+/* Section label */
+.civitai-browse-info-section {
+  margin-bottom: 14px;
+  min-width: 0;
+}
+.civitai-browse-info-section-label {
+  font-family: var(--cfy-font-mono);
+  font-size: 0.64em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--cfy-label-tracking);
+  color: var(--cfy-text-faint);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-bottom: 1px solid var(--cfy-line);
+  padding-bottom: 5px;
+}
+.civitai-browse-info-section-label::before { content: "//"; color: var(--cfy-accent); }
+.civitai-browse-info-section-label i { color: var(--cfy-text-faint); }
+
+/* KV grid (Overview) */
+.civitai-browse-info-kv-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  font-size: 0.83em;
+}
+.civitai-browse-info-kv-key {
+  color: var(--cfy-text-faint);
+  font-family: var(--cfy-font-mono);
+  font-size: 0.86em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  padding-top: 3px;
+}
+.civitai-browse-info-kv-val {
+  color: var(--cfy-text);
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.civitai-browse-info-kv-val code {
+  background: var(--cfy-recess);
+  border: 1px solid var(--cfy-line);
+  border-radius: 0;
+  padding: 1px 6px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.9em;
+}
+
+/* Trigger words */
+.civitai-browse-info-tw-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+.civitai-browse-info-trigger-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.civitai-browse-info-trigger-word {
+  display: inline-flex;
+  align-items: center;
+  background: var(--cfy-accent-dim);
+  border: 1px solid var(--cfy-accent-glow);
+  color: var(--cfy-accent-text);
+  border-radius: 0;
+  padding: 3px 8px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.76em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--cfy-transition), color var(--cfy-transition), border-color var(--cfy-transition);
+  user-select: none;
+}
+.civitai-browse-info-trigger-word:hover {
+  background: var(--cfy-accent);
+  border-color: var(--cfy-accent);
+  color: var(--cfy-on-accent);
+}
+
+/* Version cards */
+.civitai-browse-info-versions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.civitai-browse-info-version-card {
+  background: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-left: 2px solid var(--cfy-line);
+  border-radius: 0;
+  overflow: hidden;
+  transition: border-color var(--cfy-transition);
+}
+.civitai-browse-info-version-card:hover { border-color: var(--cfy-line-strong); }
+.civitai-browse-info-version-card:has(.civitai-browse-info-latest-badge) {
+  border-left-color: var(--cfy-accent);
+  background: var(--cfy-accent-soft);
+}
+.civitai-browse-info-version-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+}
+.civitai-browse-info-version-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.civitai-browse-info-version-name {
+  font-weight: 600;
+  font-size: 0.86em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.civitai-browse-info-latest-badge {
+  flex-shrink: 0;
+  background: var(--cfy-accent-dim);
+  color: var(--cfy-accent-text);
+  border: 1px solid var(--cfy-accent-glow);
+  border-radius: 0;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.62em;
+  font-weight: 600;
+  padding: 1px 6px;
+  letter-spacing: var(--cfy-label-tracking);
+  text-transform: uppercase;
+}
+.civitai-browse-info-version-files {
+  border-top: 1px solid var(--cfy-line);
+  padding: 5px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.civitai-browse-info-version-file {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8em;
+}
+.civitai-browse-info-file-ext {
+  flex-shrink: 0;
+  background: var(--cfy-fill-2);
+  border: 1px solid var(--cfy-fill-3);
+  border-radius: 0;
+  padding: 1px 6px;
+  font-family: var(--cfy-font-mono);
+  font-weight: 600;
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  min-width: 48px;
+  text-align: center;
+}
+.civitai-browse-info-file-ext.primary {
+  background: var(--cfy-accent-dim);
+  border-color: var(--cfy-accent-glow);
+  color: var(--cfy-accent-text);
+}
+.civitai-browse-info-file-name {
+  flex: 1;
+  color: var(--cfy-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.civitai-browse-info-file-size {
+  flex-shrink: 0;
+  color: var(--cfy-text-dim);
+  font-family: var(--cfy-font-mono);
+  font-size: 0.84em;
+  font-variant-numeric: tabular-nums;
+}
+.civitai-browse-info-version-words {
+  border-top: 1px dashed var(--cfy-line);
+  padding: 5px 10px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.72em;
+  color: var(--cfy-accent-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Example prompts */
+.civitai-browse-info-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.civitai-browse-info-prompt-card {
+  background: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-radius: 0;
+  overflow: hidden;
+  min-width: 0;
+  max-width: 100%;
+}
+.civitai-browse-info-prompt-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  background: var(--cfy-recess);
+  border-bottom: 1px solid var(--cfy-line);
+  flex-wrap: wrap;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.72em;
+  font-variant-numeric: tabular-nums;
+  color: var(--cfy-text-dim);
+}
+.civitai-browse-info-prompt-num {
+  font-weight: 700;
+  color: var(--cfy-accent-text);
+  margin-right: 2px;
+}
+.civitai-browse-info-prompt-header span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.civitai-browse-info-prompt-header .civitai-button {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.civitai-browse-info-prompt-text {
+  padding: 7px 10px;
+  font-size: 0.8em;
+  line-height: 1.6;
+  color: var(--cfy-text);
+  max-height: 90px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  max-width: 100%;
+}
+.civitai-browse-info-prompt-neg {
+  padding: 5px 10px;
+  font-size: 0.77em;
+  line-height: 1.6;
+  color: var(--cfy-text-dim);
+  border-top: 1px dashed var(--cfy-line);
+  max-height: 60px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  max-width: 100%;
+}
+.civitai-browse-info-prompt-neg-label {
+  color: var(--cfy-danger-text);
+  font-family: var(--cfy-font-mono);
+  font-size: 0.9em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-right: 4px;
+}
+
+/* Description */
+.civitai-browse-info-desc {
+  font-size: 0.83em;
+  color: var(--cfy-text-dim);
+  line-height: 1.6;
+  max-height: 140px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  background: var(--cfy-recess);
+  border: 1px solid var(--cfy-line);
+  border-left: 2px solid var(--cfy-line-strong);
+  border-radius: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Tags */
+.civitai-browse-info-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.civitai-browse-info-tag {
+  background: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-radius: 0;
+  padding: 2px 8px;
+  font-size: 0.78em;
+  color: var(--cfy-text-dim);
+  cursor: pointer;
+  transition: background var(--cfy-transition), border-color var(--cfy-transition), color var(--cfy-transition);
+}
+.civitai-browse-info-tag:hover {
+  background: var(--cfy-accent-dim);
+  border-color: var(--cfy-accent);
+  color: var(--cfy-accent-text);
+}
+
+/* Footer */
+.civitai-browse-info-footer {
+  padding: 9px 16px;
+  border-top: 1px solid var(--cfy-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  background: var(--cfy-recess);
+}
+.civitai-browse-info-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.74em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cfy-text-faint);
+}
+.civitai-browse-info-model-id-label code {
+  background: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-radius: 0;
+  padding: 1px 6px;
+  font-family: var(--cfy-font-mono);
+  color: var(--cfy-text);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 3px;
+}
+.civitai-browse-info-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* =============================================================
+   LIGHTBOX
+   ============================================================= */
+.civitai-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--cfy-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  animation: cfy-fade-in var(--cfy-dur-2) var(--cfy-ease-out) both;
+}
+.civitai-lightbox-close {
+  position: absolute;
+  top: 18px; right: 22px;
+  background: var(--cfy-glass);
+  border: 1px solid var(--cfy-glass-line);
+  color: #fff;
+  font-size: 20px;
+  width: 34px; height: 34px;
+  border-radius: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: background var(--cfy-transition);
+}
+.civitai-lightbox-close:hover {
+  background: var(--cfy-danger);
+  border-color: var(--cfy-danger);
+  color: var(--cfy-on-accent);
+}
+.civitai-lightbox-close:focus-visible { outline: 1px solid var(--cfy-accent); outline-offset: 2px; }
+.civitai-lightbox-media {
+  max-width: 92vw;
+  max-height: 90vh;
+  border-radius: 0;
+  box-shadow: var(--cfy-shadow-lg);
+  cursor: default;
+  user-select: none;
+  animation: cfy-wipe var(--cfy-dur-3) var(--cfy-ease-out) both;
+}
+
+/* ── Lightbox Zoom Badge ────────────────────────────────────── */
+.civitai-lightbox-zoom-badge {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--cfy-glass);
+  color: #fff;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.78em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  padding: 5px 12px;
+  border-radius: 0;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--cfy-dur-2) var(--cfy-ease-out);
+  border: 1px solid var(--cfy-glass-line);
+  border-left: 2px solid var(--cfy-accent);
+  white-space: nowrap;
+  user-select: none;
+}
+.civitai-lightbox-zoom-badge.visible { opacity: 1; }
+
+/* ── Hide buttons when lightbox is zoomed in ────────────────── */
+.civitai-lightbox--zoomed .civitai-lightbox-close,
+.civitai-lightbox--zoomed .civitai-gallery-lightbox-close,
+.civitai-lightbox--zoomed .civitai-gallery-lightbox-nav {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.civitai-lightbox-close,
+.civitai-gallery-lightbox-close,
+.civitai-gallery-lightbox-nav {
+  transition: opacity 0.2s ease, background var(--cfy-transition), color var(--cfy-transition), border-color var(--cfy-transition);
+}
+
+/* ── Preview hero: show zoom cursor ────────────────────────── */
+.cfy-prev-gallery-main { cursor: zoom-in; }
+
+/* =============================================================
+   BROWSE CARD VERSION BUTTONS
+   ============================================================= */
+.show-all-versions-button { align-self: flex-end; }
+.base-model-badge {
+  display: inline-block;
+  background: var(--cfy-fill-2);
+  border: 1px solid var(--cfy-line-strong);
+  color: var(--cfy-text-dim);
+  font-family: var(--cfy-font-mono);
+  font-weight: 500;
+  padding: 2px 5px;
+  border-radius: 0;
+  margin-right: 3px;
+  line-height: 1;
+  vertical-align: middle;
+  font-size: 0.88em;
+}
+

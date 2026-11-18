@@ -1,71 +1,72 @@
 // Modal template for Civicomfy UI
 //
-// Layout: a left navigation rail (grouped by task) plus a main column with a
-// page header and one panel per section. Every element id used by the handlers
-// is preserved — the rail buttons keep the `civitai-downloader-tab` class and
-// `data-tab` attribute that switchTab() relies on.
+// Layout: a full-width top bar (brand, section readout, window actions), a
+// numbered module rail on the left, the panel area, and a thin status strip.
+// Every element id used by the handlers is preserved — the rail buttons keep
+// the `civitai-downloader-tab` class and `data-tab` attribute that switchTab()
+// relies on.
 
-// Page titles shown in the top bar, keyed by tab id.
+// Section readout shown in the top bar, keyed by tab id.
 export const PAGE_META = {
-  download:  { title: 'Download',   sub: 'Paste a Civitai or HuggingFace link and pick where it lands' },
-  browse:    { title: 'Browse',     sub: 'Search the Civitai catalogue and queue models directly' },
-  mymodels:  { title: 'My Models',  sub: 'Everything installed in your ComfyUI models folder' },
-  gallery:   { title: 'Gallery',    sub: 'Images generated in your ComfyUI output folder' },
-  status:    { title: 'Downloads',  sub: 'Active transfers, queue and history' },
-  settings:  { title: 'Settings',   sub: 'API keys, interface preferences and model maintenance' },
-  directory: { title: 'Directories', sub: 'Per-model-type save folders' },
+  download:  { code: '01', title: 'Download',    sub: 'Paste a Civitai or HuggingFace link and pick where it lands' },
+  browse:    { code: '02', title: 'Browse',      sub: 'Search the Civitai catalogue and queue models directly' },
+  mymodels:  { code: '03', title: 'My Models',   sub: 'Everything installed in your ComfyUI models folder' },
+  gallery:   { code: '04', title: 'Gallery',     sub: 'Images generated in your ComfyUI output folder' },
+  status:    { code: '05', title: 'Downloads',   sub: 'Active transfers, queue and history' },
+  settings:  { code: '06', title: 'Settings',    sub: 'API keys, interface preferences and model maintenance' },
+  directory: { code: '07', title: 'Directories', sub: 'Per-model-type save folders' },
 };
+
+const navTab = (tab, icon, label, title, extra = '') => `
+            <button type="button" class="civitai-downloader-tab${tab === 'download' ? ' active' : ''}" data-tab="${tab}" title="${title}">
+              <b class="cfy-nav-code" aria-hidden="true">${PAGE_META[tab].code}</b><i class="fas ${icon}"></i><span>${label}</span>${extra}
+            </button>`;
 
 export function modalTemplate(settings = {}) {
   const numConnections = Number.isFinite(settings.numConnections) ? settings.numConnections : 1;
   return `
     <div class="civitai-downloader-modal-content">
-      <aside class="civitai-rail">
-        <div class="civitai-rail-brand">
-          <span class="civitai-rail-logo"><i class="fas fa-cloud-download-alt"></i></span>
-          <span class="civitai-rail-brand-text">
+      <header class="civitai-downloader-header cfy-topbar">
+        <button class="civitai-icon-button civitai-rail-open" id="civitai-rail-open" title="Show sections"><i class="fas fa-bars"></i></button>
+        <div class="cfy-brand">
+          <span class="cfy-brand-mark" aria-hidden="true"><i class="fas fa-cloud-download-alt"></i></span>
+          <span class="cfy-brand-text">
             <strong>Civicomfy</strong>
-            <small>Model manager</small>
+            <small>Model ops terminal</small>
           </span>
         </div>
+        <span class="cfy-topbar-hazard" aria-hidden="true"></span>
+        <div class="civitai-page-title-wrap">
+          <span class="cfy-page-code" id="civitai-page-code" aria-hidden="true">${PAGE_META.download.code}</span>
+          <div class="cfy-page-title-text">
+            <h2 id="civitai-page-title">${PAGE_META.download.title}</h2>
+            <p class="civitai-page-sub" id="civitai-page-sub">${PAGE_META.download.sub}</p>
+          </div>
+        </div>
+        <div class="civitai-header-actions">
+          <button class="civitai-icon-button" id="civitai-fullscreen-toggle" title="Toggle fullscreen"><i class="fas fa-expand"></i></button>
+          <button class="civitai-close-button" id="civitai-close-modal" title="Close (Esc)"><i class="fas fa-times"></i></button>
+        </div>
+      </header>
+      <div class="cfy-frame">
+      <aside class="civitai-rail">
         <nav class="civitai-downloader-tabs" aria-label="Sections">
           <div class="civitai-nav-group">
-            <div class="civitai-nav-group-label">Get models</div>
-            <button type="button" class="civitai-downloader-tab active" data-tab="download" title="Download">
-              <i class="fas fa-download"></i><span>Download</span>
-            </button>
-            <button type="button" class="civitai-downloader-tab" data-tab="browse" title="Browse Civitai">
-              <i class="fas fa-compass"></i><span>Browse</span>
-            </button>
+            <div class="civitai-nav-group-label">Acquire</div>${navTab('download', 'fa-download', 'Download', 'Download')}${navTab('browse', 'fa-compass', 'Browse', 'Browse Civitai')}
           </div>
           <div class="civitai-nav-group">
-            <div class="civitai-nav-group-label">Library</div>
-            <button type="button" class="civitai-downloader-tab" data-tab="mymodels" title="My Models">
-              <i class="fas fa-layer-group"></i><span>My Models</span>
-            </button>
-            <button type="button" class="civitai-downloader-tab" data-tab="gallery" title="Gallery">
-              <i class="fas fa-images"></i><span>Gallery</span>
-            </button>
+            <div class="civitai-nav-group-label">Archive</div>${navTab('mymodels', 'fa-layer-group', 'My Models', 'My Models')}${navTab('gallery', 'fa-images', 'Gallery', 'Gallery')}
           </div>
           <div class="civitai-nav-group">
-            <div class="civitai-nav-group-label">Activity</div>
-            <button type="button" class="civitai-downloader-tab" data-tab="status" title="Downloads in progress">
-              <i class="fas fa-tasks"></i><span>Downloads</span>
-              <span class="civitai-nav-badge" id="civitai-status-indicator" style="display:none;"><span id="civitai-active-count">0</span></span>
-            </button>
+            <div class="civitai-nav-group-label">Operations</div>${navTab('status', 'fa-tasks', 'Downloads', 'Downloads in progress',
+              '<span class="civitai-nav-badge" id="civitai-status-indicator" style="display:none;"><span id="civitai-active-count">0</span></span>')}
           </div>
           <div class="civitai-nav-group">
-            <div class="civitai-nav-group-label">Configure</div>
-            <button type="button" class="civitai-downloader-tab" data-tab="settings" title="Settings">
-              <i class="fas fa-sliders-h"></i><span>Settings</span>
-            </button>
-            <button type="button" class="civitai-downloader-tab" data-tab="directory" title="Directories">
-              <i class="fas fa-sitemap"></i><span>Directories</span>
-            </button>
+            <div class="civitai-nav-group-label">System</div>${navTab('settings', 'fa-sliders-h', 'Settings', 'Settings')}${navTab('directory', 'fa-sitemap', 'Directories', 'Directories')}
           </div>
         </nav>
         <div class="civitai-rail-footer">
-          <button type="button" class="civitai-rail-action" id="civitai-theme-toggle" title="Switch between the dark and light Claude theme">
+          <button type="button" class="civitai-rail-action" id="civitai-theme-toggle" title="Switch between the dark and light theme">
             <i class="fas fa-adjust"></i><span>Light theme</span>
           </button>
           <button type="button" class="civitai-rail-action" id="civitai-rail-collapse" title="Collapse the sidebar">
@@ -75,17 +76,6 @@ export function modalTemplate(settings = {}) {
       </aside>
       <div class="civitai-rail-scrim" id="civitai-rail-scrim"></div>
       <div class="civitai-main">
-        <div class="civitai-downloader-header">
-          <button class="civitai-icon-button civitai-rail-open" id="civitai-rail-open" title="Show sections"><i class="fas fa-bars"></i></button>
-          <div class="civitai-page-title-wrap">
-            <h2 id="civitai-page-title">${PAGE_META.download.title}</h2>
-            <p class="civitai-page-sub" id="civitai-page-sub">${PAGE_META.download.sub}</p>
-          </div>
-          <div class="civitai-header-actions">
-            <button class="civitai-icon-button" id="civitai-fullscreen-toggle" title="Toggle fullscreen"><i class="fas fa-expand"></i></button>
-            <button class="civitai-close-button" id="civitai-close-modal" title="Close (Esc)">&times;</button>
-          </div>
-        </div>
         <div class="civitai-downloader-body">
         <div id="civitai-tab-download" class="civitai-downloader-tab-content active">
           <form id="civitai-download-form">
@@ -508,6 +498,13 @@ export function modalTemplate(settings = {}) {
         </div>
         </div>
       </div>
+      </div>
+      <footer class="cfy-statusbar" aria-hidden="true">
+        <span class="cfy-statusbar-mark"></span>
+        <span class="cfy-statusbar-label">Civicomfy // Model ops terminal</span>
+        <span class="cfy-statusbar-rule"></span>
+        <span class="cfy-statusbar-label">Civitai · HuggingFace</span>
+      </footer>
     </div>
     <!-- The toast lives OUTSIDE .civitai-downloader-modal-content: the
          backdrop-filter on the wrapper makes it the containing block for fixed

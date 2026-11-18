@@ -1,0 +1,301 @@
+/* =============================================================
+   STATUS TAB
+   ============================================================= */
+#civitai-status-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.civitai-status-section {
+  background: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-radius: 0;
+  padding: 14px 16px 16px;
+}
+/* The rule and spacing live on the header, not the <h3>, so the Clear button
+   centres against the title row instead of the title plus its margin. */
+.civitai-status-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--cfy-border);
+  position: relative;
+}
+.civitai-status-history-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 48px;
+  height: 2px;
+  background: var(--cfy-accent);
+}
+.civitai-status-section .civitai-status-history-header h3 {
+  margin: 0;
+  padding: 0;
+  border-bottom: 0;
+}
+.civitai-status-section .civitai-status-history-header h3::after { content: none; }
+.civitai-status-section h3 {
+  margin: 0 0 12px;
+  font-family: var(--cfy-font-display);
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cfy-text);
+  border-bottom: 1px solid var(--cfy-border);
+  padding-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.civitai-status-section h3::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 48px;
+  height: 2px;
+  background: var(--cfy-accent);
+}
+.civitai-status-section h3 > i {
+  color: var(--cfy-accent);
+  font-size: 0.88em;
+  flex-shrink: 0;
+}
+.civitai-status-history-header h3 { flex: 1 1 auto; }
+.civitai-download-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* Empty lists use the shared .civitai-empty-state component (see above) so
+   Status matches Browse / My Models / Gallery. */
+.civitai-download-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 11px 13px;
+  border-radius: 0;
+  background: var(--cfy-panel);
+  border: 1px solid var(--cfy-border);
+  border-left: 2px solid var(--cfy-line-strong);
+  transition: border-color var(--cfy-transition), background var(--cfy-transition);
+  animation: cfy-rise var(--cfy-dur-3) var(--cfy-ease-out) both;
+}
+.civitai-download-item:nth-child(2) { animation-delay: calc(var(--cfy-stagger) * 1); }
+.civitai-download-item:nth-child(3) { animation-delay: calc(var(--cfy-stagger) * 2); }
+.civitai-download-item:nth-child(4) { animation-delay: calc(var(--cfy-stagger) * 3); }
+.civitai-download-item:nth-child(5) { animation-delay: calc(var(--cfy-stagger) * 4); }
+.civitai-download-item:nth-child(6) { animation-delay: calc(var(--cfy-stagger) * 5); }
+.civitai-download-item:nth-child(7) { animation-delay: calc(var(--cfy-stagger) * 6); }
+.civitai-download-item:nth-child(8) { animation-delay: calc(var(--cfy-stagger) * 7); }
+.civitai-download-item:nth-child(9) { animation-delay: calc(var(--cfy-stagger) * 8); }
+.civitai-download-item:nth-child(10) { animation-delay: calc(var(--cfy-stagger) * 9); }
+.civitai-download-item:nth-child(11) { animation-delay: calc(var(--cfy-stagger) * 10); }
+.civitai-download-item:nth-child(12) { animation-delay: calc(var(--cfy-stagger) * 11); }
+.civitai-download-item:hover { border-color: var(--cfy-line-strong); background: var(--cfy-surface); }
+/* The row has no state class of its own; the edge follows its status pill. */
+.civitai-download-item:has(.civitai-dl-status--active)    { border-left-color: var(--cfy-accent); }
+.civitai-download-item:has(.civitai-dl-status--completed) { border-left-color: var(--cfy-success); }
+.civitai-download-item:has(.civitai-dl-status--failed),
+.civitai-download-item:has(.civitai-dl-status--cancelled) { border-left-color: var(--cfy-danger); }
+.civitai-thumbnail-container {
+  position: relative;
+  width: 64px; height: 90px;
+  overflow: hidden;
+  border-radius: 0;
+  border: 1px solid var(--cfy-line);
+  flex-shrink: 0;
+  background: var(--cfy-media-bg);
+}
+.civitai-thumbnail-container img,
+.civitai-thumbnail-container video {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.civitai-download-thumbnail { display: block; }
+.civitai-thumbnail-container.blurred img,
+.civitai-thumbnail-container.blurred video {
+  filter: blur(14px) brightness(0.6) saturate(0.6);
+  pointer-events: none;
+}
+.civitai-thumbnail-container.blurred { cursor: pointer; }
+.civitai-nsfw-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 20px;
+  background: rgba(0,0,0,0.35);
+  z-index: 3;
+  user-select: none;
+}
+.civitai-download-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+  min-width: 0;
+}
+/* Title row: name + status pill */
+.civitai-dl-titlerow {
+  display: flex;
+  align-items: center;
+  gap: 6px 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.civitai-dl-name {
+  /* 60% basis keeps the name and the pill on one line when there is room and
+     drops the pill underneath instead of shrinking the name to "Meg…". */
+  flex: 1 1 60%;
+  min-width: 0;
+  font-size: 0.98em;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.civitai-dl-status {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.66em;
+  font-weight: 700;
+  letter-spacing: var(--cfy-label-tracking);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.civitai-dl-status--active    { background: var(--cfy-accent-dim);   border-color: var(--cfy-accent-glow);  color: var(--cfy-accent-text); }
+.civitai-dl-status--queued    { background: var(--cfy-fill-2);       border-color: var(--cfy-line);         color: var(--cfy-text-dim); }
+.civitai-dl-status--completed { background: var(--cfy-success-dim);  border-color: var(--cfy-success-glow); color: var(--cfy-success-text); }
+.civitai-dl-status--failed    { background: var(--cfy-danger-dim);   border-color: var(--cfy-danger-glow);  color: var(--cfy-danger-text); }
+.civitai-dl-status--cancelled { background: var(--cfy-fill-1);       border-color: var(--cfy-line);         color: var(--cfy-text-faint); }
+
+/* File facts: one wrapped row of chips */
+.civitai-dl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 1px 0 2px;
+}
+.civitai-dl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 0;
+  background: var(--cfy-fill-1);
+  border: 1px solid var(--cfy-line);
+  color: var(--cfy-text-dim);
+  font-family: var(--cfy-font-mono);
+  font-size: 0.7em;
+  white-space: nowrap;
+}
+.civitai-dl-chip i { opacity: 0.8; color: var(--cfy-accent-text); font-size: 0.9em; }
+
+/* Progress: bar and percentage on one line */
+.civitai-dl-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+}
+.civitai-dl-progress-row .civitai-progress-container { flex: 1 1 auto; }
+.civitai-download-info p {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--cfy-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.civitai-download-info .filename {
+  font-style: italic;
+  font-size: 0.8em;
+  color: var(--cfy-text-faint);
+}
+.civitai-download-info .output-dir {
+  font-family: var(--cfy-font-mono);
+  font-size: 0.76em;
+  color: var(--cfy-accent-text);
+  direction: rtl;
+  text-align: left;
+}
+.civitai-download-info .output-dir i {
+  margin-right: 4px;
+  direction: ltr;
+}
+.civitai-download-info .error-message {
+  color: var(--cfy-danger-text);
+  font-size: 0.84em;
+  white-space: normal;
+  word-break: break-word;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+.civitai-download-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+  align-self: center;
+}
+.civitai-progress-pct {
+  font-family: var(--cfy-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.74em;
+  font-weight: 600;
+  color: var(--cfy-text);
+  min-width: 40px;
+  text-align: right;
+}
+.civitai-progress-container {
+  margin-top: 0;
+  width: 100%;
+  background: var(--cfy-fill-2);
+  border-radius: 0;
+  overflow: hidden;
+  height: 6px;
+}
+.civitai-progress-bar {
+  height: 100%;
+  background-color: var(--cfy-accent);
+  transition: width 0.3s var(--cfy-ease-out);
+  min-width: 0;
+  width: 0%;
+  border-radius: 0;
+}
+/* Stripes move only while the row is live. */
+.civitai-download-item:has(.civitai-dl-status--active) .civitai-progress-bar {
+  background-image: repeating-linear-gradient(-45deg, rgba(0,0,0,.18) 0 8px, transparent 8px 16px);
+  background-size: 34px 100%;
+  animation: cfy-stripes .8s linear infinite;
+}
+.civitai-progress-bar.completed { background-color: var(--cfy-success); }
+.civitai-progress-bar.failed    { background-color: var(--cfy-danger); }
+.civitai-progress-bar.cancelled { background-color: var(--cfy-line-strong); }
+.civitai-speed-indicator {
+  font-family: var(--cfy-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.74em;
+  color: var(--cfy-text-dim);
+  margin-top: 2px;
+  text-align: right;
+}
+

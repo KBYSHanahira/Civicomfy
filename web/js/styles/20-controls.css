@@ -1,0 +1,507 @@
+/* =============================================================
+   TOOLBAR (shared by Browse / My Models / Gallery)
+   ============================================================= */
+.civitai-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--cfy-border);
+  flex-shrink: 0;
+  position: relative;
+}
+/* Orange tick at the start of the rule. */
+.civitai-toolbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 48px;
+  height: 2px;
+  background: var(--cfy-accent);
+}
+.civitai-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.civitai-toolbar-row--filters {
+  gap: 6px 8px;
+}
+.civitai-toolbar-spacer { flex: 1 1 auto; }
+.civitai-toolbar-label {
+  font-family: var(--cfy-font-mono);
+  font-size: 0.64em;
+  font-weight: 600;
+  letter-spacing: var(--cfy-label-tracking);
+  text-transform: uppercase;
+  color: var(--cfy-text-faint);
+  white-space: nowrap;
+  margin-right: 2px;
+}
+.civitai-toolbar-label::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  background: var(--cfy-accent);
+}
+
+/* =============================================================
+   SHARED INPUT / SELECT
+   ============================================================= */
+.civitai-input,
+.civitai-select {
+  height: var(--cfy-input-h);
+  padding: 0 10px;
+  background: var(--cfy-surface);
+  color: var(--cfy-text);
+  border: 1px solid var(--cfy-border);
+  border-bottom-color: var(--cfy-line-strong);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.9em;
+  width: 100%;
+  transition: border-color var(--cfy-transition), box-shadow var(--cfy-transition), background var(--cfy-transition);
+}
+.civitai-input:hover:not(:focus),
+.civitai-select:hover:not(:focus) { border-color: var(--cfy-line-strong); }
+/* Focus: an orange underline, like a field taking the cursor. */
+.civitai-input:focus,
+.civitai-select:focus {
+  outline: none;
+  border-color: var(--cfy-accent);
+  box-shadow: inset 0 -2px 0 var(--cfy-accent), 0 0 0 3px var(--cfy-accent-soft);
+}
+.civitai-input::placeholder { color: var(--cfy-text-faint); }
+.civitai-input:disabled,
+.civitai-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background-image: repeating-linear-gradient(-45deg, var(--cfy-fill-1) 0 6px, transparent 6px 12px);
+}
+textarea.civitai-input { height: auto; padding: 8px 10px; line-height: 1.5; }
+/* Native arrow replaced by a square orange chevron. */
+.civitai-select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M1 3h8L5 8z' fill='%23ff6b1a'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+.civitai-select option {
+  background: var(--cfy-surface);
+  color: var(--cfy-text);
+}
+
+/* =============================================================
+   BUTTONS
+   Default = outlined plate; primary = solid orange with a cut corner
+   and a light sheen on hover; danger = outlined red that fills on hover.
+   ============================================================= */
+.civitai-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: var(--cfy-input-h);
+  padding: 0 16px;
+  background: var(--cfy-surface);
+  color: var(--cfy-text);
+  border: 1px solid var(--cfy-line-strong);
+  border-radius: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.84em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition: background var(--cfy-transition), border-color var(--cfy-transition),
+              color var(--cfy-transition), box-shadow var(--cfy-transition), transform var(--cfy-dur-1);
+  box-sizing: border-box;
+  text-decoration: none;
+}
+.civitai-button:hover:not(:disabled) {
+  background: var(--cfy-accent-soft);
+  border-color: var(--cfy-accent);
+  color: var(--cfy-accent-text);
+}
+.civitai-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.civitai-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+/* Primary */
+.civitai-button.primary {
+  background: var(--cfy-accent);
+  border-color: var(--cfy-accent);
+  color: var(--cfy-on-accent);
+  font-weight: 700;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cfy-cut-sm)), calc(100% - var(--cfy-cut-sm)) 100%, 0 100%);
+}
+.civitai-button.primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.42) 50%, transparent 65%);
+  transform: translateX(-110%);
+  transition: transform 0.55s var(--cfy-ease-out);
+}
+.civitai-button.primary:hover:not(:disabled) {
+  background: var(--cfy-accent-gradient-hover);
+  border-color: var(--cfy-accent);
+  color: var(--cfy-on-accent);
+  box-shadow: 0 0 22px var(--cfy-accent-dim);
+}
+.civitai-button.primary:hover:not(:disabled)::before { transform: translateX(110%); }
+/* clip-path hides an outside outline, so the focus ring sits inside. */
+.civitai-button.primary:focus-visible {
+  outline: 2px solid var(--cfy-on-accent);
+  outline-offset: -5px;
+}
+/* Secondary */
+.civitai-button.secondary {
+  background: transparent;
+  border-color: var(--cfy-line-strong);
+}
+.civitai-button.secondary:hover:not(:disabled) {
+  background: var(--cfy-accent-soft);
+  border-color: var(--cfy-accent);
+}
+/* Danger */
+.civitai-button.danger {
+  background: var(--cfy-danger-surface);
+  border-color: var(--cfy-danger);
+  color: var(--cfy-danger-text);
+}
+.civitai-button.danger:hover:not(:disabled) {
+  background: var(--cfy-danger);
+  border-color: var(--cfy-danger);
+  color: var(--cfy-on-accent);
+  box-shadow: 0 0 18px var(--cfy-danger-dim);
+}
+/* Small */
+.civitai-button.small {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 0.74em;
+}
+.civitai-button.icon-only {
+  width: var(--cfy-input-h);
+  padding: 0;
+}
+.civitai-button.icon-only.small { width: 28px; }
+
+/* =============================================================
+   CARD / SECTION (grouping primitive)
+   A plate with orange corner brackets and a numbered head.
+   ============================================================= */
+#civitai-download-form,
+.civitai-settings-container { counter-reset: cfy-card; }
+.civitai-card {
+  background: var(--cfy-surface);
+  border: 1px solid var(--cfy-border);
+  border-radius: 0;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  position: relative;
+  transition: border-color var(--cfy-transition);
+}
+.civitai-card::before,
+.civitai-card::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  transition: width var(--cfy-dur-2) var(--cfy-ease-snap), height var(--cfy-dur-2) var(--cfy-ease-snap);
+}
+.civitai-card::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid var(--cfy-accent);
+  border-left: 2px solid var(--cfy-accent);
+}
+.civitai-card::after {
+  right: -1px;
+  bottom: -1px;
+  border-right: 2px solid var(--cfy-line-strong);
+  border-bottom: 2px solid var(--cfy-line-strong);
+}
+.civitai-card:hover { border-color: var(--cfy-line-strong); }
+.civitai-card:hover::before,
+.civitai-card:focus-within::before { width: 18px; height: 18px; }
+.civitai-card:focus-within::after { border-color: var(--cfy-accent); }
+.civitai-card:last-child { margin-bottom: 0; }
+.civitai-downloader-tab-content.active .civitai-card { animation: cfy-rise var(--cfy-dur-3) var(--cfy-ease-out) both; }
+.civitai-downloader-tab-content.active .civitai-card:nth-of-type(2) { animation-delay: calc(var(--cfy-stagger) * 2); }
+.civitai-downloader-tab-content.active .civitai-card:nth-of-type(3) { animation-delay: calc(var(--cfy-stagger) * 4); }
+.civitai-downloader-tab-content.active .civitai-card:nth-of-type(4) { animation-delay: calc(var(--cfy-stagger) * 6); }
+.civitai-card-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--cfy-line);
+  counter-increment: cfy-card;
+}
+.civitai-card-head::after {
+  content: "// " counter(cfy-card, decimal-leading-zero);
+  margin-left: auto;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.66em;
+  letter-spacing: 0.12em;
+  color: var(--cfy-text-faint);
+}
+.civitai-card-head i {
+  color: var(--cfy-accent);
+  font-size: 0.86em;
+  flex-shrink: 0;
+}
+.civitai-card-head h4 {
+  margin: 0;
+  font-family: var(--cfy-font-display);
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cfy-text);
+}
+
+/* =============================================================
+   FORM LAYOUT
+   ============================================================= */
+.civitai-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.civitai-form-group:last-child { margin-bottom: 0; }
+.civitai-form-group label {
+  font-size: 0.74em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cfy-text-dim);
+}
+.civitai-form-group label .civitai-optional {
+  font-family: var(--cfy-font-mono);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--cfy-text-faint);
+  margin-left: 2px;
+}
+.civitai-form-group label > i { color: var(--cfy-text-faint); margin-right: 5px; }
+.civitai-form-group:focus-within > label { color: var(--cfy-accent-text); }
+.civitai-form-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.civitai-form-row > .civitai-form-group {
+  flex: 1 1 200px;
+  min-width: 0;
+  /* The row's own gap already separates wrapped groups; keeping the margin too
+     doubled the space between them. */
+  margin-bottom: 0;
+}
+.civitai-form-row { margin-bottom: 16px; }
+.civitai-form-row:last-child { margin-bottom: 0; }
+/* Checkbox + label on one line. nowrap plus a zero flex-basis on the label:
+   with wrap enabled a long label's content width pushes it onto its own line
+   before the flexbox ever gets to shrink it, which left the checkbox stranded
+   on the row above. */
+.civitai-form-group.inline {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: nowrap;
+}
+.civitai-form-group.inline label {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+  font-size: 0.9em;
+  color: var(--cfy-text);
+  margin-bottom: 0;
+  line-height: 1.4;
+  flex: 1 1 0;
+  min-width: 0;
+  word-break: break-word;
+  cursor: pointer;
+}
+.civitai-form-group.inline > .civitai-checkbox {
+  margin-top: 1px;
+}
+/* Square checkbox; checked = solid orange with a black tick. */
+.civitai-checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1px solid var(--cfy-line-strong);
+  border-radius: 0;
+  background: var(--cfy-surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-content: center;
+  transition: background var(--cfy-dur-1), border-color var(--cfy-dur-1);
+}
+.civitai-checkbox::after {
+  content: "";
+  width: 9px;
+  height: 9px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M1 5.2 3.8 8 9 2' fill='none' stroke='%230a0a0b' stroke-width='2' stroke-linecap='square'/%3E%3C/svg%3E") center / contain no-repeat;
+  transform: scale(0);
+  transition: transform var(--cfy-dur-2) var(--cfy-ease-snap);
+}
+.civitai-checkbox:hover { border-color: var(--cfy-accent); }
+.civitai-checkbox:checked {
+  background: var(--cfy-accent);
+  border-color: var(--cfy-accent);
+}
+.civitai-checkbox:checked::after { transform: scale(1); }
+.civitai-checkbox:focus-visible {
+  outline: 2px solid var(--cfy-accent);
+  outline-offset: 2px;
+}
+.civitai-checkbox:disabled { opacity: 0.45; cursor: not-allowed; }
+.civitai-field-hint {
+  font-size: 0.8em;
+  color: var(--cfy-text-dim);
+  line-height: 1.7;
+  margin: 0;
+}
+.civitai-field-hint i { margin-right: 4px; opacity: 0.8; color: var(--cfy-accent-text); }
+.civitai-field-hint code {
+  display: inline-block;
+  background: var(--cfy-fill-2);
+  border: 1px solid var(--cfy-line);
+  border-left: 2px solid var(--cfy-accent);
+  border-radius: 0;
+  padding: 0 5px;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.9em;
+  /* Inline code has no line box of its own: without a tightened line-height
+     the padded border box overlaps the line above when the hint wraps. */
+  line-height: 1.45;
+  vertical-align: baseline;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+/* Shared empty / loading / error state for grids and lists.
+   grid-column spans the whole row so it never renders as one narrow cell. */
+.civitai-empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 34px 18px;
+  border: 1px dashed var(--cfy-line-strong);
+  border-radius: 0;
+  background: repeating-linear-gradient(-45deg, var(--cfy-fill-1) 0 10px, transparent 10px 20px);
+  color: var(--cfy-text-dim);
+  font-size: 0.88em;
+  line-height: 1.5;
+  text-align: center;
+  word-break: break-word;
+  animation: cfy-fade-in var(--cfy-dur-3) ease both;
+}
+.civitai-empty-state i { opacity: 0.8; color: var(--cfy-accent); flex-shrink: 0; }
+.civitai-empty-state--error {
+  border-style: solid;
+  border-color: var(--cfy-danger-glow);
+  background: var(--cfy-danger-surface);
+  color: var(--cfy-danger-text);
+}
+.civitai-empty-state--error i { opacity: 0.9; color: var(--cfy-danger-text); }
+
+/* Fallback glyph for cards whose thumbnail failed to load */
+.civitai-card-fallback-icon {
+  font-size: 1.8em;
+  opacity: 0.22;
+  color: var(--cfy-text);
+}
+.civitai-input-btn-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.civitai-input-btn-group .civitai-select,
+.civitai-input-btn-group .civitai-input {
+  flex: 1;
+  min-width: 0;
+}
+/* Action bar — sticks to the bottom of long forms so the primary
+   action is always reachable without scrolling back down. */
+.civitai-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: 18px;
+  padding: 13px 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  background: var(--cfy-panel);
+  border-top: 1px solid var(--cfy-border);
+}
+.civitai-form-actions::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 72px;
+  height: 2px;
+  background: var(--cfy-hazard);
+}
+.civitai-form-actions .civitai-form-actions-hint {
+  margin-right: auto;
+  font-size: 0.78em;
+  color: var(--cfy-text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.civitai-form-actions .civitai-form-actions-hint i { color: var(--cfy-accent-text); }
+/* These panels let the sticky action bar own the bottom padding */
+#civitai-tab-download,
+#civitai-tab-settings,
+#civitai-tab-directory { padding-bottom: 0; }
+/* Short forms (fullscreen, tall windows) pin the action bar to the panel's
+   bottom edge instead of leaving it floating under the last card. */
+#civitai-tab-download.active,
+#civitai-tab-settings.active,
+#civitai-tab-directory.active { display: flex; flex-direction: column; }
+#civitai-download-form,
+#civitai-settings-form { display: flex; flex-direction: column; flex: 1 0 auto; }
+#civitai-tab-directory .civitai-form-actions,
+#civitai-download-form .civitai-form-actions,
+#civitai-settings-form .civitai-form-actions { margin-top: auto; }

@@ -77,6 +77,7 @@ export class CivitaiDownloaderUI {
         this.railScrim = this.modal.querySelector('#civitai-rail-scrim');
         this.pageTitleEl = this.modal.querySelector('#civitai-page-title');
         this.pageSubEl = this.modal.querySelector('#civitai-page-sub');
+        this.pageCodeEl = this.modal.querySelector('#civitai-page-code');
 
         // Download Tab
         this.downloadForm = this.modal.querySelector('#civitai-download-form');
@@ -594,6 +595,14 @@ export class CivitaiDownloaderUI {
         if (!meta) return;
         if (this.pageTitleEl) this.pageTitleEl.textContent = meta.title;
         if (this.pageSubEl) this.pageSubEl.textContent = meta.sub;
+        if (this.pageCodeEl) this.pageCodeEl.textContent = meta.code;
+        // Restart the readout's swap animation on every section change.
+        const wrap = this.pageTitleEl?.closest('.civitai-page-title-wrap');
+        if (wrap) {
+            wrap.classList.remove('cfy-swap');
+            void wrap.offsetWidth;
+            wrap.classList.add('cfy-swap');
+        }
     }
 
     switchTab(tabId) {

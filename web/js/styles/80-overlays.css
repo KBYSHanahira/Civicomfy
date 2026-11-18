@@ -1,0 +1,189 @@
+/* =============================================================
+   DIALOG (confirm / alert / prompt — see ui/dialog.js)
+   Replaces window.confirm/alert/prompt, which render browser chrome we do
+   not control and ignore the theme entirely.
+   ============================================================= */
+.civitai-dialog {
+  display: none;
+  position: fixed;
+  inset: 0;
+  /* Above the gallery lightbox (9000): deleting an image is confirmed from it. */
+  z-index: 9600;
+  background: var(--cfy-overlay);
+  justify-content: center;
+  align-items: center;
+  font-family: var(--cfy-font);
+}
+.civitai-dialog.open { display: flex; animation: cfy-fade-in var(--cfy-dur-2) ease both; }
+
+.civitai-dialog-panel {
+  background: var(--cfy-panel);
+  color: var(--cfy-text);
+  padding: 22px 24px 18px;
+  border: 1px solid var(--cfy-line-strong);
+  border-top: 2px solid var(--cfy-accent);
+  border-radius: 0;
+  width: 100%;
+  max-width: 440px;
+  margin: 16px;
+  position: relative;
+  /* Top-left and bottom-right corners cut. clip-path hides box-shadow, so none is set. */
+  clip-path: polygon(var(--cfy-cut) 0, 100% 0, 100% calc(100% - var(--cfy-cut)), calc(100% - var(--cfy-cut)) 100%, 0 100%, 0 var(--cfy-cut));
+  animation: cfy-modal-in var(--cfy-dur-2) var(--cfy-ease-out) both;
+}
+.civitai-dialog-panel--question { border-top-color: var(--cfy-accent); }
+.civitai-dialog-panel--info     { border-top-color: var(--cfy-accent); }
+.civitai-dialog-panel--success  { border-top-color: var(--cfy-success); }
+.civitai-dialog-panel--warning  { border-top-color: var(--cfy-amber); }
+.civitai-dialog-panel--error    { border-top-color: var(--cfy-danger); }
+.civitai-dialog-panel--error::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 84px;
+  height: 6px;
+  background: var(--cfy-hazard);
+}
+.civitai-dialog-panel :focus-visible { outline-offset: -4px; }
+
+.civitai-dialog-title {
+  margin: 0 0 10px;
+  font-family: var(--cfy-font-display);
+  font-size: 1.1em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  line-height: 1.35;
+}
+.civitai-dialog-panel--question .civitai-dialog-title i { color: var(--cfy-accent); }
+.civitai-dialog-panel--info     .civitai-dialog-title i { color: var(--cfy-accent-text); }
+.civitai-dialog-panel--success  .civitai-dialog-title i { color: var(--cfy-success-text); }
+.civitai-dialog-panel--warning  .civitai-dialog-title i { color: var(--cfy-amber-text); }
+.civitai-dialog-panel--error    .civitai-dialog-title i { color: var(--cfy-danger-text); }
+
+.civitai-dialog-message {
+  margin: 0 0 18px;
+  line-height: 1.6;
+  font-size: 0.92em;
+  color: var(--cfy-text-dim);
+  /* Messages are set with textContent and may contain newlines. */
+  white-space: pre-line;
+  /* Long filenames and server errors must not widen the panel. */
+  overflow-wrap: anywhere;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+/* Layout only — appearance comes from the shared .civitai-input rules. */
+.civitai-dialog-input { margin: 0 0 18px; }
+
+.civitai-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.civitai-dialog-actions .civitai-button { min-width: 92px; }
+
+@media (max-width: 520px) {
+  .civitai-dialog-actions { flex-direction: column-reverse; }
+  .civitai-dialog-actions .civitai-button { width: 100%; }
+}
+
+/* =============================================================
+   TOAST
+   ============================================================= */
+.civitai-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  /* Same motion as cfy-slide-in, done as a transition: the keyframe's transform
+     would drop the translate(-50%) centring. */
+  transform: translate(calc(-50% - 12px), 0);
+  background: var(--cfy-bg);
+  color: var(--cfy-text);
+  padding: 10px 18px 10px 16px;
+  border-radius: 0;
+  z-index: 1020;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.82em;
+  font-weight: 500;
+  line-height: 1.6;
+  opacity: 0;
+  transition: opacity var(--cfy-dur-2) ease, transform var(--cfy-dur-3) var(--cfy-ease-out);
+  pointer-events: none;
+  box-shadow: var(--cfy-shadow);
+  border: 1px solid var(--cfy-line-strong);
+  border-left: 3px solid var(--cfy-accent);
+  box-sizing: border-box;
+  max-width: min(400px, calc(100vw - 32px));
+  text-align: center;
+}
+.civitai-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.civitai-toast.success { border-left-color: var(--cfy-success); }
+.civitai-toast.error   { border-left-color: var(--cfy-danger); }
+.civitai-toast.info    { border-left-color: var(--cfy-accent); }
+/* Warning was reachable from code (settings save, duplicate-file notices) but
+   had no rule at all, so it rendered as a plain neutral toast. */
+.civitai-toast.warning { border-left-color: var(--cfy-amber); }
+
+/* =============================================================
+   TOOLTIP
+   ============================================================= */
+[data-tooltip] { position: relative; cursor: help; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 100%;
+  margin-bottom: 6px;
+  background: var(--cfy-bg);
+  color: var(--cfy-text);
+  padding: 5px 9px;
+  border-radius: 0;
+  font-family: var(--cfy-font-mono);
+  font-size: 0.76em;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 1015;
+  pointer-events: none;
+  border: 1px solid var(--cfy-line-strong);
+}
+[data-tooltip]:hover::after { opacity: 1; visibility: visible; }
+/* .civitai-download-info clips overflow, so the status pill's tooltip opens
+   downward and right-aligned to stay inside it. */
+.civitai-dl-status[data-tooltip]::after {
+  top: 100%;
+  bottom: auto;
+  left: auto;
+  right: 0;
+  transform: none;
+  margin: 6px 0 0;
+  letter-spacing: normal;
+  text-transform: none;
+  font-weight: 500;
+}
+
+/* =============================================================
+   SCROLLBAR (webkit)
+   ============================================================= */
+.civitai-downloader-modal-content ::-webkit-scrollbar { width: 8px; height: 8px; }
+.civitai-downloader-modal-content ::-webkit-scrollbar-track { background: transparent; }
+.civitai-downloader-modal-content ::-webkit-scrollbar-thumb {
+  background: var(--cfy-line-strong);
+  border-radius: 0;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.civitai-downloader-modal-content ::-webkit-scrollbar-thumb:hover {
+  background: var(--cfy-accent);
+  background-clip: padding-box;
+}
+.civitai-downloader-modal-content { scrollbar-color: var(--cfy-line-strong) transparent; }
+

@@ -503,7 +503,7 @@ function _renderBrowseInfoModal(ui, hit) {
     const typeChip = document.createElement('span');
     typeChip.className = 'civitai-browse-info-type-chip';
     typeChip.textContent = modelTypeApi;
-    typeChip.style.cssText = `color:${typeColor};border-color:${typeColor}88;background:${typeColor}22;`;
+    typeChip.style.cssText = `color:#fff;border-color:${typeColor};background:${typeColor};`;
 
     const titleEl = document.createElement('h3');
     titleEl.className = 'civitai-browse-info-title';

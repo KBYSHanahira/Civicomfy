@@ -1,0 +1,249 @@
+﻿/* =============================================================
+   CIVICOMFY — DESIGN SYSTEM  ·  "Field Terminal" theme
+   ---------------------------------------------------------------
+   Industrial HUD: matte black plates, one signal orange, hairline
+   rules, chamfered corners, condensed type with mono data labels.
+   Every colour comes from a token below. The light palette
+   ("field white") activates when `cfy-theme-light` is on <body>.
+   ============================================================= */
+
+/* ── Design Tokens — black (default) ───────────────────────── */
+:root {
+  /* Signal orange. Labels on it are black (--cfy-on-accent): white on
+     this orange is under 3:1. */
+  --cfy-accent:        #ff6b1a;
+  --cfy-accent-2:      #e2560a;
+  --cfy-accent-text:   #ff8a4c;
+  --cfy-on-accent:     #0a0a0b;
+  --cfy-accent-soft:   rgba(255, 107, 26, 0.08);
+  --cfy-accent-dim:    rgba(255, 107, 26, 0.16);
+  --cfy-accent-glow:   rgba(255, 107, 26, 0.45);
+  --cfy-accent-strong: rgba(255, 107, 26, 0.88);
+  --cfy-accent-gradient:       linear-gradient(90deg, #ff6b1a 0%, #ff7a2e 100%);
+  --cfy-accent-gradient-hover: linear-gradient(90deg, #ff7a2e 0%, #ff8c45 100%);
+
+  /* Neutrals — near-black graphite */
+  --cfy-bg:            #0a0a0b;   /* shell / rail / top bar  */
+  --cfy-panel:         #101113;   /* content canvas          */
+  --cfy-surface:       #17181b;   /* inputs, cards           */
+  --cfy-surface-hover: #1e1f23;
+  --cfy-border:        #2a2c31;
+  --cfy-text:          #eceae4;
+  --cfy-text-dim:      #a3a098;
+  --cfy-text-faint:    #8d8a82;
+
+  --cfy-fill-1:        rgba(236, 234, 228, 0.03);
+  --cfy-fill-2:        rgba(236, 234, 228, 0.06);
+  --cfy-fill-3:        rgba(236, 234, 228, 0.10);
+  --cfy-line:          rgba(236, 234, 228, 0.09);
+  --cfy-line-strong:   rgba(236, 234, 228, 0.18);
+  --cfy-recess:        rgba(0, 0, 0, 0.28);
+  --cfy-recess-strong: rgba(0, 0, 0, 0.42);
+
+  /* Always-dark surfaces that sit on top of imagery */
+  --cfy-media-bg:      #070708;
+  --cfy-glass:         rgba(10, 10, 11, 0.86);
+  --cfy-glass-line:    rgba(255, 255, 255, 0.16);
+  --cfy-overlay:       rgba(8, 8, 9, 0.95);
+  --cfy-on-media-dim:  #d4d1ca;
+
+  /* Semantic */
+  --cfy-danger:        #e5484d;
+  --cfy-danger-hover:  #cc3a3f;
+  --cfy-danger-text:   #ff8589;
+  --cfy-danger-dim:    rgba(229, 72, 77, 0.18);
+  --cfy-danger-glow:   rgba(229, 72, 77, 0.42);
+  --cfy-danger-surface: rgba(229, 72, 77, 0.14);
+  --cfy-danger-solid:  rgba(140, 30, 34, 0.96);
+  --cfy-success:       #3fbf86;
+  --cfy-success-text:  #7fdcb0;
+  --cfy-success-dim:   rgba(63, 191, 134, 0.18);
+  --cfy-success-glow:  rgba(63, 191, 134, 0.42);
+  --cfy-success-surface: rgba(63, 191, 134, 0.12);
+  --cfy-success-solid: rgba(24, 92, 62, 0.96);
+  --cfy-info-surface:  rgba(255, 107, 26, 0.10);
+  --cfy-info-line:     rgba(255, 107, 26, 0.38);
+  --cfy-info-solid:    rgba(120, 48, 10, 0.96);
+  --cfy-amber:         #ffc23d;
+  --cfy-amber-text:    #ffd36b;
+  --cfy-amber-soft:    rgba(255, 194, 61, 0.07);
+  --cfy-amber-dim:     rgba(255, 194, 61, 0.15);
+  --cfy-amber-line:    rgba(255, 194, 61, 0.34);
+  --cfy-amber-glow:    rgba(255, 194, 61, 0.50);
+  --cfy-warning:       var(--cfy-amber);
+
+  /* Shape — near-square; corners are cut, not rounded */
+  --cfy-radius-sm:     1px;
+  --cfy-radius:        2px;
+  --cfy-radius-lg:     2px;
+  --cfy-radius-xl:     0px;
+  --cfy-cut:           12px;      /* chamfer on panels / modal */
+  --cfy-cut-sm:        7px;       /* chamfer on buttons / cards */
+  --cfy-shadow-sm:     0 1px 0 rgba(0,0,0,0.40), 0 2px 10px rgba(0,0,0,0.30);
+  --cfy-shadow:        0 2px 0 rgba(0,0,0,0.45), 0 10px 26px rgba(0,0,0,0.45);
+  --cfy-shadow-lg:     0 0 0 1px rgba(255,107,26,0.10), 0 18px 50px rgba(0,0,0,0.65), 0 40px 90px rgba(0,0,0,0.55);
+
+  /* Patterns */
+  --cfy-hazard: repeating-linear-gradient(-45deg, var(--cfy-accent) 0 6px, transparent 6px 12px);
+  --cfy-grid:
+    linear-gradient(var(--cfy-line) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, var(--cfy-line) 1px, transparent 1px) 0 0 / 32px 32px;
+  --cfy-grid-faint:    0.35;      /* opacity for --cfy-grid overlays */
+
+  /* Motion — mechanical: fast snap in, soft settle */
+  --cfy-ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
+  --cfy-ease-snap:     cubic-bezier(0.2, 0.9, 0.1, 1);
+  --cfy-ease-in-out:   cubic-bezier(0.65, 0, 0.35, 1);
+  --cfy-dur-1:         120ms;
+  --cfy-dur-2:         220ms;
+  --cfy-dur-3:         420ms;
+  --cfy-stagger:       35ms;
+  --cfy-transition:    0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+  --cfy-transition-slow: 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Typography — system faces only (no network fonts). Bahnschrift ships
+     with Windows; Thai falls through to Leelawadee UI / Noto Sans Thai. */
+  --cfy-font: "Bahnschrift", "DIN Alternate", "Barlow", "Segoe UI", "Leelawadee UI", "Noto Sans Thai", Roboto, Arial, sans-serif;
+  --cfy-font-display: "Bahnschrift Condensed", "Bahnschrift", "DIN Condensed", "Barlow Condensed", "Arial Narrow", "Leelawadee UI", sans-serif;
+  --cfy-font-mono: "Cascadia Mono", "JetBrains Mono", Consolas, "SFMono-Regular", Menlo, monospace;
+  --cfy-label-tracking: 0.14em;   /* uppercase Latin labels only — never on Thai */
+
+  /* Metrics */
+  --cfy-input-h:       36px;
+  --cfy-rail-w:        224px;
+  --cfy-rail-w-collapsed: 64px;
+  --cfy-topbar-h:      58px;
+  --cfy-statusbar-h:   26px;
+  --cfy-browse-card-min-w: 158px;
+  --cfy-mymodels-card-min-w: 148px;
+}
+
+/* ── Design Tokens — field white (light) ───────────────────── */
+body.cfy-theme-light {
+  --cfy-accent:        #ff6b1a;
+  --cfy-accent-2:      #e2560a;
+  --cfy-accent-text:   #b23f05;
+  --cfy-on-accent:     #0a0a0b;
+  --cfy-accent-soft:   rgba(226, 86, 10, 0.07);
+  --cfy-accent-dim:    rgba(226, 86, 10, 0.14);
+  --cfy-accent-glow:   rgba(226, 86, 10, 0.36);
+  --cfy-accent-strong: rgba(226, 86, 10, 0.88);
+  --cfy-accent-gradient:       linear-gradient(90deg, #ff6b1a 0%, #ff7a2e 100%);
+  --cfy-accent-gradient-hover: linear-gradient(90deg, #ff7a2e 0%, #ff8c45 100%);
+
+  --cfy-bg:            #d9d8d3;
+  --cfy-panel:         #e9e8e4;
+  --cfy-surface:       #f6f5f2;
+  --cfy-surface-hover: #ffffff;
+  --cfy-border:        #c3c1b9;
+  --cfy-text:          #0f1012;
+  --cfy-text-dim:      #4f4d47;
+  --cfy-text-faint:    #5c5952;
+
+  --cfy-fill-1:        rgba(15, 16, 18, 0.035);
+  --cfy-fill-2:        rgba(15, 16, 18, 0.06);
+  --cfy-fill-3:        rgba(15, 16, 18, 0.10);
+  --cfy-line:          rgba(15, 16, 18, 0.12);
+  --cfy-line-strong:   rgba(15, 16, 18, 0.24);
+  --cfy-recess:        rgba(15, 16, 18, 0.05);
+  --cfy-recess-strong: rgba(15, 16, 18, 0.09);
+
+  --cfy-danger:        #d1343a;
+  --cfy-danger-hover:  #b5272d;
+  --cfy-danger-text:   #a8242a;
+  --cfy-danger-dim:    rgba(209, 52, 58, 0.12);
+  --cfy-danger-glow:   rgba(209, 52, 58, 0.34);
+  --cfy-danger-surface: rgba(209, 52, 58, 0.09);
+  --cfy-success:       #1f8a5c;
+  --cfy-success-text:  #16704a;
+  --cfy-success-dim:   rgba(31, 138, 92, 0.14);
+  --cfy-success-glow:  rgba(31, 138, 92, 0.34);
+  --cfy-success-surface: rgba(31, 138, 92, 0.09);
+  --cfy-info-surface:  rgba(226, 86, 10, 0.08);
+  --cfy-info-line:     rgba(226, 86, 10, 0.32);
+  --cfy-amber:         #c98a00;
+  --cfy-amber-text:    #7d5600;
+  --cfy-amber-soft:    rgba(201, 138, 0, 0.07);
+  --cfy-amber-dim:     rgba(201, 138, 0, 0.14);
+  --cfy-amber-line:    rgba(201, 138, 0, 0.32);
+  --cfy-amber-glow:    rgba(201, 138, 0, 0.45);
+
+  --cfy-shadow-sm:     0 1px 0 rgba(15,16,18,0.08), 0 2px 8px rgba(15,16,18,0.06);
+  --cfy-shadow:        0 2px 0 rgba(15,16,18,0.08), 0 8px 22px rgba(15,16,18,0.10);
+  --cfy-shadow-lg:     0 0 0 1px rgba(15,16,18,0.10), 0 18px 50px rgba(15,16,18,0.18), 0 40px 90px rgba(15,16,18,0.14);
+}
+
+/* ── Motion keyframes (shared; components pick these up) ───── */
+@keyframes cfy-modal-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+/* Ambient sweep along a ruler (status strip). */
+@keyframes cfy-sweep {
+  from { transform: translateX(-60px); }
+  to   { transform: translateX(calc(100vw)); }
+}
+@keyframes cfy-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+/* Rise: cards, list rows, sections entering. */
+@keyframes cfy-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+/* Wipe: left-to-right reveal for panels, bars and headings. */
+@keyframes cfy-wipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+/* Slide in from the left edge (rail items, toasts). */
+@keyframes cfy-slide-in {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: none; }
+}
+/* A thin bright line sweeping down a surface once. */
+@keyframes cfy-scan {
+  from { transform: translateY(-100%); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  to   { transform: translateY(100vh); opacity: 0; }
+}
+/* Moving hazard stripes on active progress bars. */
+@keyframes cfy-stripes {
+  from { background-position: 0 0; }
+  to   { background-position: 34px 0; }
+}
+/* Status lamps and live indicators. */
+@keyframes cfy-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+/* Corner brackets settling into place on hover/focus. */
+@keyframes cfy-bracket-in {
+  from { opacity: 0; transform: scale(1.12); }
+  to   { opacity: 1; transform: none; }
+}
+/* Shimmer for loading placeholders. */
+@keyframes cfy-shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+
+/* ── Search icon inside inputs ─────────────────────────────── */
+/* ID selectors: .civitai-input's `background` shorthand comes later and would
+   otherwise reset the icon while the padding below still reserved its space. */
+#civitai-browse-search,
+#civitai-mymodels-search {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23ff6b1a' stroke-width='2.5' stroke-linecap='square' stroke-linejoin='miter'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  padding-left: 32px !important;
+}
+#civitai-model-url {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23ff6b1a' stroke-width='2.5' stroke-linecap='square' stroke-linejoin='miter'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  padding-left: 32px !important;
+}
+
