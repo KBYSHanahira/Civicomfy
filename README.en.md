@@ -20,7 +20,7 @@ Browse, search, and download models — and manage the ones you already have —
 - 🗂️ **My Models** — see, sort, and delete locally installed models
 - 🖼️ **Gallery** — browse the images *and videos* your workflows produced
 - 📊 **Downloads** — watch active transfers, queue, and history in real time
-- 🎨 **Claude theme** — one warm design system, in dark or cream
+- 🎨 **Field-terminal theme** — orange-on-black industrial HUD, with a light palette too
 
 ---
 
@@ -76,20 +76,23 @@ Restart ComfyUI. A **Civicomfy** button appears in the top-right toolbar.
 ## The interface
 
 **Sidebar navigation.** Sections are grouped by what you're trying to do —
-**Get models** (Download, Browse), **Library** (My Models, Gallery),
-**Activity** (Downloads), **Configure** (Settings, Directories). The current
-section's name and a one-line description sit in the top bar, and a badge on
+**Acquire** (Download, Browse), **Archive** (My Models, Gallery),
+**Operations** (Downloads), **System** (Settings, Directories), each numbered
+01–07. The current section's number, name and a one-line description sit in the
+top bar, and a badge on
 **Downloads** counts transfers in flight from anywhere in the app.
 
-**It shrinks with the window.** Collapse the sidebar to a 60 px icon rail, or let
+**It shrinks with the window.** Collapse the sidebar to a 64 px icon rail, or let
 it become a slide-over drawer when the window gets narrow. Every panel keeps its
 own scroll position, and long forms keep their primary action pinned to the
 bottom instead of hiding it below the fold.
 
-**Claude theme, two palettes.** Warm dark by default, warm cream on request —
-switch with the toggle at the bottom of the sidebar. Every colour comes from one
-token set, so both palettes stay consistent down to the badges and progress bars.
-Your choice is remembered per browser.
+**Field-terminal theme, two palettes.** Black with a signal-orange accent by
+default, an off-white "field" palette on request — switch with the toggle at the
+bottom of the sidebar. Square plates, cut corners, condensed and mono type, and
+short mechanical motion (turned off when your system asks for reduced motion).
+Every colour comes from one token set, so both palettes stay consistent down to
+the badges and progress bars. Your choice is remembered per browser.
 
 **Keyboard & mouse.** `Esc` closes the window (or just the panel on top of it),
 arrow keys page through the gallery lightbox, and card grids resize live with the
