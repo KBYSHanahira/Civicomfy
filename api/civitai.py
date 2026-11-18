@@ -5,6 +5,9 @@ import requests
 import json
 from typing import List, Optional, Dict, Any, Union
 
+MEILI_URL = "https://search.civitai.com/multi-search"
+MEILI_AUTH = 'Bearer 8c46eb2508e21db1e9828a97968d91ab1ca1caa5f70a00e88a2ba1e286603b61' #Nothing harmful, everyone have the same meilisearch bearer token. I checked with 3 accounts
+
 class CivitaiAPI:
     """Simple wrapper for interacting with the Civitai API v1."""
     BASE_URL = "https://civitai.com/api/v1"
@@ -91,6 +94,15 @@ class CivitaiAPI:
         result = self._request("GET", endpoint)
         if isinstance(result, dict) and "error" in result:
             return result
+        # For some models the REST API returns `images: []` while the site and
+        # the search index still show them; fill them in so previews and
+        # thumbnails work everywhere this is used.
+        if isinstance(result, dict) and not result.get("images") and result.get("modelId"):
+            images = self.get_version_images_from_search(result["modelId"], version_id)
+            for img in images:
+                if not img["url"].startswith("http"):
+                    img["url"] = f"https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/{img['url']}/width=450"
+            result["images"] = images
         return result
 
     def get_models_bulk(self, model_ids: List[str]) -> Optional[Dict[str, Any]]:
@@ -141,6 +153,26 @@ class CivitaiAPI:
              # Return a consistent empty structure on unexpected format
              return {"items": [], "metadata": {"totalItems": 0, "currentPage": page, "pageSize": limit, "totalPages": 0}}
         
+    def get_version_images_from_search(self, model_id: int, version_id: int) -> List[Dict[str, Any]]:
+        """Images of one model version as the search index lists them.
+
+        For some models the REST API returns `images: []` on every version while
+        the search index (and civitai.com) still shows them. Index image `url`s
+        are bare CDN ids, not full URLs.
+        """
+        payload = {"queries": [{"indexUid": "models_v9", "q": "", "filter": [f"id = {int(model_id)}"], "limit": 1}]}
+        try:
+            response = requests.post(MEILI_URL, headers={'Content-Type': 'application/json', 'Authorization': MEILI_AUTH},
+                                     json=payload, timeout=15)
+            response.raise_for_status()
+            hits = response.json()["results"][0]["hits"]
+        except (requests.exceptions.RequestException, ValueError, KeyError, IndexError, TypeError) as e:
+            print(f"[Civicomfy] Search index image lookup failed for model {model_id}: {e}")
+            return []
+        images = (hits[0].get("images") or []) if hits else []
+        return [img for img in images
+                if isinstance(img, dict) and img.get("url") and img.get("modelVersionId") == int(version_id)]
+
     def search_models_meili(self, query: str, types: Optional[List[str]] = None,
                             base_models: Optional[List[str]] = None,
                             sort: str = 'metrics.downloadCount:desc', # Default to Most Downloaded
@@ -148,9 +180,8 @@ class CivitaiAPI:
                             nsfw: Optional[bool] = None,
                             search_mode: str = 'all') -> Optional[Dict[str, Any]]:
         """Searches models using the Civitai Meilisearch endpoint."""
-        meili_url = "https://search.civitai.com/multi-search"
-        headers = {'Content-Type': 'application/json'}
-        headers['Authorization'] = f'Bearer 8c46eb2508e21db1e9828a97968d91ab1ca1caa5f70a00e88a2ba1e286603b61' #Nothing harmful, everyone have the same meilisearch bearer token. I checked with 3 accounts
+        meili_url = MEILI_URL
+        headers = {'Content-Type': 'application/json', 'Authorization': MEILI_AUTH}
 
         offset = max(0, (page - 1) * limit)
 
