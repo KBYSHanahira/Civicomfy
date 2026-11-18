@@ -19,6 +19,26 @@ if TYPE_CHECKING:
 # Import config values
 from ..config import DEFAULT_CHUNK_SIZE, DOWNLOAD_TIMEOUT, HEAD_REQUEST_TIMEOUT
 
+
+def _http_error_detail(e: Exception) -> str:
+    """Error text for a failed request, with the server's own reason when it gives one.
+
+    Civitai explains refusals in a JSON body, e.g. {"error": "Unauthorized",
+    "message": "The creator of this asset requires you to be logged in ..."}.
+    """
+    response = getattr(e, 'response', None)
+    if response is None:
+        return str(e)
+    try:
+        server_msg = response.json().get("message")
+    except (ValueError, AttributeError):
+        server_msg = None
+    if server_msg:
+        return f"HTTP {response.status_code}: {server_msg}"
+    hint = {401: " (Unauthorized - Check API Key?)", 403: " (Forbidden - Permissions Issue?)",
+            416: " (Range Not Satisfiable)"}.get(response.status_code, "")
+    return f"{e}{hint}"
+
 class ChunkDownloader:
     """Handles downloading files in chunks using multiple connections or fallback."""
     # Constants
@@ -42,6 +62,10 @@ class ChunkDownloader:
         # Paths
         self.output_path = Path(output_path)
         self.temp_dir = self.output_path.parent / f".{self.output_path.name}.parts_{download_id or int(time.time())}"
+        # Bytes land here and replace output_path only once the download is
+        # complete, so a failed or cancelled re-download never touches an
+        # existing good file.
+        self.write_path = self.output_path.with_name(self.output_path.name + ".part")
         
         # Download configuration
         self.num_connections = max(1, num_connections)
@@ -126,13 +150,13 @@ class ChunkDownloader:
                     else:
                         time.sleep(0.5)
 
-        # Remove output file if download failed
-        if not success and self.output_path.exists():
+        # Remove the incomplete download; output_path itself is never touched here.
+        if self.write_path.exists():
             try:
-                self.output_path.unlink()
-                print(f"[Downloader {self.download_id}] Removed incomplete/failed output file: {self.output_path}")
+                self.write_path.unlink()
+                print(f"[Downloader {self.download_id}] Removed incomplete download: {self.write_path}")
             except Exception as e:
-                print(f"[Downloader {self.download_id}] Warning: Could not remove incomplete output file {self.output_path}: {e}")
+                print(f"[Downloader {self.download_id}] Warning: Could not remove incomplete download {self.write_path}: {e}")
 
     def _get_range_support_and_url(self) -> Tuple[str, bool]:
         """Check for range support and get final URL after redirects."""
@@ -275,19 +299,12 @@ class ChunkDownloader:
                 self._rewind_progress(bytes_written_this_segment)
 
                 # Handle HTTP status codes
-                status_code = None
-                error_msg_detail = f"{e}"
-
-                if isinstance(e, requests.exceptions.RequestException) and hasattr(e, 'response') and e.response is not None:
-                    status_code = e.response.status_code
-                    if status_code == 401:
-                        error_msg_detail += " (Unauthorized)"
-                    elif status_code == 403:
-                        error_msg_detail += " (Forbidden)"
-                    elif status_code == 416:
-                        error_msg_detail += " (Range Not Satisfiable)"
-                        self.abort(f"Segment {segment_index} failed: {error_msg_detail}")
-                        return
+                error_msg_detail = _http_error_detail(e)
+                status_code = getattr(getattr(e, 'response', None), 'status_code', None)
+                # Retrying cannot change these: the account is refused or the range is wrong.
+                if status_code in (401, 403, 416):
+                    self.abort(f"Segment {segment_index} failed: {error_msg_detail}")
+                    return
 
                 print(f"[Downloader {self.download_id}] Warning: Segment {segment_index} failed (Try {current_try+1}/{retries}): {error_msg_detail}")
 
@@ -325,7 +342,7 @@ class ChunkDownloader:
             # Sort part files numerically
             sorted_part_files = sorted(self.part_files, key=lambda p: int(p.name.split('_')[-1]))
 
-            with open(self.output_path, 'wb') as outfile:
+            with open(self.write_path, 'wb') as outfile:
                 for part_file in sorted_part_files:
                     # Check if part exists
                     if not part_file.exists():
@@ -348,7 +365,7 @@ class ChunkDownloader:
             print(f"[Downloader {self.download_id}] Merging complete.")
             
             # Verify final file size
-            final_size = self.output_path.stat().st_size
+            final_size = self.write_path.stat().st_size
             if self.total_size > 0 and abs(final_size - self.total_size) > 1:
                 self.error = f"Merged size ({final_size}) differs significantly from expected ({self.total_size}). File may be corrupt."
                 print(f"[Downloader {self.download_id}] Error: {self.error}")
@@ -402,7 +419,7 @@ class ChunkDownloader:
             # Ensure output directory exists
             self.output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(self.output_path, 'wb') as f:
+            with open(self.write_path, 'wb') as f:
                 for chunk in response.iter_content(self.chunk_size):
                     if self.is_cancelled:
                         print(f"[Downloader {self.download_id}] Fallback download cancelled.")
@@ -415,20 +432,17 @@ class ChunkDownloader:
 
             # Verify download size if known
             if self.total_size > 0 and self.downloaded != self.total_size and not self.error:
-                print(f"[Downloader {self.download_id}] Warning: Size mismatch. Expected {self.total_size}, got {self.downloaded}.")
+                # The connection closed early; keeping this file would leave a corrupt model.
+                self.error = f"Size mismatch. Expected {self.total_size} bytes, got {self.downloaded}."
+                print(f"[Downloader {self.download_id}] Error: {self.error}")
+                return False
 
             print(f"[Downloader {self.download_id}] Fallback download completed.")
             return not self.error
 
         except requests.exceptions.RequestException as e:
-            error_msg_detail = f"{e}"
-            if hasattr(e, 'response') and e.response is not None:
-                status_code = e.response.status_code
-                if status_code == 401: 
-                    error_msg_detail += " (Unauthorized - Check API Key?)"
-                elif status_code == 403: 
-                    error_msg_detail += " (Forbidden - Permissions Issue?)"
-            
+            error_msg_detail = _http_error_detail(e)
+
             if not self.error:
                 self.error = f"Fallback download failed: {error_msg_detail}"
             print(f"[Downloader {self.download_id}] Error during fallback download: {self.error}")
@@ -486,6 +500,9 @@ class ChunkDownloader:
                 
                 if not success and not self.error:
                     self.error = "Single connection download failed."
+
+            if success and not self.is_cancelled and not self.error:
+                os.replace(self.write_path, self.output_path)
 
         except KeyboardInterrupt:
             print(f"[Downloader {self.download_id}] Interrupted! Signalling cancellation.")
