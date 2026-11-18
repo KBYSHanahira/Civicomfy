@@ -34,7 +34,7 @@ COMFYUI_ROOT_DIR = folder_paths.base_path
 # The folder_paths_type is used by ComfyUI's folder_paths.get_directory_by_type().
 MODEL_TYPE_DIRS = {
     "checkpoint": ("Checkpoint", "checkpoints"),
-    "diffusionmodels": ("Diffusion Models", "diffusers"),
+    "diffusionmodels": ("Diffusion Models", "diffusion_models"),
     "unet": ("Unet", "unet"),
     "lora": ("Lora", "loras"),
     "locon": ("LoCon", "loras"),

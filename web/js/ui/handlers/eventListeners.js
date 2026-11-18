@@ -383,9 +383,9 @@ export function setupEventListeners(ui) {
             const downloadButton = event.target.closest('.civitai-search-download-button');
             if (downloadButton) {
                 event.preventDefault();
-                const { modelId, versionId, modelType, modelName, versionName } = downloadButton.dataset;
+                const { modelId, versionId, modelType, baseModel, modelName, versionName } = downloadButton.dataset;
                 if (!modelId || !versionId) { ui.showToast("Error: Missing data for download.", "error"); return; }
-                const modelTypeInternalKey = ui.inferFolderFromCivitaiType(modelType) || ui.settings.defaultModelType;
+                const modelTypeInternalKey = ui.inferFolderFromCivitaiType(modelType, baseModel) || ui.settings.defaultModelType;
                 ui.modelUrlInput.value = modelId;
                 ui.modelVersionIdInput.value = versionId;
                 ui.customFilenameInput.value = '';

@@ -288,6 +288,7 @@ export function renderBrowseCards(ui, items) {
             btn.dataset.modelId = modelId;
             btn.dataset.versionId = ver.id || '';
             btn.dataset.modelType = modelTypeApi;
+            btn.dataset.baseModel = ver.baseModel || '';
             btn.dataset.modelName = modelName;
             btn.dataset.versionName = ver.name || 'Unknown';
             btn.title = ver.id ? `Pre-fill Download tab — ${ver.name || 'Unknown'}` : 'Version ID missing';
@@ -809,6 +810,7 @@ function _renderBrowseInfoModal(ui, hit) {
             dlBtn.dataset.modelId = modelId;
             dlBtn.dataset.versionId = ver.id || '';
             dlBtn.dataset.modelType = modelTypeApi;
+            dlBtn.dataset.baseModel = ver.baseModel || '';
             dlBtn.dataset.modelName = modelName;
             dlBtn.dataset.versionName = ver.name || 'Unknown';
             dlBtn.title = `Download: ${ver.name || 'this version'}`;
@@ -856,9 +858,9 @@ function _renderBrowseInfoModal(ui, hit) {
             const btn = e.target.closest('.civitai-search-download-button');
             if (!btn) return;
             e.preventDefault();
-            const { modelId: mid, versionId, modelType, modelName: mname, versionName } = btn.dataset;
+            const { modelId: mid, versionId, modelType, baseModel, modelName: mname, versionName } = btn.dataset;
             if (!mid || !versionId) { ui.showToast('Missing version data.', 'error'); return; }
-            const typeKey = ui.inferFolderFromCivitaiType(modelType) || ui.settings.defaultModelType;
+            const typeKey = ui.inferFolderFromCivitaiType(modelType, baseModel) || ui.settings.defaultModelType;
             ui.modelUrlInput.value = mid;
             ui.modelVersionIdInput.value = versionId;
             ui.customFilenameInput.value = '';

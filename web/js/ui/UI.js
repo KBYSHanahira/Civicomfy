@@ -14,6 +14,9 @@ import { modalTemplate, PAGE_META } from "./templates.js";
 import { CivitaiDownloaderAPI } from "../api/civitai.js";
 import { esc } from "../utils/dom.js";
 
+// Civitai base models whose "Checkpoint" files are diffusion-model weights only (models/diffusion_models).
+const DIFFUSION_ONLY_BASE_MODELS = /^(anima|chroma|ernie|flux|hidream|hunyuan video|kolors|lumina|mochi|moss image|pony v7|qwen|wan|z image)/i;
+
 export class CivitaiDownloaderUI {
     constructor() {
         this.modal = null;
@@ -732,7 +735,7 @@ export class CivitaiDownloaderUI {
     showBrowseCardInfo = (modelId) => showBrowseCardInfo(this, modelId);
     
     // --- Auto-select model type based on Civitai model type ---
-    inferFolderFromCivitaiType(civitaiType) {
+    inferFolderFromCivitaiType(civitaiType, baseModel) {
         if (!civitaiType || typeof civitaiType !== 'string') return null;
         const t = civitaiType.trim().toLowerCase();
         const keys = Object.keys(this.modelTypes || {});
@@ -740,6 +743,9 @@ export class CivitaiDownloaderUI {
 
         const exists = (k) => keys.includes(k);
         const findBy = (pred) => keys.find(pred);
+
+        // DiT families publish "Checkpoints" without VAE/text encoder; they load with the diffusion model loader.
+        if (t === 'checkpoint' && exists('diffusion_models') && DIFFUSION_ONLY_BASE_MODELS.test(baseModel || '')) return 'diffusion_models';
 
         // Direct matches first
         if (exists(t)) return t;
@@ -754,7 +760,7 @@ export class CivitaiDownloaderUI {
                 addIfExists('checkpoints');
                 addIfExists('models');
                 break;
-            case 'lora': case 'locon': case 'lycoris':
+            case 'lora': case 'locon': case 'lycoris': case 'dora':
                 addIfExists('loras');
                 break;
             case 'vae':
@@ -772,8 +778,10 @@ export class CivitaiDownloaderUI {
             case 'unet': case 'unet2':
                 addIfExists('unet');
                 break;
-            case 'diffusers': case 'diffusionmodels': case 'diffusion_models': case 'diffusion':
+            case 'diffusers':
                 addIfExists('diffusers');
+                break;
+            case 'diffusionmodels': case 'diffusion_models': case 'diffusion':
                 addIfExists('diffusion_models');
                 break;
             case 'upscaler': case 'upscalers':
@@ -802,9 +810,9 @@ export class CivitaiDownloaderUI {
         return null;
     }
 
-    async autoSelectModelTypeFromCivitai(civitaiType) {
+    async autoSelectModelTypeFromCivitai(civitaiType, baseModel) {
         try {
-            const folder = this.inferFolderFromCivitaiType(civitaiType);
+            const folder = this.inferFolderFromCivitaiType(civitaiType, baseModel);
             if (!folder) return;
             if (this.downloadModelTypeSelect && this.downloadModelTypeSelect.value !== folder) {
                 this.downloadModelTypeSelect.value = folder;
