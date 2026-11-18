@@ -90,32 +90,13 @@ def get_default_model_dir(model_type: str, ensure: bool = True) -> str:
         _, folder_paths_type = display_and_type
 
     if display_and_type and folder_paths_type:
-        try:
-            # Preferred: ask ComfyUI for the configured directory for this type
-            full_path = folder_paths.get_directory_by_type(folder_paths_type)
-            # If API returned a falsy value, try alternative lookups
-            if not full_path:
-                raise RuntimeError(f"No directory registered for type '{folder_paths_type}'")
-        except Exception:
-            # Fallback: assume a subdirectory under models_dir
-            print(f"Warning: Could not resolve path for type '{folder_paths_type}' via folder_paths. Falling back to models_dir.")
-            # Try get_folder_paths first
-            full_path = None
-            try:
-                get_fp = getattr(folder_paths, 'get_folder_paths', None)
-                if callable(get_fp):
-                    paths_list = get_fp(folder_paths_type)
-                    if isinstance(paths_list, (list, tuple)) and paths_list:
-                        full_path = paths_list[0]
-            except Exception:
-                pass
-            if not full_path:
-                models_dir = getattr(folder_paths, 'models_dir', None)
-                if not models_dir:
-                    # Last resort: try to infer a models dir near base_path
-                    base = getattr(folder_paths, 'base_path', os.getcwd())
-                    models_dir = os.path.join(base, 'models')
-                full_path = os.path.join(models_dir, folder_paths_type)
+        # ComfyUI's registered folders for this type (extra_model_paths included).
+        # A type can list several, e.g. diffusion_models -> [models/unet,
+        # models/diffusion_models]; prefer the one named after the type.
+        paths_list = (folder_paths.get_folder_paths(folder_paths_type)
+                      if folder_paths.map_legacy(folder_paths_type) in folder_paths.folder_names_and_paths else [])
+        named = [p for p in paths_list if os.path.basename(os.path.normpath(p)).lower() == folder_paths_type.lower()]
+        full_path = (named or paths_list or [os.path.join(folder_paths.models_dir, folder_paths_type)])[0]
     else:
         # Treat model_type as a literal folder under the main models directory
         models_dir = getattr(folder_paths, 'models_dir', None)

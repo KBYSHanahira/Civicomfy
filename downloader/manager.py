@@ -19,13 +19,8 @@ from ..config import (
     MAX_CONCURRENT_DOWNLOADS, DOWNLOAD_HISTORY_LIMIT, DEFAULT_CONNECTIONS,
     METADATA_SUFFIX, PREVIEW_SUFFIX, METADATA_DOWNLOAD_TIMEOUT, PLUGIN_ROOT 
 )
-try:
-    from folder_paths import get_directory_by_type, get_valid_path, base_path
-    COMFY_PATHS_AVAILABLE = True
-except ImportError:
-    print("[Civicomfy Manager] Warning: ComfyUI folder_paths not available. Path validation/opening might be limited.")
-    COMFY_PATHS_AVAILABLE = False
-    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+import folder_paths
+from ..utils.helpers import load_dir_overrides
 
 # --- Define History File Path ---
 # Place it in the root of the extension directory
@@ -811,63 +806,39 @@ class DownloadManager:
             abs_file_path = os.path.abspath(file_path)
             folder_path = os.path.dirname(abs_file_path)
 
-            # Option 1: Check against ComfyUI's known directories (preferred)
-            if COMFY_PATHS_AVAILABLE:
-                 # Check if the folder is within any known model type directory
-                 known_types = [
-                     "checkpoints", "loras", "vae", "embeddings", "hypernetworks",
-                     "controlnet", "upscale_models", "clip_vision", "gligen", "configs",
-                     "unet", "diffusers", "motion_models", "poses", "wildcards"
-                 ]
-                 known_dirs = [os.path.abspath(get_directory_by_type(t)) for t in known_types if get_directory_by_type(t)]
-                 # Also allow output and input directories
-                 if get_directory_by_type("output"): known_dirs.append(os.path.abspath(get_directory_by_type("output")))
-                 if get_directory_by_type("input"): known_dirs.append(os.path.abspath(get_directory_by_type("input")))
-                 # Add the plugin's own 'other_models' directory as safe
-                 known_dirs.append(os.path.abspath(os.path.join(PLUGIN_ROOT, "other_models")))
-                 # Add plugin-managed custom roots as safe
-                 try:
-                     import json as _json
-                     _roots_file = os.path.join(PLUGIN_ROOT, "custom_roots.json")
-                     if os.path.exists(_roots_file):
-                         with open(_roots_file, 'r', encoding='utf-8') as _f:
-                             _data = _json.load(_f)
-                             if isinstance(_data, dict):
-                                 for _lst in _data.values():
-                                     if isinstance(_lst, list):
-                                         for _p in _lst:
-                                             if isinstance(_p, str):
-                                                 known_dirs.append(os.path.abspath(_p))
-                 except Exception as _e:
-                     print(f"[Manager OpenPath] Warning: Failed to load custom roots: {_e}")
-                 # Include all first-level subdirectories under models_dir as safe
-                 try:
-                     _fp = __import__('folder_paths')
-                     models_dir = getattr(_fp, 'models_dir', None)
-                     if not models_dir:
-                         _base = getattr(_fp, 'base_path', os.getcwd())
-                         models_dir = os.path.join(_base, 'models')
-                 except Exception:
-                     models_dir = None
-                 try:
-                     if models_dir and os.path.isdir(models_dir):
-                         for _name in os.listdir(models_dir):
-                             _p = os.path.join(models_dir, _name)
-                             if os.path.isdir(_p):
-                                 known_dirs.append(os.path.abspath(_p))
-                 except Exception as _e2:
-                     print(f"[Manager OpenPath] Warning: Failed enumerating models_dir subfolders: {_e2}")
+            # Every folder ComfyUI has registered for a model type, including
+            # extra_model_paths.yaml entries outside the ComfyUI tree.
+            known_dirs = [p for name, (paths, _exts) in folder_paths.folder_names_and_paths.items()
+                          if name not in ("custom_nodes", "configs") for p in paths]
+            known_dirs.append(folder_paths.get_output_directory())
+            known_dirs.append(folder_paths.get_input_directory())
+            # Save folders the user set on the Directories page.
+            known_dirs.extend(load_dir_overrides().values())
+            known_dirs.append(os.path.join(PLUGIN_ROOT, "other_models"))
+            # Plugin-managed custom roots
+            _roots_file = os.path.join(PLUGIN_ROOT, "custom_roots.json")
+            if os.path.exists(_roots_file):
+                try:
+                    with open(_roots_file, 'r', encoding='utf-8') as _f:
+                        _data = json.load(_f)
+                    if isinstance(_data, dict):
+                        known_dirs.extend(_p for _lst in _data.values() if isinstance(_lst, list)
+                                          for _p in _lst if isinstance(_p, str))
+                except (OSError, ValueError) as _e:
+                    print(f"[Manager OpenPath] Warning: Failed to load custom roots: {_e}")
+            # Every first-level folder under models/, registered or not
+            if os.path.isdir(folder_paths.models_dir):
+                known_dirs.extend(os.path.join(folder_paths.models_dir, _n) for _n in os.listdir(folder_paths.models_dir))
 
-                 for known_dir in known_dirs:
-                      if os.path.commonpath([known_dir, folder_path]) == known_dir:
-                           is_safe_path = True
-                           break
-            else:
-                 # Option 2: Fallback - Check if path is within the ComfyUI base directory
-                 comfy_base = os.path.abspath(base_path)
-                 if os.path.commonpath([comfy_base, folder_path]) == comfy_base:
-                      is_safe_path = True
-                      #print(f"[Manager OpenPath Warning] ComfyUI paths unavailable. Using base path check for {folder_path}")
+            for known_dir in known_dirs:
+                known_dir = os.path.abspath(known_dir)
+                try:
+                    if os.path.commonpath([known_dir, folder_path]) == known_dir:
+                        is_safe_path = True
+                        break
+                except ValueError:
+                    # Different drives on Windows: cannot contain each other.
+                    continue
 
             if not is_safe_path:
                   print(f"[Manager OpenPath Denied] Path '{folder_path}' is outside known safe ComfyUI directories.")
