@@ -100,28 +100,6 @@ CIVITAI_API_TYPE_MAP = {
     "diffusionmodels": "Checkpoint",
 }
 
-AVAILABLE_MEILI_BASE_MODELS = [
-    "Anima", "Aura Flow", "Chroma", "CogVideoX", "Ernie",
-    "Flux .1 D", "Flux .1 Kontext", "Flux .1 Krea", "Flux .1 S", "Flux .2 D",
-    "Flux .2 Klein 4B", "Flux .2 Klein 4B-Base", "Flux .2 Klein 9B", "Flux .2 Klein 9B-Base",
-    "Grok", "HiDream", "Hunyuan 1", "Hunyuan Video",
-    "Illustrious", "Illustrious 0.1", "Imagen 4",
-    "Kling", "Kolors", "LTXV", "LTXV 2.3", "LTXV2", "Lumina",
-    "Mochi", "Nano Banana", "NoobAI", "ODOR", "Open AI", "Other",
-    "PixArt Σ", "PixArt A", "Playground V2", "Pony", "Pony V7",
-    "Qwen", "Qwen 2",
-    "SD 1.4", "SD 1.5", "SD 1.5 Hyper", "SD 1.5 LCM",
-    "SD 2.0", "SD 2.0 768", "SD 2.1", "SD 2.1 768", "SD 2.1 Unclip",
-    "SDXL 0.9", "SDXL 1.0", "SDXL 1.0 LCM", "SDXL Distilled", "SDXL Hyper", "SDXL Lightning",
-    "SVD XT", "Seedance", "Seedream", "Sora 2", "Stable Cascade",
-    "Upscaler", "Veo 3", "Vidu Q1",
-    "Wan Image 2.7", "WAN Video",
-    "Wan Video 1.3B T2v",
-    "Wan Video 14B I2v 480p", "Wan Video 14B I2v 720p", "Wan Video 14B T2v",
-    "Wan Video 2.2 I2V-A14B", "Wan Video 2.2 T2V-A14B", "Wan Video 2.2 TI2V-5B",
-    "Wan Video 2.5 I2V", "Wan Video 2.5 T2V", "Wan Video 2.7",
-    "Z Image Base", "Z Image Turbo",
-]
 
 # --- Filename Suffixes ---
 METADATA_SUFFIX = ".cminfo.json"

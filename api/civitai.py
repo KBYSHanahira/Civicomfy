@@ -173,6 +173,14 @@ class CivitaiAPI:
         return [img for img in images
                 if isinstance(img, dict) and img.get("url") and img.get("modelVersionId") == int(version_id)]
 
+    def get_base_models_from_search(self) -> List[str]:
+        """Every base model name the search index knows, spelled exactly as its filters expect."""
+        payload = {"queries": [{"indexUid": "models_v9", "q": "", "limit": 0, "facets": ["versions.baseModel"]}]}
+        response = requests.post(MEILI_URL, headers={'Content-Type': 'application/json', 'Authorization': MEILI_AUTH},
+                                 json=payload, timeout=15)
+        response.raise_for_status()
+        return sorted(response.json()["results"][0]["facetDistribution"]["versions.baseModel"])
+
     def search_models_meili(self, query: str, types: Optional[List[str]] = None,
                             base_models: Optional[List[str]] = None,
                             sort: str = 'metrics.downloadCount:desc', # Default to Most Downloaded

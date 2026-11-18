@@ -54,12 +54,7 @@ async def route_search_models(request):
         # 2. Base Model Filters (assume frontend sends exact names like "SD 1.5")
         valid_base_models = []
         if isinstance(base_model_filters, list) and base_model_filters:
-             # Optional: Validate against known list?
              valid_base_models = [bm for bm in base_model_filters if isinstance(bm, str) and bm]
-             # Example validation (optional):
-             # valid_base_models = [bm for bm in base_model_filters if bm in AVAILABLE_MEILI_BASE_MODELS]
-             # if len(valid_base_models) != len(base_model_filters):
-             #     print("Warning: Some provided base model filters were invalid.")
 
         # --- Call the New API Method ---
         print(f"[Server Search] Meili: query='{query if query else '<none>'}', mode='{search_mode}', types={api_types_filter or 'Any'}, baseModels={valid_base_models or 'Any'}, sort={sort}, nsfw={nsfw}, limit={limit}, page={page}")

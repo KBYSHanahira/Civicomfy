@@ -15,7 +15,7 @@ import { CivitaiDownloaderAPI } from "../api/civitai.js";
 import { esc } from "../utils/dom.js";
 
 // Civitai base models whose "Checkpoint" files are diffusion-model weights only (models/diffusion_models).
-const DIFFUSION_ONLY_BASE_MODELS = /^(anima|chroma|ernie|flux|hidream|hunyuan video|kolors|lumina|mochi|moss image|pony v7|qwen|wan|z image)/i;
+const DIFFUSION_ONLY_BASE_MODELS = /^(anima|chroma|ernie|flux|hidream|hunyuan video|kolors|lumina|mochi|moss image|pony v7|qwen|wan|z ?image)/i;
 
 export class CivitaiDownloaderUI {
     constructor() {

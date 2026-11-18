@@ -1,19 +1,24 @@
 # ================================================
 # File: server/routes/GetBaseModels.py
 # ================================================
+import asyncio
 from aiohttp import web
+import requests
 import server # ComfyUI server instance
-from ...config import AVAILABLE_MEILI_BASE_MODELS
+from ...api.civitai import CivitaiAPI
 
 prompt_server = server.PromptServer.instance
 
 @prompt_server.routes.get("/civitai/base_models")
 async def route_get_base_models(request):
-    """API Endpoint to get the known base model types for filtering."""
+    """Base model names for the Browse filter, read live from the search index.
+
+    Civitai adds base models often and renames some (e.g. "Flux .1 D" became
+    "Flux.1 D"); a filter value must match the index spelling exactly.
+    """
     try:
-        # Return the hardcoded list for now
-        # In future, this *could* fetch dynamically if Civitai provides an endpoint
-        return web.json_response({"base_models": AVAILABLE_MEILI_BASE_MODELS})
-    except Exception as e:
-        print(f"Error getting base model types: {e}")
-        return web.json_response({"error": "Internal Server Error", "details": str(e), "status_code": 500}, status=500)
+        base_models = await asyncio.to_thread(CivitaiAPI().get_base_models_from_search)
+        return web.json_response({"base_models": base_models})
+    except (requests.exceptions.RequestException, ValueError, KeyError, IndexError, TypeError) as e:
+        print(f"[Civicomfy] Could not load base models from Civitai search: {e}")
+        return web.json_response({"error": "Could not load base models from Civitai", "details": str(e), "status_code": 502}, status=502)
