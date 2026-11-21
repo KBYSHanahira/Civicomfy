@@ -752,7 +752,7 @@
   --cfy-ac-cat: var(--cfy-ac-general);
   position: fixed;
   z-index: 10000;
-  width: min(440px, calc(100vw - 8px));
+  width: min(500px, calc(100vw - 8px));
   display: flex;
   flex-direction: column;
   background: var(--cfy-bg);
@@ -779,7 +779,7 @@
 /* Columns line up row to row: tag | alias | count | wiki */
 .cfy-ac-item {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 62px 46px 22px;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 62px 46px 22px;
   align-items: center;
   column-gap: 10px;
   height: 30px;
@@ -787,6 +787,9 @@
   border-left: 3px solid transparent;
   cursor: pointer;
 }
+/* A tag without an alias takes the alias column too, so long names are not cut. */
+.cfy-ac-alias:empty { display: none; }
+.cfy-ac-item:has(.cfy-ac-alias:empty) .cfy-ac-tag { grid-column: span 2; }
 .cfy-ac-item + .cfy-ac-item { border-top: 1px solid var(--cfy-line); }
 .cfy-ac-item.active {
   background: var(--cfy-accent-soft);
