@@ -1,18 +1,36 @@
-# Civicomfy
-
 <div align="center">
+
+# Civicomfy 3.0
+
+**A Civitai & HuggingFace model terminal, built into ComfyUI — now ready for Nodes 2.0.**
 
 [🇯🇵 日本語](README.md)　|　**🇬🇧 English**
 
+![version](https://img.shields.io/badge/version-3.0.0-ff6b1a?style=flat-square&labelColor=0a0a0b)
+![ComfyUI](https://img.shields.io/badge/ComfyUI-Nodes%202.0%20ready-ff6b1a?style=flat-square&labelColor=0a0a0b)
+![license](https://img.shields.io/badge/license-MIT-eceae4?style=flat-square&labelColor=0a0a0b)
+
+<img width="920" alt="Civicomfy launcher and system monitor in the ComfyUI top bar" src="docs/images/system-monitor.png" />
+
 </div>
 
-**A Civitai & HuggingFace model downloader, built into ComfyUI.**
-
-Browse, search, and download models — and manage the ones you already have — without leaving ComfyUI. One button in the toolbar opens everything.
+Browse, search and download models — and manage the ones you already have — without leaving ComfyUI. One button in the toolbar opens everything, a live system monitor sits next to it, and every prompt box gets Danbooru / e621 tag autocomplete.
 
 ---
 
-## What it does
+## What's new in 3.0
+
+| | |
+|---|---|
+| 🧩 **Nodes 2.0 support** | The **CiviComfy Model Info** node renders on both the classic canvas and the new Vue-based Nodes 2.0, and resizes freely in both |
+| 📈 **System monitor** | CPU, RAM, GPU load, VRAM, GPU temperature and models-disk meters in the top bar |
+| 🏷️ **Tag autocomplete** | 227k+ Danbooru and e621 tags merged from three MIT datasets, with JA / ZH / KO aliases |
+| 🎛️ **Feature switches** | Turn the monitor or autocomplete on and off, and tune each one, in ComfyUI's Settings |
+| 🪪 **Redesigned model card** | The node card now uses the same field-terminal look as the Civicomfy window |
+
+---
+
+## Features
 
 - 🔍 **Browse & search** Civitai's catalogue (powered by Meilisearch)
 - ⬇️ **Download** from Civitai *or* HuggingFace by URL/ID
@@ -20,6 +38,9 @@ Browse, search, and download models — and manage the ones you already have —
 - 🗂️ **My Models** — see, sort, and delete locally installed models
 - 🖼️ **Gallery** — browse the images *and videos* your workflows produced
 - 📊 **Downloads** — watch active transfers, queue, and history in real time
+- 🧩 **Model Info node** — a model's preview, trigger words and example prompts right in your workflow, with one-click copy
+- 📈 **System monitor** — live hardware meters in the ComfyUI top bar
+- 🏷️ **Tag autocomplete** — Danbooru / e621 suggestions in every prompt box
 - 🎨 **Field-terminal theme** — orange-on-black industrial HUD, with a light palette too
 
 ---
@@ -45,9 +66,13 @@ The preview resolves before you commit: exact file, exact folder, trigger words 
 <td width="50%"><img alt="Settings in the light theme" src="docs/images/settings-light.png" /><br><em>Settings — light theme</em></td>
 <td width="50%"><img alt="Sidebar collapsed to an icon rail" src="docs/images/collapsed.png" /><br><em>Sidebar collapsed to an icon rail</em></td>
 </tr>
+<tr>
+<td width="50%"><img alt="CiviComfy Model Info node" src="docs/images/model-info-node.png" /><br><em>Model Info node — classic canvas and Nodes 2.0</em></td>
+<td width="50%"><img alt="Tag autocomplete in a prompt box" src="docs/images/tag-autocomplete.png" /><br><em>Tag autocomplete — merged sources, aliases, post counts</em></td>
+</tr>
 </table>
 
-> Captured from the real interface; model names, thumbnails and counts are placeholder data.
+> Captured from the real interface; model names, thumbnails, counts and hardware readings are placeholder data.
 
 ---
 
@@ -58,7 +83,13 @@ cd ComfyUI/custom_nodes
 git clone https://github.com/KBYSHanahira/Civicomfy.git
 ```
 
-Restart ComfyUI. A **Civicomfy** button appears in the top-right toolbar.
+For the GPU / VRAM / temperature meters on NVIDIA cards, install the one extra dependency into ComfyUI's Python:
+
+```bash
+pip install -r Civicomfy/requirements.txt
+```
+
+Restart ComfyUI. A **Civicomfy** button appears in the top-right toolbar, with the system monitor beside it. ComfyUI Manager installs the requirements for you.
 
 ---
 
@@ -97,6 +128,62 @@ the badges and progress bars. Your choice is remembered per browser.
 **Keyboard & mouse.** `Esc` closes the window (or just the panel on top of it),
 arrow keys page through the gallery lightbox, and card grids resize live with the
 slider in each toolbar.
+
+---
+
+## Inside your workflow
+
+### 🧩 CiviComfy Model Info node
+
+**Send to Workflow** (from Download, Browse or My Models) drops a **CiviComfy Model Info** node into your graph: the model's preview, type and base model, creator and version, file name, trigger words and example prompts.
+
+- **Copy with one click** — the file name, every trigger word at once, or any example prompt
+- **INFO** opens the full model details without leaving the canvas
+- **Works on both renderers** — the classic LiteGraph canvas and ComfyUI's **Nodes 2.0**
+- **Resize it freely** — drag any corner; the card reflows to the size you set and never grows on its own
+- Narrow nodes stay tidy: long names and badges are cut with `…` instead of spilling out
+
+### 📈 System monitor
+
+Live meters next to the Civicomfy button in the top bar:
+
+| Meter | Reads |
+|---|---|
+| **CPU** | Total CPU load |
+| **RAM** | `used / total GB` (or %) |
+| **GPU** | GPU load — NVIDIA, through `nvidia-ml-py` |
+| **VRAM** | `used / total GB` (or %) |
+| **TEMP** | GPU temperature |
+| **DISK** | Space used on the drive that holds your models folder |
+
+Meters turn hot at 90 % (or 80 °C). Hover a meter for the exact reading. Each NVIDIA GPU gets its own meters, and a GPU that drops out (after a driver reset, for example) has its meters removed. Without an NVIDIA GPU you still get CPU, RAM and DISK.
+
+### 🏷️ Tag autocomplete
+
+Start typing in any prompt box — classic text widgets and Nodes 2.0 textareas alike — and matching tags appear under the caret.
+
+- **227,939 tags** merged from three MIT-licensed lists; the chips on each row show which lists have the tag:
+  - **AP** — [newtextdoc1111/danbooru-tag-csv](https://huggingface.co/datasets/newtextdoc1111/danbooru-tag-csv) (Autocomplete-Plus data, with Japanese / Chinese / Korean aliases)
+  - **TC** — [DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete) Danbooru list
+  - **E6** — the same project's e621 list
+- **Search by alias** — type `ぱっつん` or `青髪` to get `blunt_bangs` / `blue_hair`; katakana and hiragana match each other
+- Tags are coloured by category, show post counts, and link to their wiki page
+- Tags already in the prompt are dimmed, so duplicates are easy to spot
+- Understands prompt syntax: weights such as `(red hair:1.2)`, escaped `\(` `\)`, and it stays out of `<lora:…>` and `embedding:` text
+- `↑` `↓` choose, `Enter` / `Tab` insert, `Esc` close; an insert goes on the undo stack, so `Ctrl+Z` takes it back
+- IME friendly — Japanese input is matched once the text is confirmed
+
+The tag lists download into `data/` the first time ComfyUI starts with Civicomfy, then merge on the server. Nothing is fetched again once the files exist.
+
+### 🎛️ Settings in ComfyUI
+
+Open ComfyUI's **Settings → Civicomfy**:
+
+| Group | Settings |
+|---|---|
+| **Features** | Enable System Monitor · Enable Tag Autocomplete |
+| **System monitor** | Show CPU / RAM / GPU / VRAM / TEMP / DISK · values in GB or % · refresh interval (0.5–10 s) |
+| **Tag autocomplete** | Include Danbooru / e621 tags · maximum suggestions (5–50) · characters before suggesting (1–5) · underscores as spaces · escape parentheses · add `, ` after a tag · show aliases |
 
 ---
 
@@ -239,6 +326,19 @@ If you store models on an external drive and link them in with `mklink /D` or `m
 
 ## Changelog
 
+### 3.0.0
+
+Civicomfy is ready for ComfyUI's **Nodes 2.0**, and grows two tools you use outside the Civicomfy window.
+
+- **Nodes 2.0 support for the CiviComfy Model Info node.** Nodes 2.0 draws nodes as DOM and never shows `onDrawBackground`, so the card was blank there. It now draws on its own widget canvas in Nodes 2.0 and keeps the classic canvas path. Dragging a corner resizes it in both directions; the node no longer grows by its title and padding on every drag.
+- **Redesigned Model Info card** in the field-terminal style: corner-bracketed preview, type and base-model badges, a copyable file name, trigger-word chips with a "+N" overflow, example-prompt cards that fill the height you give the node, and a Civitai link footer.
+- **System monitor** in the top bar: CPU, RAM, NVIDIA GPU load, VRAM and temperature (via `nvidia-ml-py`, now in `requirements.txt`) and the models disk. Values in GB or %, adjustable refresh rate.
+- **Tag autocomplete** for every prompt box, classic and Nodes 2.0: three MIT tag lists merged into 227,939 tags with source chips, JA / ZH / KO alias search, category colours, post counts and wiki links. The lists download once on first start.
+- **Features section in ComfyUI's Settings** to switch the monitor and autocomplete on or off, plus options for each.
+- **Credits** in the Settings tab, and a redesigned launcher button matching the Start download button.
+- Fixed: the base-model badge on Browse cards was cut short while space sat unused next to the type badge.
+- Fixed: the Browse info panel's thumbnail strip scrolled instead of showing its images.
+
 ### 2.4.0
 
 - **Model cards show their download size.** Civitai's search index carries no file information at all, so the size is resolved from the REST API in one batched request per page (`server/routes/ModelFileSizes.py`) and filled into the cards after they are already on screen — browsing never waits for it. Sizes of published versions never change, so they are cached for the life of the process. The Info panel lists the size of every version, which is what you actually pick between when a model has twenty of them.
@@ -288,6 +388,18 @@ A performance release. Both image grids were sending full-resolution originals t
 - The **base-model filter selection is now remembered** between sessions. It was never written to the saved settings, so it reset on every reload.
 - Cancelling or failing a **multi-connection download** no longer abandons its worker threads. They were left running while the temp directory was deleted underneath them, which on Windows strands a `.<name>.parts_<id>` folder in your model directory. Threads are now joined with a bound, and cleanup retries before giving up.
 - The output-folder scan is cached briefly instead of re-walking every image on each page click, sort change, and subfolder switch. Deleting an image invalidates it, and **Refresh** forces a fresh scan.
+
+---
+
+## Credits
+
+| | |
+|---|---|
+| **Developed by** | [KBYSHanahira](https://github.com/KBYSHanahira) (Kobayashi Hanahira) |
+| **Original project** | [MoonGoblinDev/Civicomfy](https://github.com/MoonGoblinDev/Civicomfy) by MoonGoblin — MIT License |
+| **Contributors** | snomiao |
+| **Tag data** | [newtextdoc1111/danbooru-tag-csv](https://huggingface.co/datasets/newtextdoc1111/danbooru-tag-csv) (AP) · [DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete) (TC, E6) — MIT |
+| **Model data** | [Civitai](https://civitai.com) · [Hugging Face](https://huggingface.co) |
 
 ---
 

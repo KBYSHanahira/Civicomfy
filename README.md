@@ -1,14 +1,32 @@
-# Civicomfy
-
 <div align="center">
+
+# Civicomfy 3.0
+
+**Civitai・HuggingFace のモデルターミナルを ComfyUI に統合 — Nodes 2.0 に対応しました。**
 
 **🇯🇵 日本語**　|　[🇬🇧 English](README.en.md)
 
+![version](https://img.shields.io/badge/version-3.0.0-ff6b1a?style=flat-square&labelColor=0a0a0b)
+![ComfyUI](https://img.shields.io/badge/ComfyUI-Nodes%202.0%20ready-ff6b1a?style=flat-square&labelColor=0a0a0b)
+![license](https://img.shields.io/badge/license-MIT-eceae4?style=flat-square&labelColor=0a0a0b)
+
+<img width="920" alt="ComfyUI トップバーの Civicomfy ボタンとシステムモニター" src="docs/images/system-monitor.png" />
+
 </div>
 
-**Civitai・HuggingFace のモデルダウンローダーを ComfyUI に統合。**
+ComfyUI を離れることなく、モデルの検索・閲覧・ダウンロードから、すでに手元にあるモデルの管理までこなせます。ツールバーのボタン一つですべてが開き、その横にはライブのシステムモニター、すべてのプロンプト欄には Danbooru / e621 タグ補完が加わります。
 
-ComfyUI を離れることなく、モデルの検索・閲覧・ダウンロードから、すでに手元にあるモデルの管理までこなせます。ツールバーのボタン一つですべてが開きます。
+---
+
+## 3.0 の新機能
+
+| | |
+|---|---|
+| 🧩 **Nodes 2.0 対応** | **CiviComfy Model Info** ノードが従来のキャンバスと新しい Vue ベースの Nodes 2.0 の両方で表示され、どちらでも自由にリサイズできます |
+| 📈 **システムモニター** | CPU・RAM・GPU 負荷・VRAM・GPU 温度・モデル用ディスクのメーターをトップバーに表示 |
+| 🏷️ **タグ補完** | 3つの MIT データセットを統合した 22万以上の Danbooru / e621 タグ。日本語・中国語・韓国語のエイリアス付き |
+| 🎛️ **機能スイッチ** | ComfyUI の設定画面でモニターとタグ補完を個別にオン/オフ・調整 |
+| 🪪 **モデルカードを刷新** | ノードのカードが Civicomfy ウィンドウと同じフィールドターミナルのデザインに |
 
 ---
 
@@ -20,6 +38,9 @@ ComfyUI を離れることなく、モデルの検索・閲覧・ダウンロー
 - 🗂️ **My Models** — インストール済みモデルの一覧・並び替え・削除
 - 🖼️ **ギャラリー** — ワークフローが生成した画像**と動画**を閲覧
 - 📊 **ダウンロード** — 進行中の転送・キュー・履歴をリアルタイム表示
+- 🧩 **Model Info ノード** — モデルのプレビュー・トリガーワード・プロンプト例をワークフロー上に表示、ワンクリックでコピー
+- 📈 **システムモニター** — ComfyUI のトップバーにハードウェアのライブメーター
+- 🏷️ **タグ補完** — すべてのプロンプト欄で Danbooru / e621 タグを候補表示
 - 🎨 **フィールドターミナル テーマ** — 黒地にオレンジのインダストリアル HUD、ライトパレットも用意
 
 ---
@@ -45,9 +66,13 @@ ComfyUI を離れることなく、モデルの検索・閲覧・ダウンロー
 <td width="50%"><img alt="ライトテーマの設定" src="docs/images/settings-light.png" /><br><em>Settings — ライトテーマ</em></td>
 <td width="50%"><img alt="アイコンレールに折りたたんだサイドバー" src="docs/images/collapsed.png" /><br><em>サイドバーをアイコンレールに折りたたみ</em></td>
 </tr>
+<tr>
+<td width="50%"><img alt="CiviComfy Model Info ノード" src="docs/images/model-info-node.png" /><br><em>Model Info ノード — 従来キャンバスと Nodes 2.0</em></td>
+<td width="50%"><img alt="プロンプト欄のタグ補完" src="docs/images/tag-autocomplete.png" /><br><em>タグ補完 — 統合ソース・エイリアス・投稿数</em></td>
+</tr>
 </table>
 
-> 実際のインターフェースを撮影したものです。モデル名・サムネイル・件数はプレースホルダーです。
+> 実際のインターフェースを撮影したものです。モデル名・サムネイル・件数・ハードウェアの数値はプレースホルダーです。
 
 ---
 
@@ -58,7 +83,13 @@ cd ComfyUI/custom_nodes
 git clone https://github.com/KBYSHanahira/Civicomfy.git
 ```
 
-ComfyUI を再起動すると、右上のツールバーに **Civicomfy** ボタンが表示されます。
+NVIDIA GPU の GPU / VRAM / 温度メーターを使うには、追加の依存パッケージを ComfyUI の Python に入れてください:
+
+```bash
+pip install -r Civicomfy/requirements.txt
+```
+
+ComfyUI を再起動すると、右上のツールバーに **Civicomfy** ボタンとシステムモニターが表示されます。ComfyUI Manager でインストールした場合は依存パッケージも自動で入ります。
 
 ---
 
@@ -95,6 +126,62 @@ ComfyUI を再起動すると、右上のツールバーに **Civicomfy** ボタ
 **キーボードとマウス。** `Esc` でウィンドウ(または最前面のパネルだけ)を閉じ、
 矢印キーでギャラリーのライトボックスを送り、カードグリッドは各ツールバーのスライダーで
 ライブにサイズ変更できます。
+
+---
+
+## ワークフローの中で
+
+### 🧩 CiviComfy Model Info ノード
+
+Download・Browse・My Models の **Send to Workflow** で、グラフに **CiviComfy Model Info** ノードが追加されます。モデルのプレビュー、タイプとベースモデル、作者とバージョン、ファイル名、トリガーワード、プロンプト例を表示します。
+
+- **ワンクリックでコピー** — ファイル名、トリガーワード全部、各プロンプト例
+- **INFO** でキャンバスを離れずにモデルの詳細を表示
+- **両方のレンダラーで動作** — 従来の LiteGraph キャンバスと ComfyUI の **Nodes 2.0**
+- **自由にリサイズ** — 角をドラッグすると、カードは設定したサイズに合わせて組み直され、勝手に大きくなることはありません
+- 幅が狭くても崩れません。長い名前やバッジは `…` で省略され、はみ出しません
+
+### 📈 システムモニター
+
+トップバーの Civicomfy ボタンの横にライブメーターを表示します。
+
+| メーター | 内容 |
+|---|---|
+| **CPU** | CPU 全体の負荷 |
+| **RAM** | `使用量 / 合計 GB`(または %) |
+| **GPU** | GPU 負荷 — NVIDIA、`nvidia-ml-py` 経由 |
+| **VRAM** | `使用量 / 合計 GB`(または %) |
+| **TEMP** | GPU 温度 |
+| **DISK** | モデルフォルダがあるドライブの使用量 |
+
+90%(温度は 80°C)を超えるとメーターが警告色になります。メーターにマウスを乗せると正確な数値を表示します。NVIDIA GPU が複数あれば GPU ごとにメーターが付き、ドライバーのリセットなどで GPU が外れるとそのメーターは消えます。NVIDIA GPU がなくても CPU・RAM・DISK は表示されます。
+
+### 🏷️ タグ補完
+
+どのプロンプト欄でも(従来のテキストウィジェットでも Nodes 2.0 のテキストエリアでも)、入力を始めるとカーソルの下に一致するタグが表示されます。
+
+- MIT ライセンスの3つのリストを統合した **227,939 タグ**。各行のチップでどのリストに含まれるかが分かります:
+  - **AP** — [newtextdoc1111/danbooru-tag-csv](https://huggingface.co/datasets/newtextdoc1111/danbooru-tag-csv)(Autocomplete-Plus のデータ、日本語・中国語・韓国語のエイリアス付き)
+  - **TC** — [DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete) の Danbooru リスト
+  - **E6** — 同プロジェクトの e621 リスト
+- **エイリアスで検索** — `ぱっつん` や `青髪` と入力すると `blunt_bangs` / `blue_hair` が出ます。カタカナとひらがなは同じものとして一致します
+- カテゴリごとの色分け、投稿数、Wiki へのリンク付き
+- すでにプロンプトにあるタグは薄く表示され、重複にすぐ気づけます
+- プロンプトの書式を理解します: `(red hair:1.2)` のような重み付け、エスケープした `\(` `\)`、`<lora:…>` や `embedding:` の中では補完しません
+- `↑` `↓` で選択、`Enter` / `Tab` で挿入、`Esc` で閉じる。挿入は元に戻す履歴に入るので `Ctrl+Z` で取り消せます
+- IME 対応 — 日本語入力は確定してから検索します
+
+タグリストは Civicomfy を入れて ComfyUI を初めて起動したときに `data/` へ自動でダウンロードされ、サーバー側で統合されます。ファイルがあれば再ダウンロードはしません。
+
+### 🎛️ ComfyUI の設定
+
+ComfyUI の **Settings → Civicomfy** から:
+
+| グループ | 設定 |
+|---|---|
+| **Features** | システムモニターを有効化 · タグ補完を有効化 |
+| **System monitor** | CPU / RAM / GPU / VRAM / TEMP / DISK の表示 · GB または % で表示 · 更新間隔(0.5〜10 秒) |
+| **Tag autocomplete** | Danbooru / e621 タグを含める · 最大候補数(5〜50) · 候補を出すまでの文字数(1〜5) · アンダースコアをスペースに · 括弧をエスケープ · タグの後に `, ` を追加 · エイリアスを表示 |
 
 ---
 
@@ -240,6 +327,19 @@ Civicomfy はリンクをたどります — サブフォルダのドロップ�
 
 ## 変更履歴
 
+### 3.0.0
+
+Civicomfy が ComfyUI の **Nodes 2.0** に対応し、Civicomfy ウィンドウの外でも使える2つのツールが加わりました。
+
+- **CiviComfy Model Info ノードが Nodes 2.0 に対応。** Nodes 2.0 はノードを DOM で描画し `onDrawBackground` を表示しないため、カードが空白になっていました。Nodes 2.0 では専用のウィジェットキャンバスに描画し、従来キャンバスの描画もそのまま残しています。角のドラッグで拡大・縮小どちらもでき、ドラッグのたびにタイトルや余白の分だけノードが伸びる問題もなくなりました。
+- **Model Info カードをフィールドターミナル風に刷新**: 角ブラケット付きのプレビュー、タイプとベースモデルのバッジ、コピーできるファイル名、「+N」で折り返すトリガーワードのチップ、ノードの高さいっぱいに広がるプロンプト例のカード、Civitai リンクのフッター。
+- **トップバーにシステムモニター**: CPU、RAM、NVIDIA GPU の負荷・VRAM・温度(`nvidia-ml-py` 経由、`requirements.txt` に追加)、モデル用ディスク。GB / % 表示と更新間隔を変更可能。
+- **すべてのプロンプト欄でタグ補完**(従来 / Nodes 2.0 とも): 3つの MIT タグリストを 227,939 タグに統合し、ソースのチップ、日中韓エイリアス検索、カテゴリ色、投稿数、Wiki リンクを表示。リストは初回起動時に一度だけダウンロード。
+- **ComfyUI の設定に Features セクション**: モニターとタグ補完のオン/オフと、それぞれの詳細設定。
+- Settings タブに**クレジット**を追加し、起動ボタンを Start download ボタンと同じデザインに刷新。
+- 修正: Browse カードのベースモデルのバッジが、タイプのバッジの横に余白があるのに短く切られていた問題。
+- 修正: Browse の Info パネルでサムネイル列が画像を並べずにスクロールしていた問題。
+
 ### 2.4.0
 
 - **モデルカードにダウンロードサイズを表示。** Civitai の検索インデックスにはファイル情報が一切含まれないため、ページごとに1回のバッチリクエストで REST API から解決し(`server/routes/ModelFileSizes.py`)、カードが表示された後に埋め込みます — 閲覧が待たされることはありません。公開済みバージョンのサイズは変わらないので、プロセスの生存期間中キャッシュします。Info パネルでは全バージョンのサイズを一覧表示します。バージョンが20個ある時に実際に選ぶ基準はこれです。
@@ -290,6 +390,18 @@ Civicomfy はリンクをたどります — サブフォルダのドロップ�
 - **ベースモデルのフィルター選択がセッション間で記憶される** ようになりました。保存設定に書き込まれておらず、リロードのたびにリセットされていました。
 - **マルチ接続ダウンロード** をキャンセル/失敗してもワーカースレッドを放置しなくなりました。従来はスレッドが動作中に一時ディレクトリが削除され、Windows ではモデルディレクトリに `.<name>.parts_<id>` フォルダが取り残されていました。スレッドは上限付きで join し、クリーンアップは諦める前に再試行します。
 - output フォルダのスキャンは、ページクリック・並び替え・サブフォルダ切り替えのたびに全画像を歩き直す代わりに短時間キャッシュします。画像の削除で無効化し、**Refresh** で強制的に再スキャンします。
+
+---
+
+## クレジット
+
+| | |
+|---|---|
+| **開発** | [KBYSHanahira](https://github.com/KBYSHanahira)(Kobayashi Hanahira) |
+| **オリジナル** | [MoonGoblinDev/Civicomfy](https://github.com/MoonGoblinDev/Civicomfy)(MoonGoblin)— MIT License |
+| **コントリビューター** | snomiao |
+| **タグデータ** | [newtextdoc1111/danbooru-tag-csv](https://huggingface.co/datasets/newtextdoc1111/danbooru-tag-csv)(AP)· [DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)(TC, E6)— MIT |
+| **モデルデータ** | [Civitai](https://civitai.com) · [Hugging Face](https://huggingface.co) |
 
 ---
 
