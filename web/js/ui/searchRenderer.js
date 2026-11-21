@@ -241,21 +241,23 @@ export function renderBrowseCards(ui, items) {
             preview.appendChild(nsfw);
         }
 
-        // Type badge — bottom-left, with type color
+        // Type badge bottom-left, base model (NoobAI / Illustrious / SDXL 1.0 …) bottom-right,
+        // in one row so the base model gets whatever width the type leaves.
+        const badges = document.createElement('div');
+        badges.className = 'civitai-browse-card-badges';
         const badge = document.createElement('div');
         badge.className = 'civitai-browse-card-badge';
         badge.textContent = TYPE_BADGE_LABELS[modelTypeApi] ?? modelTypeApi;
         badge.style.backgroundColor = typeColor;
-        preview.appendChild(badge);
-
-        // Base model badge — bottom-right (NoobAI / Illustrious / SDXL 1.0 …)
+        badges.appendChild(badge);
         if (primaryBaseModel && primaryBaseModel !== 'N/A') {
             const bmBadge = document.createElement('div');
             bmBadge.className = 'civitai-browse-card-bm-badge';
             bmBadge.textContent = primaryBaseModel;
             bmBadge.title = `Base model: ${primaryBaseModel}`;
-            preview.appendChild(bmBadge);
+            badges.appendChild(bmBadge);
         }
+        preview.appendChild(badges);
 
         // "Installed" overlay — shown when this model exists locally
         const installedIds = ui._installedModelIds;

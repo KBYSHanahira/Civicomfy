@@ -28,5 +28,7 @@ from . import MaintenanceProgress
 from . import GetOutputImages
 from . import Thumbnails
 from . import DeleteOutputImage
+from . import SystemStats
+from . import TagAutocomplete
 
 print("[Civicomfy] All server route modules loaded.")

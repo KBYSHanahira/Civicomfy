@@ -632,3 +632,262 @@
 #civitai-tab-browse.active,
 #civitai-tab-mymodels.active,
 #civitai-tab-gallery.active { display: flex; }
+
+/* =============================================================
+   LAUNCHER — the Civicomfy button in ComfyUI's top bar
+   ============================================================= */
+.cfy-launch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  background: var(--cfy-accent);
+  color: var(--cfy-on-accent);
+  font-family: var(--cfy-font);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cfy-cut-sm)), calc(100% - var(--cfy-cut-sm)) 100%, 0 100%);
+  transition: background var(--cfy-transition);
+}
+/* Same light sweep as .civitai-button.primary. */
+.cfy-launch::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.42) 50%, transparent 65%);
+  transform: translateX(-110%);
+  transition: transform 0.55s var(--cfy-ease-out);
+}
+.cfy-launch:hover { background: var(--cfy-accent-gradient-hover); }
+.cfy-launch:hover::before { transform: translateX(110%); }
+.cfy-launch:active { background: var(--cfy-accent-strong); }
+/* clip-path hides an outside outline, so the focus ring sits inside. */
+.cfy-launch:focus-visible {
+  outline: 2px solid var(--cfy-on-accent);
+  outline-offset: -5px;
+}
+
+/* =============================================================
+   SYSTEM MONITOR — CPU / RAM / GPU / VRAM / TEMP / DISK meters
+   ============================================================= */
+.cfy-monitor {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+}
+.cfy-meter {
+  position: relative;
+  width: 70px;
+  height: 22px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0 6px;
+  overflow: hidden;
+  background: var(--cfy-bg);
+  box-shadow: inset 0 0 0 1px var(--cfy-line-strong);
+  color: var(--cfy-text);
+  font-family: var(--cfy-font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+.cfy-meter-wide { width: 124px; }
+.cfy-meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--cfy-meter, 0%);
+  background: var(--cfy-accent-glow);
+  border-right: 2px solid var(--cfy-accent);
+  transition: width 0.4s var(--cfy-ease-out), background-color var(--cfy-transition);
+}
+.cfy-meter.is-hot .cfy-meter-fill {
+  background: var(--cfy-danger-glow);
+  border-right-color: var(--cfy-danger);
+}
+.cfy-meter-label,
+.cfy-meter-value { position: relative; }
+.cfy-meter-label {
+  color: var(--cfy-text-dim);
+  letter-spacing: 0.06em;
+}
+.cfy-meter.is-hot .cfy-meter-value { color: var(--cfy-danger-text); }
+@media (prefers-reduced-motion: reduce) {
+  .cfy-meter-fill { transition: none; }
+}
+
+/* =============================================================
+   TAG AUTOCOMPLETE — Danbooru suggestions under prompt textareas
+   ============================================================= */
+.cfy-ac {
+  /* Danbooru's dark-theme category colours */
+  --cfy-ac-general:   #009be6;
+  --cfy-ac-artist:    #ff8a8b;
+  --cfy-ac-copyright: #c797ff;
+  --cfy-ac-character: #35c64a;
+  --cfy-ac-meta:      #ead084;
+  /* e621's category colours */
+  --cfy-ac-e-general:   #b4c7d9;
+  --cfy-ac-e-artist:    #f2ac08;
+  --cfy-ac-e-copyright: #dd00dd;
+  --cfy-ac-e-character: #00aa00;
+  --cfy-ac-e-species:   #ed5d1f;
+  --cfy-ac-e-meta:      #ffffff;
+  --cfy-ac-e-lore:      #228822;
+  --cfy-ac-cat: var(--cfy-ac-general);
+  position: fixed;
+  z-index: 10000;
+  width: min(440px, calc(100vw - 8px));
+  display: flex;
+  flex-direction: column;
+  background: var(--cfy-bg);
+  border: 1px solid var(--cfy-line-strong);
+  border-top: 2px solid var(--cfy-accent);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  font-family: var(--cfy-font);
+  font-size: 13px;
+  color: var(--cfy-text);
+  animation: cfy-ac-in 0.12s var(--cfy-ease-out);
+}
+@keyframes cfy-ac-in {
+  from { opacity: 0; transform: translateY(-3px); }
+}
+.cfy-ac-list {
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cfy-line-strong) transparent;
+}
+.cfy-ac-list::-webkit-scrollbar { width: 6px; }
+.cfy-ac-list::-webkit-scrollbar-thumb { background: var(--cfy-line-strong); }
+
+/* Columns line up row to row: tag | alias | count | wiki */
+.cfy-ac-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 62px 46px 22px;
+  align-items: center;
+  column-gap: 10px;
+  height: 30px;
+  padding: 0 4px 0 12px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+}
+.cfy-ac-item + .cfy-ac-item { border-top: 1px solid var(--cfy-line); }
+.cfy-ac-item.active {
+  background: var(--cfy-accent-soft);
+  border-left-color: var(--cfy-accent);
+}
+.cfy-ac-cat-d1 { --cfy-ac-cat: var(--cfy-ac-artist); }
+.cfy-ac-cat-d3 { --cfy-ac-cat: var(--cfy-ac-copyright); }
+.cfy-ac-cat-d4 { --cfy-ac-cat: var(--cfy-ac-character); }
+.cfy-ac-cat-d5 { --cfy-ac-cat: var(--cfy-ac-meta); }
+.cfy-ac-cat-e0 { --cfy-ac-cat: var(--cfy-ac-e-general); }
+.cfy-ac-cat-e1 { --cfy-ac-cat: var(--cfy-ac-e-artist); }
+.cfy-ac-cat-e3 { --cfy-ac-cat: var(--cfy-ac-e-copyright); }
+.cfy-ac-cat-e4 { --cfy-ac-cat: var(--cfy-ac-e-character); }
+.cfy-ac-cat-e5 { --cfy-ac-cat: var(--cfy-ac-e-species); }
+.cfy-ac-cat-e7 { --cfy-ac-cat: var(--cfy-ac-e-meta); }
+.cfy-ac-cat-e8 { --cfy-ac-cat: var(--cfy-ac-e-lore); }
+
+/* Source chips: which tag list(s) the tag came from */
+.cfy-ac-src {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+}
+.cfy-ac-src b,
+.cfy-ac-legend b {
+  padding: 1px 3px;
+  border: 1px solid var(--cfy-line-strong);
+  font-family: var(--cfy-font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--cfy-text-dim);
+}
+.cfy-ac-src-ap { border-color: var(--cfy-accent-dim); color: var(--cfy-accent-text); }
+.cfy-ac-src-e6 { border-color: var(--cfy-ac-e-artist); color: var(--cfy-ac-e-artist); }
+.cfy-ac-legend {
+  display: flex;
+  gap: 3px;
+  margin-left: auto;
+}
+.cfy-ac-tag,
+.cfy-ac-alias {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cfy-ac-tag { color: var(--cfy-ac-cat); }
+.cfy-ac-tag mark {
+  background: none;
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--cfy-accent);
+  text-underline-offset: 3px;
+}
+.cfy-ac-item.is-used .cfy-ac-tag {
+  color: var(--cfy-text-faint);
+  text-decoration: line-through;
+}
+.cfy-ac-alias {
+  color: var(--cfy-text-dim);
+  font-size: 12px;
+}
+.cfy-ac-count {
+  text-align: right;
+  font-family: var(--cfy-font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--cfy-text-faint);
+}
+.cfy-ac-wiki {
+  display: inline-flex;
+  justify-content: center;
+  padding: 4px 0;
+  color: var(--cfy-text-faint);
+  opacity: 0;
+  transition: opacity var(--cfy-transition), color var(--cfy-transition);
+}
+.cfy-ac-item:hover .cfy-ac-wiki,
+.cfy-ac-item.active .cfy-ac-wiki { opacity: 1; }
+.cfy-ac-wiki:hover { color: var(--cfy-accent-text); }
+
+.cfy-ac-foot {
+  display: flex;
+  gap: 14px;
+  padding: 5px 12px;
+  border-top: 1px solid var(--cfy-line-strong);
+  font-family: var(--cfy-font-mono);
+  font-size: 10px;
+  color: var(--cfy-text-faint);
+}
+.cfy-ac-foot kbd {
+  display: inline-block;
+  min-width: 14px;
+  margin-right: 3px;
+  padding: 0 4px;
+  border: 1px solid var(--cfy-line-strong);
+  font-family: inherit;
+  text-align: center;
+  color: var(--cfy-text-dim);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cfy-ac { animation: none; }
+}

@@ -167,3 +167,4 @@ CLAUDE.md
 web/.DS_Store
 /tests
 .cache/
+/data/

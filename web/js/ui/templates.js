@@ -465,6 +465,26 @@ export function modalTemplate(settings = {}) {
                 <!-- Progress / result area -->
                 <div id="civitai-maintenance-result" class="civitai-maintenance-result" style="display:none;"></div>
               </div>
+
+              <!-- ── Credits ───────────────────────────── -->
+              <div class="civitai-settings-section civitai-settings-section--wide cfy-credits">
+                <h4><i class="fas fa-heart"></i> Credits</h4>
+                <dl class="cfy-credits-list">
+                  <dt>Developed by</dt>
+                  <dd><a href="https://github.com/KBYSHanahira/Civicomfy" target="_blank" rel="noopener">KBYSHanahira</a> <span>Kobayashi Hanahira</span></dd>
+                  <dt>Original project</dt>
+                  <dd><a href="https://github.com/MoonGoblinDev/Civicomfy" target="_blank" rel="noopener">MoonGoblin</a> <span>Civicomfy · MIT License</span></dd>
+                  <dt>Contributors</dt>
+                  <dd><a href="https://github.com/snomiao" target="_blank" rel="noopener">snomiao</a></dd>
+                  <dt>Tag data</dt>
+                  <dd>
+                    <a href="https://huggingface.co/datasets/newtextdoc1111/danbooru-tag-csv" target="_blank" rel="noopener">newtextdoc1111 / danbooru-tag-csv</a> <span>AP · MIT</span><br>
+                    <a href="https://github.com/DominikDoom/a1111-sd-webui-tagcomplete" target="_blank" rel="noopener">DominikDoom / a1111-sd-webui-tagcomplete</a> <span>TC, E6 · MIT</span>
+                  </dd>
+                  <dt>Model data</dt>
+                  <dd><a href="https://civitai.com" target="_blank" rel="noopener">Civitai</a> · <a href="https://huggingface.co" target="_blank" rel="noopener">Hugging Face</a></dd>
+                </dl>
+              </div>
             </div>
             <div class="civitai-form-actions">
               <span class="civitai-form-actions-hint"><i class="fas fa-info-circle"></i> Settings are stored in this browser.</span>
@@ -501,7 +521,7 @@ export function modalTemplate(settings = {}) {
       </div>
       <footer class="cfy-statusbar" aria-hidden="true">
         <span class="cfy-statusbar-mark"></span>
-        <span class="cfy-statusbar-label">Civicomfy // Model ops terminal</span>
+        <span class="cfy-statusbar-label">Civicomfy // Model ops terminal · by KBYSHanahira</span>
         <span class="cfy-statusbar-rule"></span>
         <span class="cfy-statusbar-label">Civitai · HuggingFace</span>
       </footer>

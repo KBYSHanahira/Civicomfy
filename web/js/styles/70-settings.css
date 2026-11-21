@@ -185,3 +185,37 @@
 .civitai-maintenance-result--success { border-left-color: var(--cfy-success); }
 .civitai-maintenance-result--error   { border-left-color: var(--cfy-danger); }
 
+
+/* Credits */
+.cfy-credits-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 10px 24px;
+  margin: 0;
+  font-size: 0.86em;
+  line-height: 1.5;
+}
+.cfy-credits-list dt {
+  font-family: var(--cfy-font-mono);
+  font-size: 0.82em;
+  letter-spacing: var(--cfy-label-tracking);
+  text-transform: uppercase;
+  color: var(--cfy-text-faint);
+}
+.cfy-credits-list dd {
+  margin: 0;
+  color: var(--cfy-text);
+}
+.cfy-credits-list dd span {
+  margin-left: 6px;
+  color: var(--cfy-text-faint);
+}
+.cfy-credits-list a {
+  color: var(--cfy-accent-text);
+  text-decoration: none;
+}
+.cfy-credits-list a:hover { text-decoration: underline; }
+@media (max-width: 520px) {
+  .cfy-credits-list { grid-template-columns: 1fr; gap: 2px; }
+  .cfy-credits-list dd { margin-bottom: 8px; }
+}
